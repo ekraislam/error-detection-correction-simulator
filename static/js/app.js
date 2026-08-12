@@ -1,7 +1,7 @@
 /**
- * ERROR DETECTION & CORRECTION LAB - Futuristic JavaScript App
- * Handles particle canvas background, metric count-up animations, UI state manager,
- * dynamic technique configurations, error injection controls, and API calls.
+ * EDC SIMULATOR - Futuristic Interactive Engineering Simulator JavaScript App
+ * Controls particle matrix canvas, telemetry side panel, transmission pipeline nodes,
+ * module selection, dynamic forms, error injection controls, and API calls.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -31,17 +31,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const processBtn = document.getElementById('process-btn');
     const resetBtn = document.getElementById('reset-btn');
 
+    const heroLaunchBtn = document.getElementById('hero-launch-btn');
+    const heroExploreBtn = document.getElementById('hero-explore-btn');
+
     const resultStatusIndicator = document.getElementById('result-status-indicator');
     const outputEncoded = document.getElementById('output-encoded');
     const outputReceived = document.getElementById('output-received');
     const outputDecoded = document.getElementById('output-decoded');
     const stepByStepDisplay = document.getElementById('step-by-step-display');
 
-    // Canvas Background Particle Matrix Generator
-    initBackgroundCanvas();
+    // Telemetry Elements
+    const tModule = document.getElementById('t-module');
+    const tSize = document.getElementById('t-size');
+    const tState = document.getElementById('t-state');
+    const tError = document.getElementById('t-error');
+    const tLatency = document.getElementById('t-latency');
+    const tChannel = document.getElementById('t-channel');
 
-    // Metric Count-up Animation
-    initMetricCountUp();
+    // Canvas Background Stream Generator
+    initBackgroundCanvas();
 
     // Mobile Sidebar Drawer Toggle
     if (mobileMenuBtn && sidebarDrawer) {
@@ -54,6 +62,19 @@ document.addEventListener('DOMContentLoaded', () => {
             if (sidebarDrawer.classList.contains('open') && !sidebarDrawer.contains(e.target) && e.target !== mobileMenuBtn) {
                 sidebarDrawer.classList.remove('open');
             }
+        });
+    }
+
+    // Hero CTA Buttons
+    if (heroLaunchBtn) {
+        heroLaunchBtn.addEventListener('click', () => {
+            document.getElementById('simulator-panel')?.scrollIntoView({ behavior: 'smooth' });
+        });
+    }
+
+    if (heroExploreBtn) {
+        heroExploreBtn.addEventListener('click', () => {
+            document.getElementById('overview-cards')?.scrollIntoView({ behavior: 'smooth' });
         });
     }
 
@@ -108,34 +129,11 @@ document.addEventListener('DOMContentLoaded', () => {
         draw();
     }
 
-    /**
-     * Metric Value Count-up Animation
-     */
-    function initMetricCountUp() {
-        const metricValues = document.querySelectorAll('.metric-value');
-        metricValues.forEach(el => {
-            const target = parseInt(el.getAttribute('data-target') || '0', 10);
-            let count = 0;
-            const duration = 1200;
-            const increment = target / (duration / 16);
-
-            const timer = setInterval(() => {
-                count += increment;
-                if (count >= target) {
-                    el.textContent = target;
-                    clearInterval(timer);
-                } else {
-                    el.textContent = Math.floor(count);
-                }
-            }, 16);
-        });
-    }
-
     // Configuration map for each of the 6 techniques
     const techniqueConfigs = {
         byte_stuffing: {
             name: "Byte Stuffing",
-            title: "Byte / Character Stuffing Simulator",
+            title: "Byte Stuffing Simulator",
             inputLabel: "Original Data Payload",
             placeholder: "e.g. ABCFE",
             defaultValue: "ABCFE",
@@ -163,7 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         bit_stuffing: {
             name: "Bit Stuffing",
-            title: "Bit Stuffing & De-stuffing Simulator",
+            title: "Bit Stuffing Simulator",
             inputLabel: "Binary Data Payload",
             placeholder: "e.g. 111110 or 011111101111110",
             defaultValue: "111110",
@@ -194,7 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         parity: {
             name: "Parity Check",
-            title: "Parity Check (1D Simple & 2D Block Parity)",
+            title: "Parity Check Simulator",
             inputLabel: "Binary Payload Data",
             placeholder: "e.g. 1011001 or 1011001011001001",
             defaultValue: "1011001",
@@ -234,13 +232,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
                 <div class="form-group" style="grid-column: span 2; font-size: 0.78rem; color: var(--text-muted); background: var(--bg-surface); padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--accent-cyan);">
-                    <i class="fa-solid fa-circle-info" style="color: var(--accent-cyan);"></i> <strong>Concept:</strong> Simple 1D parity detects odd number of bit errors (e.g. 1 bit flip), but fails on even number of bit errors. 2D parity pinpoints single-bit error locations at Row $r$, Column $c$.
+                    <i class="fa-solid fa-circle-info" style="color: var(--accent-cyan);"></i> <strong>Concept:</strong> Simple 1D parity detects odd number of bit errors. 2D parity pinpoints single-bit error locations at Row $r$, Column $c$.
                 </div>
             `
         },
         crc: {
-            name: "CRC Checksum",
-            title: "Cyclic Redundancy Check (CRC) Modulo-2 Division",
+            name: "CRC",
+            title: "Cyclic Redundancy Check Simulator",
             inputLabel: "Binary Data Payload",
             placeholder: "e.g. 100100",
             defaultValue: "100100",
@@ -270,7 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         hamming: {
             name: "Hamming Code",
-            title: "Hamming Code Error Detection & Correction (SEC)",
+            title: "Hamming Code Simulator",
             inputLabel: "Raw Data Bits Payload",
             placeholder: "e.g. 1011 for (7,4) or 10110010110 for (15,11)",
             defaultValue: "1011",
@@ -304,13 +302,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     </button>
                 </div>
                 <div class="form-group" style="grid-column: span 2; font-size: 0.78rem; color: var(--text-muted); background: var(--bg-surface); padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--accent-blue);">
-                    <i class="fa-solid fa-circle-info" style="color: var(--accent-blue);"></i> <strong>How it works:</strong> Hamming Code adds parity bits at power-of-two positions (1, 2, 4, 8...). The syndrome identifies the 1-indexed position of a single-bit error for auto-correction.
+                    <i class="fa-solid fa-circle-info" style="color: var(--accent-blue);"></i> <strong>How it works:</strong> Hamming Code adds parity bits at power-of-two positions. The syndrome identifies the 1-indexed position of a single-bit error for auto-correction.
                 </div>
             `
         },
         hamming_distance: {
             name: "Hamming Distance",
-            title: "Hamming Distance & Minimum Distance (d_min) Theory",
+            title: "Hamming Distance Simulator",
             inputLabel: "Codeword 1 (Binary)",
             placeholder: "e.g. 101101",
             defaultValue: "101101",
@@ -382,6 +380,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Render Dynamic Parameters
         if (dynamicParamsContainer) dynamicParamsContainer.innerHTML = config.paramsHtml;
+
+        // Update Telemetry Panel
+        if (tModule) tModule.textContent = config.name;
+        if (tSize) tSize.textContent = `${primaryInput ? primaryInput.value.length : 0} Bits/Chars`;
+        if (tState) tState.textContent = 'IDLE';
 
         // Attach action button handlers
         if (techKey === 'byte_stuffing') {
@@ -459,14 +462,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (flipBitBtn) flipBitBtn.disabled = false;
             if (corruptByteBtn) corruptByteBtn.disabled = false;
+            if (tChannel) tChannel.textContent = 'NOISE INJECTED';
         } else {
             errorControlsWrapper.classList.add('disabled');
             if (errorInputField) {
                 errorInputField.disabled = true;
                 errorInputField.value = '';
             }
-            if (flipBitBtn) flipBitBtn.disabled = true;
-            if (corruptByteBtn) corruptByteBtn.disabled = true;
+            if (flipBitBtn) flipBitBtn.disabled = false;
+            if (corruptByteBtn) corruptByteBtn.disabled = false;
+            if (tChannel) tChannel.textContent = 'CLEAN';
         }
     }
 
@@ -476,7 +481,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function resetResultsDisplay() {
         if (resultStatusIndicator) {
             resultStatusIndicator.className = 'status-indicator-badge neutral';
-            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-circle-info"></i> Ready for Processing';
+            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-circle-info"></i> Ready for Simulation';
         }
         if (outputEncoded) outputEncoded.textContent = '-- Awaiting Calculation --';
         if (outputReceived) outputReceived.textContent = '-- Awaiting Calculation --';
@@ -485,8 +490,8 @@ document.addEventListener('DOMContentLoaded', () => {
             stepByStepDisplay.innerHTML = `
                 <div class="empty-state">
                     <div class="empty-icon"><i class="fa-solid fa-network-wired"></i></div>
-                    <p class="empty-title">SELECT A DATA COMMUNICATION TECHNIQUE</p>
-                    <p class="empty-desc">Choose a protocol, configure payload parameters, and click <strong>Process Data</strong> to initiate real-time mathematical simulation.</p>
+                    <p class="empty-title">SELECT A MODULE</p>
+                    <p class="empty-desc">Choose a technique above to begin an interactive data transmission simulation.</p>
                 </div>
             `;
         }
@@ -711,11 +716,13 @@ document.addEventListener('DOMContentLoaded', () => {
      * Send API Request to Flask Server & Render Response
      */
     async function processSimulatorData(actionOverride) {
+        const startTime = performance.now();
         const payload = buildRequestPayload(actionOverride);
 
+        if (tState) tState.textContent = 'TRANSMITTING';
         if (resultStatusIndicator) {
             resultStatusIndicator.className = 'status-indicator-badge neutral';
-            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing Transmission...';
+            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Transmitting Frame...';
         }
 
         try {
@@ -728,6 +735,9 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const data = await response.json();
+            const endTime = performance.now();
+            if (tLatency) tLatency.textContent = `${Math.round(endTime - startTime)} ms`;
+            if (tState) tState.textContent = 'COMPLETED';
 
             if (data.success && data.result) {
                 const res = data.result;
@@ -738,6 +748,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         resultStatusIndicator.className = 'status-indicator-badge error-detected';
                         resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Error';
                     }
+                    if (tError) { tError.textContent = 'INVALID INPUT'; tError.className = 't-val t-danger'; }
                     if (outputEncoded) outputEncoded.textContent = 'Validation Error';
                     if (outputReceived) outputReceived.textContent = 'N/A';
                     if (outputDecoded) outputDecoded.textContent = 'N/A';
@@ -752,6 +763,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             resultStatusIndicator.className = 'status-indicator-badge success';
                             resultStatusIndicator.innerHTML = '<i class="fa-solid fa-check-circle"></i> Frame Stuffed';
                         }
+                        if (tError) { tError.textContent = 'NO ERROR'; tError.className = 't-val t-success'; }
                         if (outputEncoded) outputEncoded.textContent = res.original_data;
                         if (outputReceived) outputReceived.innerHTML = renderStuffedTokens(res.stuffed_tokens) || res.stuffed_frame;
                         if (outputDecoded) outputDecoded.textContent = 'N/A (Stuffing Mode)';
@@ -760,6 +772,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             resultStatusIndicator.className = 'status-indicator-badge success';
                             resultStatusIndicator.innerHTML = '<i class="fa-solid fa-check-circle"></i> Frame De-stuffed';
                         }
+                        if (tError) { tError.textContent = 'NO ERROR'; tError.className = 't-val t-success'; }
                         if (outputEncoded) outputEncoded.textContent = 'N/A (De-stuff Mode)';
                         if (outputReceived) outputReceived.textContent = payload.input_data;
                         if (outputDecoded) outputDecoded.textContent = res.destuffed_data;
@@ -769,9 +782,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             if (res.integrity_match) {
                                 resultStatusIndicator.className = 'status-indicator-badge success';
                                 resultStatusIndicator.innerHTML = '<i class="fa-solid fa-shield-check"></i> Integrity Verified (Exact Match)';
+                                if (tError) { tError.textContent = 'FRAME MATCH'; tError.className = 't-val t-success'; }
                             } else {
                                 resultStatusIndicator.className = 'status-indicator-badge error-detected';
                                 resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Frame Mismatch / Error';
+                                if (tError) { tError.textContent = 'CORRUPTED'; tError.className = 't-val t-danger'; }
                             }
                         }
 
@@ -785,8 +800,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (!res.error_detected) {
                             resultStatusIndicator.className = 'status-indicator-badge success';
                             resultStatusIndicator.innerHTML = '<i class="fa-solid fa-shield-check"></i> NO ERROR DETECTED';
+                            if (tError) { tError.textContent = 'NO ERROR'; tError.className = 't-val t-success'; }
                         } else {
                             resultStatusIndicator.className = 'status-indicator-badge error-detected';
+                            if (tError) { tError.textContent = 'DETECTED'; tError.className = 't-val t-danger'; }
                             if (res.pinpointed_location) {
                                 resultStatusIndicator.innerHTML = `<i class="fa-solid fa-crosshairs"></i> ERROR PINPOINTED (Row ${res.pinpointed_location.row}, Col ${res.pinpointed_location.col})`;
                             } else {
@@ -818,6 +835,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             resultStatusIndicator.className = 'status-indicator-badge success';
                             resultStatusIndicator.innerHTML = '<i class="fa-solid fa-check-circle"></i> CRC Encoded';
                         }
+                        if (tError) { tError.textContent = 'CHECKSUM GENERATED'; tError.className = 't-val t-success'; }
                         if (outputEncoded) outputEncoded.textContent = `Payload: ${res.original_data} | Appended Zeros: ${res.appended_data}`;
                         if (outputReceived) outputReceived.textContent = `CRC Remainder: ${res.crc_remainder}`;
                         if (outputDecoded) outputDecoded.textContent = `Transmitted Codeword: ${res.transmitted_codeword}`;
@@ -826,9 +844,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             if (!res.error_detected) {
                                 resultStatusIndicator.className = 'status-indicator-badge success';
                                 resultStatusIndicator.innerHTML = '<i class="fa-solid fa-shield-check"></i> NO ERROR (Remainder = 0)';
+                                if (tError) { tError.textContent = 'NO ERROR'; tError.className = 't-val t-success'; }
                             } else {
                                 resultStatusIndicator.className = 'status-indicator-badge error-detected';
                                 resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ERROR DETECTED (Non-zero Remainder)';
+                                if (tError) { tError.textContent = 'NON-ZERO REMAINDER'; tError.className = 't-val t-danger'; }
                             }
                         }
                         if (outputEncoded) outputEncoded.textContent = 'N/A (Check Mode)';
@@ -840,9 +860,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             if (!res.error_detected) {
                                 resultStatusIndicator.className = 'status-indicator-badge success';
                                 resultStatusIndicator.innerHTML = '<i class="fa-solid fa-shield-check"></i> CRC INTEGRITY VERIFIED (Remainder = 0)';
+                                if (tError) { tError.textContent = 'REMAINDER = 0'; tError.className = 't-val t-success'; }
                             } else {
                                 resultStatusIndicator.className = 'status-indicator-badge error-detected';
                                 resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ERROR DETECTED (Non-zero Remainder)';
+                                if (tError) { tError.textContent = 'NON-ZERO REMAINDER'; tError.className = 't-val t-danger'; }
                             }
                         }
                         if (outputEncoded) outputEncoded.textContent = `Payload: ${res.original_data} | Remainder: ${res.crc_remainder}`;
@@ -855,9 +877,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (!res.error_detected) {
                             resultStatusIndicator.className = 'status-indicator-badge success';
                             resultStatusIndicator.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> CODEWORD INTACT (Syndrome = 0)';
+                            if (tError) { tError.textContent = 'NO ERROR'; tError.className = 't-val t-success'; }
                         } else {
                             resultStatusIndicator.className = 'status-indicator-badge corrected';
                             resultStatusIndicator.innerHTML = `<i class="fa-solid fa-wrench"></i> ERROR AUTO-CORRECTED (Position ${res.error_position})`;
+                            if (tError) { tError.textContent = `CORRECTED (POS ${res.error_position})`; tError.className = 't-val t-success'; }
                         }
                     }
 
@@ -870,6 +894,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (resultStatusIndicator) {
                             resultStatusIndicator.className = 'status-indicator-badge success';
                             resultStatusIndicator.innerHTML = `<i class="fa-solid fa-ruler"></i> Minimum Distance d_min = ${res.d_min}`;
+                            if (tError) { tError.textContent = `d_min = ${res.d_min}`; tError.className = 't-val t-success'; }
                         }
                         if (outputEncoded) outputEncoded.textContent = `Codewords Set: [ ${res.codewords.join(', ')} ] (Count = ${res.num_codewords}, Length = ${res.codeword_length})`;
                         if (outputReceived) outputReceived.innerHTML = renderHammingDistanceMatrixTable(res);
@@ -879,6 +904,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (resultStatusIndicator) {
                             resultStatusIndicator.className = 'status-indicator-badge success';
                             resultStatusIndicator.innerHTML = `<i class="fa-solid fa-ruler-combined"></i> Hamming Distance d = ${res.distance}`;
+                            if (tError) { tError.textContent = `Distance d = ${res.distance}`; tError.className = 't-val t-success'; }
                         }
                         if (outputEncoded) outputEncoded.textContent = `Codeword 1: ${res.codeword1} | Codeword 2: ${res.codeword2}`;
                         if (outputReceived) outputReceived.innerHTML = renderHammingDistanceComparisonTable(res.comparison);
