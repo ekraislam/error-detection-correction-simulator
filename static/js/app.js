@@ -1,6 +1,6 @@
 /**
  * Error Detection & Correction Simulator - Frontend JavaScript App
- * Handles dynamic UI state, technique selection, Byte/Bit Stuffing,
+ * Handles dynamic UI state, mobile sidebar toggle, technique selection, Byte/Bit Stuffing,
  * 1D/2D Parity Check, CRC Checksum, Hamming Code, Hamming Distance visualizations, error injection controls, and API calls.
  */
 
@@ -11,6 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // DOM Elements
     const navItems = document.querySelectorAll('.nav-item');
     const techniqueCards = document.querySelectorAll('.technique-card');
+    const sidebarDrawer = document.getElementById('sidebar-drawer');
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
     
     const activeTechniqueTag = document.getElementById('active-technique-tag');
     const activeTechniqueTitle = document.getElementById('active-technique-title');
@@ -35,11 +37,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const outputDecoded = document.getElementById('output-decoded');
     const stepByStepDisplay = document.getElementById('step-by-step-display');
 
+    // Mobile Sidebar Drawer Toggle
+    if (mobileMenuBtn && sidebarDrawer) {
+        mobileMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            sidebarDrawer.classList.toggle('open');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (sidebarDrawer.classList.contains('open') && !sidebarDrawer.contains(e.target) && e.target !== mobileMenuBtn) {
+                sidebarDrawer.classList.remove('open');
+            }
+        });
+    }
+
     // Configuration map for each of the 6 techniques
     const techniqueConfigs = {
         byte_stuffing: {
             name: "Byte Stuffing",
-            title: "Byte / Character Stuffing & De-stuffing",
+            title: "Byte / Character Stuffing Simulator",
             inputLabel: "Original Data Payload",
             placeholder: "e.g. ABCFE",
             defaultValue: "ABCFE",
@@ -248,40 +264,44 @@ document.addEventListener('DOMContentLoaded', () => {
      * Switch Active Technique UI & Update Input Form Controls
      */
     function selectTechnique(techKey) {
+        if (sidebarDrawer) sidebarDrawer.classList.remove('open');
+
+        if (techKey === 'overview') {
+            document.getElementById('overview-cards')?.scrollIntoView({ behavior: 'smooth' });
+            navItems.forEach(item => {
+                item.classList.toggle('active', item.getAttribute('data-technique') === 'overview');
+            });
+            return;
+        }
+
         if (!techniqueConfigs[techKey]) return;
         currentTechnique = techKey;
         const config = techniqueConfigs[techKey];
 
         // Update active highlight on navigation items
         navItems.forEach(item => {
-            if (item.getAttribute('data-technique') === techKey) {
-                item.classList.add('active');
-            } else {
-                item.classList.remove('active');
-            }
+            item.classList.toggle('active', item.getAttribute('data-technique') === techKey);
         });
 
         // Update active highlight on cards
         techniqueCards.forEach(card => {
-            if (card.getAttribute('data-technique') === techKey) {
-                card.classList.add('active');
-            } else {
-                card.classList.remove('active');
-            }
+            card.classList.toggle('active', card.getAttribute('data-technique') === techKey);
         });
 
         // Update Header Titles
-        activeTechniqueTag.textContent = config.name;
-        activeTechniqueTitle.textContent = config.title;
+        if (activeTechniqueTag) activeTechniqueTag.textContent = config.name;
+        if (activeTechniqueTitle) activeTechniqueTitle.textContent = config.title;
 
         // Update Form Inputs
-        primaryInputLabel.textContent = config.inputLabel;
-        primaryInput.placeholder = config.placeholder;
-        primaryInput.value = config.defaultValue;
-        primaryInputHint.textContent = config.hint;
+        if (primaryInputLabel) primaryInputLabel.textContent = config.inputLabel;
+        if (primaryInput) {
+            primaryInput.placeholder = config.placeholder;
+            primaryInput.value = config.defaultValue;
+        }
+        if (primaryInputHint) primaryInputHint.textContent = config.hint;
 
         // Render Dynamic Parameters
-        dynamicParamsContainer.innerHTML = config.paramsHtml;
+        if (dynamicParamsContainer) dynamicParamsContainer.innerHTML = config.paramsHtml;
 
         // Attach action button handlers
         if (techKey === 'byte_stuffing') {
@@ -299,11 +319,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (e.target.value === '2D') {
                     if (colGroup) colGroup.style.display = 'block';
                     if (err2dGroup) err2dGroup.style.display = 'flex';
-                    primaryInput.value = "1011001011001001";
+                    if (primaryInput) primaryInput.value = "1011001011001001";
                 } else {
                     if (colGroup) colGroup.style.display = 'none';
                     if (err2dGroup) err2dGroup.style.display = 'none';
-                    primaryInput.value = "1011001";
+                    if (primaryInput) primaryInput.value = "1011001";
                 }
             });
         } else if (techKey === 'crc') {
@@ -313,9 +333,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const hModeSelect = document.getElementById('param-hamming-mode');
             hModeSelect?.addEventListener('change', (e) => {
                 if (e.target.value === '15,11') {
-                    primaryInput.value = "10110010110";
+                    if (primaryInput) primaryInput.value = "10110010110";
                 } else {
-                    primaryInput.value = "1011";
+                    if (primaryInput) primaryInput.value = "1011";
                 }
             });
             document.getElementById('btn-hamming-encode-only')?.addEventListener('click', () => processSimulatorData('encode'));
@@ -337,8 +357,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Reset Error Injection Controls
-        enableErrorToggle.checked = false;
-        toggleErrorInjection(false);
+        if (enableErrorToggle) {
+            enableErrorToggle.checked = false;
+            toggleErrorInjection(false);
+        }
 
         // Reset Results Display Area
         resetResultsDisplay();
@@ -348,18 +370,23 @@ document.addEventListener('DOMContentLoaded', () => {
      * Enable/Disable Error Injection Controls
      */
     function toggleErrorInjection(enabled) {
+        if (!errorControlsWrapper) return;
         if (enabled) {
             errorControlsWrapper.classList.remove('disabled');
-            errorInputField.disabled = false;
-            flipBitBtn.disabled = false;
-            corruptByteBtn.disabled = false;
-            errorInputField.value = primaryInput.value;
+            if (errorInputField) {
+                errorInputField.disabled = false;
+                errorInputField.value = primaryInput ? primaryInput.value : '';
+            }
+            if (flipBitBtn) flipBitBtn.disabled = false;
+            if (corruptByteBtn) corruptByteBtn.disabled = false;
         } else {
             errorControlsWrapper.classList.add('disabled');
-            errorInputField.disabled = true;
-            flipBitBtn.disabled = true;
-            corruptByteBtn.disabled = true;
-            errorInputField.value = '';
+            if (errorInputField) {
+                errorInputField.disabled = true;
+                errorInputField.value = '';
+            }
+            if (flipBitBtn) flipBitBtn.disabled = true;
+            if (corruptByteBtn) corruptByteBtn.disabled = true;
         }
     }
 
@@ -367,17 +394,21 @@ document.addEventListener('DOMContentLoaded', () => {
      * Reset Results View to Initial State
      */
     function resetResultsDisplay() {
-        resultStatusIndicator.className = 'status-indicator-badge neutral';
-        resultStatusIndicator.innerHTML = '<i class="fa-solid fa-circle-info"></i> Ready for Processing';
-        outputEncoded.textContent = '-- Awaiting Calculation --';
-        outputReceived.textContent = '-- Awaiting Calculation --';
-        outputDecoded.textContent = '-- Awaiting Calculation --';
-        stepByStepDisplay.innerHTML = `
-            <div class="empty-state">
-                <i class="fa-solid fa-sliders"></i>
-                <p>Select inputs and click <strong>Process Data</strong> to execute step-by-step calculations.</p>
-            </div>
-        `;
+        if (resultStatusIndicator) {
+            resultStatusIndicator.className = 'status-indicator-badge neutral';
+            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-circle-info"></i> Ready for Processing';
+        }
+        if (outputEncoded) outputEncoded.textContent = '-- Awaiting Calculation --';
+        if (outputReceived) outputReceived.textContent = '-- Awaiting Calculation --';
+        if (outputDecoded) outputDecoded.textContent = '-- Awaiting Calculation --';
+        if (stepByStepDisplay) {
+            stepByStepDisplay.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-solid fa-sliders"></i>
+                    <p>Select inputs and click <strong>Process Data</strong> to execute step-by-step calculations.</p>
+                </div>
+            `;
+        }
     }
 
     /**
@@ -386,8 +417,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function buildRequestPayload(actionOverride) {
         const payload = {
             technique: currentTechnique,
-            input_data: primaryInput.value.trim(),
-            injected_error: enableErrorToggle.checked ? errorInputField.value.trim() : null,
+            input_data: primaryInput ? primaryInput.value.trim() : '',
+            injected_error: (enableErrorToggle && enableErrorToggle.checked && errorInputField) ? errorInputField.value.trim() : null,
             params: {}
         };
 
@@ -601,8 +632,10 @@ document.addEventListener('DOMContentLoaded', () => {
     async function processSimulatorData(actionOverride) {
         const payload = buildRequestPayload(actionOverride);
 
-        resultStatusIndicator.className = 'status-indicator-badge neutral';
-        resultStatusIndicator.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing Backend...';
+        if (resultStatusIndicator) {
+            resultStatusIndicator.className = 'status-indicator-badge neutral';
+            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing Backend...';
+        }
 
         try {
             const response = await fetch('/api/process', {
@@ -620,131 +653,155 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Handle Error Response from Algorithm Validation
                 if (res.success === false) {
-                    resultStatusIndicator.className = 'status-indicator-badge error-detected';
-                    resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Error';
-                    outputEncoded.textContent = 'Validation Error';
-                    outputReceived.textContent = 'N/A';
-                    outputDecoded.textContent = 'N/A';
-                    stepByStepDisplay.innerHTML = `<div class="step-row error-step"><i class="fa-solid fa-circle-exclamation"></i> ${res.error}</div>`;
+                    if (resultStatusIndicator) {
+                        resultStatusIndicator.className = 'status-indicator-badge error-detected';
+                        resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Error';
+                    }
+                    if (outputEncoded) outputEncoded.textContent = 'Validation Error';
+                    if (outputReceived) outputReceived.textContent = 'N/A';
+                    if (outputDecoded) outputDecoded.textContent = 'N/A';
+                    if (stepByStepDisplay) stepByStepDisplay.innerHTML = `<div class="step-row error-step"><i class="fa-solid fa-circle-exclamation"></i> ${res.error}</div>`;
                     return;
                 }
 
                 // Render Response for Byte Stuffing or Bit Stuffing
                 if (currentTechnique === 'byte_stuffing' || currentTechnique === 'bit_stuffing') {
                     if (res.action === 'stuff') {
-                        resultStatusIndicator.className = 'status-indicator-badge success';
-                        resultStatusIndicator.innerHTML = '<i class="fa-solid fa-check-circle"></i> Data Stuffed';
-                        outputEncoded.textContent = res.original_data;
-                        outputReceived.innerHTML = renderStuffedTokens(res.stuffed_tokens) || res.stuffed_frame;
-                        outputDecoded.textContent = 'N/A (Stuffing Mode)';
+                        if (resultStatusIndicator) {
+                            resultStatusIndicator.className = 'status-indicator-badge success';
+                            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-check-circle"></i> Data Stuffed';
+                        }
+                        if (outputEncoded) outputEncoded.textContent = res.original_data;
+                        if (outputReceived) outputReceived.innerHTML = renderStuffedTokens(res.stuffed_tokens) || res.stuffed_frame;
+                        if (outputDecoded) outputDecoded.textContent = 'N/A (Stuffing Mode)';
                     } else if (res.action === 'destuff') {
-                        resultStatusIndicator.className = 'status-indicator-badge success';
-                        resultStatusIndicator.innerHTML = '<i class="fa-solid fa-check-circle"></i> Frame De-stuffed';
-                        outputEncoded.textContent = 'N/A (De-stuff Mode)';
-                        outputReceived.textContent = payload.input_data;
-                        outputDecoded.textContent = res.destuffed_data;
+                        if (resultStatusIndicator) {
+                            resultStatusIndicator.className = 'status-indicator-badge success';
+                            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-check-circle"></i> Frame De-stuffed';
+                        }
+                        if (outputEncoded) outputEncoded.textContent = 'N/A (De-stuff Mode)';
+                        if (outputReceived) outputReceived.textContent = payload.input_data;
+                        if (outputDecoded) outputDecoded.textContent = res.destuffed_data;
                     } else {
                         // Full Cycle Mode
-                        if (res.integrity_match) {
-                            resultStatusIndicator.className = 'status-indicator-badge success';
-                            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-shield-check"></i> Integrity Verified (Exact Match)';
-                        } else {
-                            resultStatusIndicator.className = 'status-indicator-badge error-detected';
-                            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Error / Frame Mismatch';
+                        if (resultStatusIndicator) {
+                            if (res.integrity_match) {
+                                resultStatusIndicator.className = 'status-indicator-badge success';
+                                resultStatusIndicator.innerHTML = '<i class="fa-solid fa-shield-check"></i> Integrity Verified (Exact Match)';
+                            } else {
+                                resultStatusIndicator.className = 'status-indicator-badge error-detected';
+                                resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Error / Frame Mismatch';
+                            }
                         }
 
-                        outputEncoded.textContent = res.original_data;
-                        outputReceived.innerHTML = renderStuffedTokens(res.stuffed_tokens) || res.stuffed_frame;
-                        outputDecoded.textContent = res.destuff_success ? res.destuffed_data : `Failed: ${res.destuff_error}`;
+                        if (outputEncoded) outputEncoded.textContent = res.original_data;
+                        if (outputReceived) outputReceived.innerHTML = renderStuffedTokens(res.stuffed_tokens) || res.stuffed_frame;
+                        if (outputDecoded) outputDecoded.textContent = res.destuff_success ? res.destuffed_data : `Failed: ${res.destuff_error}`;
                     }
                 } else if (currentTechnique === 'parity') {
                     // Render 1D or 2D Parity Check
-                    if (!res.error_detected) {
-                        resultStatusIndicator.className = 'status-indicator-badge success';
-                        resultStatusIndicator.innerHTML = '<i class="fa-solid fa-shield-check"></i> NO ERROR DETECTED';
-                    } else {
-                        resultStatusIndicator.className = 'status-indicator-badge error-detected';
-                        if (res.pinpointed_location) {
-                            resultStatusIndicator.innerHTML = `<i class="fa-solid fa-crosshairs"></i> ERROR DETECTED & PINPOINTED (Row ${res.pinpointed_location.row}, Col ${res.pinpointed_location.col})`;
+                    if (resultStatusIndicator) {
+                        if (!res.error_detected) {
+                            resultStatusIndicator.className = 'status-indicator-badge success';
+                            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-shield-check"></i> NO ERROR DETECTED';
                         } else {
-                            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ERROR DETECTED';
+                            resultStatusIndicator.className = 'status-indicator-badge error-detected';
+                            if (res.pinpointed_location) {
+                                resultStatusIndicator.innerHTML = `<i class="fa-solid fa-crosshairs"></i> ERROR DETECTED & PINPOINTED (Row ${res.pinpointed_location.row}, Col ${res.pinpointed_location.col})`;
+                            } else {
+                                resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ERROR DETECTED';
+                            }
                         }
                     }
 
                     if (res.mode === '1D') {
-                        outputEncoded.textContent = `Payload: ${res.original_data} | Parity Bit: ${res.parity_bit}`;
-                        outputReceived.textContent = res.received_codeword;
-                        outputDecoded.textContent = res.error_detected ? 'ERROR DETECTED (Corrupted Codeword)' : `Payload Intact: ${res.original_data}`;
+                        if (outputEncoded) outputEncoded.textContent = `Payload: ${res.original_data} | Parity Bit: ${res.parity_bit}`;
+                        if (outputReceived) outputReceived.textContent = res.received_codeword;
+                        if (outputDecoded) outputDecoded.textContent = res.error_detected ? 'ERROR DETECTED (Corrupted Codeword)' : `Payload Intact: ${res.original_data}`;
                     } else {
                         // 2D Mode
-                        outputEncoded.textContent = `2D Grid (${res.rows}x${res.columns}) | Parity Scheme: ${res.parity_type.toUpperCase()}`;
-                        outputReceived.innerHTML = render2DParityMatrix(res);
-                        if (res.pinpointed_location) {
-                            outputDecoded.textContent = `Error Pinpointed at Row ${res.pinpointed_location.row}, Column ${res.pinpointed_location.col}`;
-                        } else {
-                            outputDecoded.textContent = res.error_detected ? 'Multi-bit Error Detected' : 'Block Parity Intact';
+                        if (outputEncoded) outputEncoded.textContent = `2D Grid (${res.rows}x${res.columns}) | Parity Scheme: ${res.parity_type.toUpperCase()}`;
+                        if (outputReceived) outputReceived.innerHTML = render2DParityMatrix(res);
+                        if (outputDecoded) {
+                            if (res.pinpointed_location) {
+                                outputDecoded.textContent = `Error Pinpointed at Row ${res.pinpointed_location.row}, Column ${res.pinpointed_location.col}`;
+                            } else {
+                                outputDecoded.textContent = res.error_detected ? 'Multi-bit Error Detected' : 'Block Parity Intact';
+                            }
                         }
                     }
                 } else if (currentTechnique === 'crc') {
                     // Render CRC Checksum
                     if (res.action === 'encode') {
-                        resultStatusIndicator.className = 'status-indicator-badge success';
-                        resultStatusIndicator.innerHTML = '<i class="fa-solid fa-check-circle"></i> CRC Encoded';
-                        outputEncoded.textContent = `Payload: ${res.original_data} | Appended Zeros: ${res.appended_data}`;
-                        outputReceived.textContent = `CRC Remainder: ${res.crc_remainder}`;
-                        outputDecoded.textContent = `Transmitted Codeword: ${res.transmitted_codeword}`;
-                    } else if (res.action === 'check') {
-                        if (!res.error_detected) {
+                        if (resultStatusIndicator) {
                             resultStatusIndicator.className = 'status-indicator-badge success';
-                            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-shield-check"></i> NO ERROR DETECTED (Remainder = 0)';
-                        } else {
-                            resultStatusIndicator.className = 'status-indicator-badge error-detected';
-                            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ERROR DETECTED (Non-zero Remainder)';
+                            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-check-circle"></i> CRC Encoded';
                         }
-                        outputEncoded.textContent = 'N/A (Check Mode)';
-                        outputReceived.textContent = `Received Codeword: ${res.received_codeword}`;
-                        outputDecoded.textContent = `Receiver Remainder: ${res.received_remainder}`;
+                        if (outputEncoded) outputEncoded.textContent = `Payload: ${res.original_data} | Appended Zeros: ${res.appended_data}`;
+                        if (outputReceived) outputReceived.textContent = `CRC Remainder: ${res.crc_remainder}`;
+                        if (outputDecoded) outputDecoded.textContent = `Transmitted Codeword: ${res.transmitted_codeword}`;
+                    } else if (res.action === 'check') {
+                        if (resultStatusIndicator) {
+                            if (!res.error_detected) {
+                                resultStatusIndicator.className = 'status-indicator-badge success';
+                                resultStatusIndicator.innerHTML = '<i class="fa-solid fa-shield-check"></i> NO ERROR DETECTED (Remainder = 0)';
+                            } else {
+                                resultStatusIndicator.className = 'status-indicator-badge error-detected';
+                                resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ERROR DETECTED (Non-zero Remainder)';
+                            }
+                        }
+                        if (outputEncoded) outputEncoded.textContent = 'N/A (Check Mode)';
+                        if (outputReceived) outputReceived.textContent = `Received Codeword: ${res.received_codeword}`;
+                        if (outputDecoded) outputDecoded.textContent = `Receiver Remainder: ${res.received_remainder}`;
                     } else {
                         // Full Cycle Mode
-                        if (!res.error_detected) {
-                            resultStatusIndicator.className = 'status-indicator-badge success';
-                            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-shield-check"></i> CRC INTEGRITY VERIFIED (Remainder = 0)';
-                        } else {
-                            resultStatusIndicator.className = 'status-indicator-badge error-detected';
-                            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ERROR DETECTED (Non-zero Remainder)';
+                        if (resultStatusIndicator) {
+                            if (!res.error_detected) {
+                                resultStatusIndicator.className = 'status-indicator-badge success';
+                                resultStatusIndicator.innerHTML = '<i class="fa-solid fa-shield-check"></i> CRC INTEGRITY VERIFIED (Remainder = 0)';
+                            } else {
+                                resultStatusIndicator.className = 'status-indicator-badge error-detected';
+                                resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ERROR DETECTED (Non-zero Remainder)';
+                            }
                         }
-                        outputEncoded.textContent = `Payload: ${res.original_data} | Remainder: ${res.crc_remainder}`;
-                        outputReceived.textContent = `Received Codeword: ${res.received_codeword}`;
-                        outputDecoded.textContent = `Receiver Remainder: ${res.received_remainder} | ${res.error_detected ? 'CORRUPTED' : 'DATA INTACT'}`;
+                        if (outputEncoded) outputEncoded.textContent = `Payload: ${res.original_data} | Remainder: ${res.crc_remainder}`;
+                        if (outputReceived) outputReceived.textContent = `Received Codeword: ${res.received_codeword}`;
+                        if (outputDecoded) outputDecoded.textContent = `Receiver Remainder: ${res.received_remainder} | ${res.error_detected ? 'CORRUPTED' : 'DATA INTACT'}`;
                     }
                 } else if (currentTechnique === 'hamming') {
                     // Render Hamming Code
-                    if (!res.error_detected) {
-                        resultStatusIndicator.className = 'status-indicator-badge success';
-                        resultStatusIndicator.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> CODEWORD INTACT (Syndrome = 0)';
-                    } else {
-                        resultStatusIndicator.className = 'status-indicator-badge corrected';
-                        resultStatusIndicator.innerHTML = `<i class="fa-solid fa-wrench"></i> ERROR DETECTED & AUTO-CORRECTED (Position ${res.error_position})`;
+                    if (resultStatusIndicator) {
+                        if (!res.error_detected) {
+                            resultStatusIndicator.className = 'status-indicator-badge success';
+                            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> CODEWORD INTACT (Syndrome = 0)';
+                        } else {
+                            resultStatusIndicator.className = 'status-indicator-badge corrected';
+                            resultStatusIndicator.innerHTML = `<i class="fa-solid fa-wrench"></i> ERROR DETECTED & AUTO-CORRECTED (Position ${res.error_position})`;
+                        }
                     }
 
-                    outputEncoded.innerHTML = `<strong>Transmitted (${res.mode}):</strong> ${res.encoded_codeword}` + renderHammingPosTable(res.pos_table);
-                    outputReceived.textContent = `Received: ${res.received_codeword} | Syndrome S = ${res.syndrome_string} (Pos ${res.error_position})`;
-                    outputDecoded.textContent = res.error_detected ? `Corrected Codeword: ${res.corrected_codeword} -> Extracted Data: ${res.extracted_data}` : `Extracted Data: ${res.extracted_data}`;
+                    if (outputEncoded) outputEncoded.innerHTML = `<strong>Transmitted (${res.mode}):</strong> ${res.encoded_codeword}` + renderHammingPosTable(res.pos_table);
+                    if (outputReceived) outputReceived.textContent = `Received: ${res.received_codeword} | Syndrome S = ${res.syndrome_string} (Pos ${res.error_position})`;
+                    if (outputDecoded) outputDecoded.textContent = res.error_detected ? `Corrected Codeword: ${res.corrected_codeword} -> Extracted Data: ${res.extracted_data}` : `Extracted Data: ${res.extracted_data}`;
                 } else if (currentTechnique === 'hamming_distance') {
                     // Render Hamming Distance & d_min
                     if (res.mode === 'multi') {
-                        resultStatusIndicator.className = 'status-indicator-badge success';
-                        resultStatusIndicator.innerHTML = `<i class="fa-solid fa-ruler"></i> Minimum Distance d_min = ${res.d_min}`;
-                        outputEncoded.textContent = `Codewords Set: [ ${res.codewords.join(', ')} ] (Count = ${res.num_codewords}, Length = ${res.codeword_length})`;
-                        outputReceived.innerHTML = renderHammingDistanceMatrixTable(res);
-                        outputDecoded.innerHTML = `<strong>Theoretical Capabilities:</strong> Max Detectable Errors <code>s = ${res.detectable_errors_s}</code> | Max Correctable Errors <code>t = ${res.correctable_errors_t}</code>`;
+                        if (resultStatusIndicator) {
+                            resultStatusIndicator.className = 'status-indicator-badge success';
+                            resultStatusIndicator.innerHTML = `<i class="fa-solid fa-ruler"></i> Minimum Distance d_min = ${res.d_min}`;
+                        }
+                        if (outputEncoded) outputEncoded.textContent = `Codewords Set: [ ${res.codewords.join(', ')} ] (Count = ${res.num_codewords}, Length = ${res.codeword_length})`;
+                        if (outputReceived) outputReceived.innerHTML = renderHammingDistanceMatrixTable(res);
+                        if (outputDecoded) outputDecoded.innerHTML = `<strong>Theoretical Capabilities:</strong> Max Detectable Errors <code>s = ${res.detectable_errors_s}</code> | Max Correctable Errors <code>t = ${res.correctable_errors_t}</code>`;
                     } else {
                         // Pair Comparison Mode
-                        resultStatusIndicator.className = 'status-indicator-badge success';
-                        resultStatusIndicator.innerHTML = `<i class="fa-solid fa-ruler-combined"></i> Hamming Distance d = ${res.distance}`;
-                        outputEncoded.textContent = `Codeword 1: ${res.codeword1} | Codeword 2: ${res.codeword2}`;
-                        outputReceived.innerHTML = renderHammingDistanceComparisonTable(res.comparison);
-                        outputDecoded.textContent = `XOR Result: ${res.xor_result} | Differing Positions: ${res.differing_positions.length ? res.differing_positions.join(', ') : 'None (Identical)'}`;
+                        if (resultStatusIndicator) {
+                            resultStatusIndicator.className = 'status-indicator-badge success';
+                            resultStatusIndicator.innerHTML = `<i class="fa-solid fa-ruler-combined"></i> Hamming Distance d = ${res.distance}`;
+                        }
+                        if (outputEncoded) outputEncoded.textContent = `Codeword 1: ${res.codeword1} | Codeword 2: ${res.codeword2}`;
+                        if (outputReceived) outputReceived.innerHTML = renderHammingDistanceComparisonTable(res.comparison);
+                        if (outputDecoded) outputDecoded.textContent = `XOR Result: ${res.xor_result} | Differing Positions: ${res.differing_positions.length ? res.differing_positions.join(', ') : 'None (Identical)'}`;
                     }
                 }
 
@@ -758,17 +815,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         stepsHtml += `<div class="${stepClass}">${step}</div>`;
                     });
                 }
-                stepByStepDisplay.innerHTML = stepsHtml || 'No step trace generated.';
+                if (stepByStepDisplay) stepByStepDisplay.innerHTML = stepsHtml || 'No step trace generated.';
             } else {
-                resultStatusIndicator.className = 'status-indicator-badge error-detected';
-                resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Error';
-                stepByStepDisplay.textContent = data.error || 'Server processing error occurred.';
+                if (resultStatusIndicator) {
+                    resultStatusIndicator.className = 'status-indicator-badge error-detected';
+                    resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Error';
+                }
+                if (stepByStepDisplay) stepByStepDisplay.textContent = data.error || 'Server processing error occurred.';
             }
         } catch (err) {
             console.error('API Call Error:', err);
-            resultStatusIndicator.className = 'status-indicator-badge error-detected';
-            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-plug-circle-xmark"></i> Connection Error';
-            stepByStepDisplay.textContent = 'Failed to connect to Flask server backend at /api/process.';
+            if (resultStatusIndicator) {
+                resultStatusIndicator.className = 'status-indicator-badge error-detected';
+                resultStatusIndicator.innerHTML = '<i class="fa-solid fa-plug-circle-xmark"></i> Connection Error';
+            }
+            if (stepByStepDisplay) stepByStepDisplay.textContent = 'Failed to connect to Flask server backend at /api/process.';
         }
     }
 
@@ -785,40 +846,50 @@ document.addEventListener('DOMContentLoaded', () => {
         card.addEventListener('click', () => {
             const techKey = card.getAttribute('data-technique');
             selectTechnique(techKey);
-            document.getElementById('simulator-panel').scrollIntoView({ behavior: 'smooth' });
+            document.getElementById('simulator-panel')?.scrollIntoView({ behavior: 'smooth' });
         });
     });
 
-    enableErrorToggle.addEventListener('change', (e) => {
-        toggleErrorInjection(e.target.checked);
-    });
+    if (enableErrorToggle) {
+        enableErrorToggle.addEventListener('change', (e) => {
+            toggleErrorInjection(e.target.checked);
+        });
+    }
 
-    flipBitBtn.addEventListener('click', () => {
-        let val = errorInputField.value;
-        if (!val) return;
-        let arr = val.split('');
-        for (let i = 0; i < arr.length; i++) {
-            if (arr[i] === '0') { arr[i] = '1'; break; }
-            else if (arr[i] === '1') { arr[i] = '0'; break; }
-        }
-        errorInputField.value = arr.join('');
-    });
+    if (flipBitBtn) {
+        flipBitBtn.addEventListener('click', () => {
+            if (!errorInputField) return;
+            let val = errorInputField.value;
+            if (!val) return;
+            let arr = val.split('');
+            for (let i = 0; i < arr.length; i++) {
+                if (arr[i] === '0') { arr[i] = '1'; break; }
+                else if (arr[i] === '1') { arr[i] = '0'; break; }
+            }
+            errorInputField.value = arr.join('');
+        });
+    }
 
-    corruptByteBtn.addEventListener('click', () => {
-        let val = errorInputField.value;
-        if (!val) return;
-        if (currentTechnique === 'bit_stuffing') {
-            errorInputField.value = val.slice(0, 10) + '111111' + val.slice(16);
-        } else {
-            errorInputField.value = val + " CORRUPT_FLAG";
-        }
-    });
+    if (corruptByteBtn) {
+        corruptByteBtn.addEventListener('click', () => {
+            if (!errorInputField) return;
+            let val = errorInputField.value;
+            if (!val) return;
+            if (currentTechnique === 'bit_stuffing') {
+                errorInputField.value = val.slice(0, 10) + '111111' + val.slice(16);
+            } else {
+                errorInputField.value = val + " CORRUPT_FLAG";
+            }
+        });
+    }
 
-    processBtn.addEventListener('click', () => processSimulatorData('full_cycle'));
+    if (processBtn) processBtn.addEventListener('click', () => processSimulatorData('full_cycle'));
 
-    resetBtn.addEventListener('click', () => {
-        selectTechnique(currentTechnique);
-    });
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            selectTechnique(currentTechnique);
+        });
+    }
 
     // Initialize default view
     selectTechnique('byte_stuffing');

@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Error Detection & Correction Simulator | Data Communication Lab</title>
+    <title>Error Detection & Correction Simulator</title>
     <!-- Meta Description for SEO -->
-    <meta name="description" content="Interactive Data Link Layer Error Detection, Correction, and Framing Simulator for Data Communication Course.">
+    <meta name="description" content="Interactive Error Detection & Correction Simulator.">
     <!-- Google Fonts: Inter for UI & Fira Code for Bitstreams -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,21 +17,27 @@
 </head>
 <body>
     <div class="app-container">
-        <!-- Sidebar Navigation -->
-        <aside class="sidebar">
+        <!-- Sidebar Navigation Drawer -->
+        <aside class="sidebar" id="sidebar-drawer">
             <div class="brand">
                 <div class="brand-icon">
                     <i class="fa-solid fa-network-wired"></i>
                 </div>
                 <div class="brand-text">
-                    <h2>Data Comm Lab</h2>
+                    <h2>ERROR DETECTION LAB</h2>
                     <span>Simulator v1.0</span>
                 </div>
             </div>
 
             <nav class="nav-menu">
+                <div class="nav-section-title">Navigation</div>
+                <a href="#overview" class="nav-item active" data-technique="overview">
+                    <i class="fa-solid fa-house-signal"></i>
+                    <span>Simulator Overview</span>
+                </a>
+
                 <div class="nav-section-title">Framing Techniques</div>
-                <a href="#byte_stuffing" class="nav-item active" data-technique="byte_stuffing">
+                <a href="#byte_stuffing" class="nav-item" data-technique="byte_stuffing">
                     <i class="fa-solid fa-file-code"></i>
                     <span>Byte Stuffing</span>
                 </a>
@@ -63,7 +69,7 @@
 
             <div class="sidebar-footer">
                 <div class="status-badge online">
-                    <span class="pulse-dot"></span> Flask Engine Active
+                    <span class="pulse-dot"></span> System Online
                 </div>
             </div>
         </aside>
@@ -72,30 +78,62 @@
         <main class="main-content">
             <!-- Top Navigation Header -->
             <header class="top-header">
-                <div class="header-title">
-                    <h1>Error Detection & Correction Simulator</h1>
-                    <p class="subtitle">Interactive Data Link Layer Framing, Error Detection, and Correction Suite</p>
+                <div class="header-left">
+                    <button class="mobile-toggle-btn" id="mobile-menu-btn" aria-label="Toggle Navigation Menu">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <div class="header-title">
+                        <h1>Error Detection & Correction Simulator</h1>
+                        <p class="subtitle">Interactive Framing, Error Detection & Correction Suite</p>
+                    </div>
                 </div>
                 <div class="header-actions">
-                    <span class="course-badge"><i class="fa-solid fa-graduation-cap"></i> Data Comm Coursework</span>
+                    <span class="course-badge"><i class="fa-solid fa-microchip"></i> Interactive Engineering Simulator</span>
+                    <span class="status-badge online header-status"><span class="pulse-dot"></span> System Online</span>
                 </div>
             </header>
 
             <!-- Dashboard Content Scroll Area -->
             <div class="dashboard-scroll">
                 
-                <!-- Overview Cards Section (All 6 Technique Cards) -->
+                <!-- Hero & Lab Metrics Overview Section -->
                 <section class="techniques-overview" id="overview-cards">
-                    <h2 class="section-title"><i class="fa-solid fa-cubes"></i> Select a Lab Technique</h2>
+                    <div class="hero-banner">
+                        <div class="hero-text">
+                            <span class="hero-tag"><i class="fa-solid fa-sliders"></i> Simulator Studio</span>
+                            <h2>Error Detection & Correction Simulator</h2>
+                            <p>Simulate Data Link Layer framing, error detection, polynomial modulo-2 CRC division, Hamming single-bit error correction, and minimum Hamming distance theory.</p>
+                        </div>
+                        <div class="metrics-grid">
+                            <div class="metric-card">
+                                <div class="metric-value">6</div>
+                                <div class="metric-label">Protocols</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value">3</div>
+                                <div class="metric-label">Error Detectors</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value">1</div>
+                                <div class="metric-label">Error Corrector</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value">2</div>
+                                <div class="metric-label">Framing Methods</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 class="section-title"><i class="fa-solid fa-cubes"></i> Select a Technique</h3>
                     
                     <div class="cards-grid">
                         <!-- Card 1: Byte Stuffing -->
-                        <div class="technique-card active" data-technique="byte_stuffing" id="card-byte-stuffing">
+                        <div class="technique-card" data-technique="byte_stuffing" id="card-byte-stuffing">
                             <div class="card-badge">Framing</div>
                             <div class="card-icon cyan"><i class="fa-solid fa-file-code"></i></div>
                             <h3>Byte / Character Stuffing</h3>
-                            <p>Inserts Escape (ESC) characters before internal flag occurrences to achieve byte-oriented delimiter transparency.</p>
-                            <button class="card-select-btn">Select Technique <i class="fa-solid fa-arrow-right"></i></button>
+                            <p>Inserts Escape (ESC) bytes before internal flag occurrences to achieve character-oriented delimiter transparency.</p>
+                            <button class="card-select-btn">Select Protocol <i class="fa-solid fa-arrow-right"></i></button>
                         </div>
 
                         <!-- Card 2: Bit Stuffing -->
@@ -104,7 +142,7 @@
                             <div class="card-icon purple"><i class="fa-solid fa-microchip"></i></div>
                             <h3>Bit Stuffing</h3>
                             <p>Stuffs a '0' bit after five consecutive '1's in payload binary stream to prevent false flag (01111110) detection.</p>
-                            <button class="card-select-btn">Select Technique <i class="fa-solid fa-arrow-right"></i></button>
+                            <button class="card-select-btn">Select Protocol <i class="fa-solid fa-arrow-right"></i></button>
                         </div>
 
                         <!-- Card 3: Parity Check -->
@@ -113,7 +151,7 @@
                             <div class="card-icon emerald"><i class="fa-solid fa-list-check"></i></div>
                             <h3>Parity Check (1D & 2D)</h3>
                             <p>Computes even/odd parity bits across 1D binary vectors and 2D block matrices to detect single & multi-bit errors.</p>
-                            <button class="card-select-btn">Select Technique <i class="fa-solid fa-arrow-right"></i></button>
+                            <button class="card-select-btn">Select Protocol <i class="fa-solid fa-arrow-right"></i></button>
                         </div>
 
                         <!-- Card 4: CRC -->
@@ -122,7 +160,7 @@
                             <div class="card-icon amber"><i class="fa-solid fa-calculator"></i></div>
                             <h3>Cyclic Redundancy Check (CRC)</h3>
                             <p>Performs binary modulo-2 polynomial division to attach remainder checksums and verify frame integrity.</p>
-                            <button class="card-select-btn">Select Technique <i class="fa-solid fa-arrow-right"></i></button>
+                            <button class="card-select-btn">Select Protocol <i class="fa-solid fa-arrow-right"></i></button>
                         </div>
 
                         <!-- Card 5: Hamming Code -->
@@ -131,7 +169,7 @@
                             <div class="card-icon blue"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
                             <h3>Hamming Code</h3>
                             <p>Calculates parity bits at power-of-2 positions ($1, 2, 4, 8$) to pinpoint error bit indices and auto-correct bit flips.</p>
-                            <button class="card-select-btn">Select Technique <i class="fa-solid fa-arrow-right"></i></button>
+                            <button class="card-select-btn">Select Protocol <i class="fa-solid fa-arrow-right"></i></button>
                         </div>
 
                         <!-- Card 6: Hamming Distance -->
@@ -140,7 +178,7 @@
                             <div class="card-icon rose"><i class="fa-solid fa-ruler-combined"></i></div>
                             <h3>Hamming Distance</h3>
                             <p>Measures bitwise differences between codewords to determine minimum distance ($d_{min}$) detection thresholds.</p>
-                            <button class="card-select-btn">Select Technique <i class="fa-solid fa-arrow-right"></i></button>
+                            <button class="card-select-btn">Select Protocol <i class="fa-solid fa-arrow-right"></i></button>
                         </div>
                     </div>
                 </section>
