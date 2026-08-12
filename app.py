@@ -52,30 +52,72 @@ def process_data():
 
     # Route to modular algorithm handler
     if technique == "byte_stuffing":
-        flag = params.get("flag", "FLAG")
-        esc = params.get("esc", "ESC")
-        result = process_byte_stuffing(input_data, flag=flag, esc=esc, injected_error=injected_error)
+        flag = params.get("flag", "F")
+        esc = params.get("esc", "E")
+        action = params.get("action", "full_cycle")
+        result = process_byte_stuffing(input_data, flag=flag, esc=esc, action=action, injected_error=injected_error)
         
     elif technique == "bit_stuffing":
         flag_pattern = params.get("flag_pattern", "01111110")
-        result = process_bit_stuffing(input_data, flag_pattern=flag_pattern, injected_error=injected_error)
+        action = params.get("action", "full_cycle")
+        error_pos = params.get("error_pos")
+        result = process_bit_stuffing(input_data, flag_pattern=flag_pattern, action=action, injected_error=injected_error, error_pos=error_pos)
         
     elif technique == "parity":
         parity_type = params.get("parity_type", "even")
         mode = params.get("mode", "1D")
-        result = process_parity(input_data, parity_type=parity_type, mode=mode, injected_error=injected_error)
+        columns = int(params.get("columns", 4)) if str(params.get("columns", "")).isdigit() else 4
+        action = params.get("action", "full_cycle")
+        error_pos = params.get("error_pos")
+        error_row = params.get("error_row")
+        error_col = params.get("error_col")
+        result = process_parity(
+            input_data,
+            parity_type=parity_type,
+            mode=mode,
+            columns=columns,
+            action=action,
+            injected_error=injected_error,
+            error_pos=error_pos,
+            error_row=error_row,
+            error_col=error_col
+        )
         
     elif technique == "crc":
         polynomial = params.get("polynomial", "1101")
-        result = process_crc(input_data, polynomial=polynomial, injected_error=injected_error)
+        action = params.get("action", "full_cycle")
+        error_pos = params.get("error_pos")
+        result = process_crc(
+            input_data,
+            polynomial=polynomial,
+            action=action,
+            injected_error=injected_error,
+            error_pos=error_pos
+        )
         
     elif technique == "hamming":
+        mode = params.get("mode", "7,4")
         parity_type = params.get("parity_type", "even")
-        result = process_hamming(input_data, parity_type=parity_type, injected_error=injected_error)
+        action = params.get("action", "full_cycle")
+        error_pos = params.get("error_pos")
+        result = process_hamming(
+            input_data,
+            mode=mode,
+            parity_type=parity_type,
+            action=action,
+            injected_error=injected_error,
+            error_pos=error_pos
+        )
         
     elif technique == "hamming_distance":
+        mode = params.get("mode", "pair")
         codeword2 = params.get("codeword2", "")
-        result = process_hamming_distance(input_data, codeword2)
+        codewords_list = params.get("codewords", [])
+        
+        if mode == "multi" or (codewords_list and len(codewords_list) > 0):
+            result = process_hamming_distance(codewords_list, mode="multi")
+        else:
+            result = process_hamming_distance(input_data, codeword2, mode="pair")
         
     else:
         return jsonify({"error": f"Unknown technique: {technique}"}), 400

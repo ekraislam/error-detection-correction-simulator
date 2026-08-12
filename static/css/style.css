@@ -429,6 +429,17 @@ body {
     box-shadow: 0 6px 20px rgba(0, 242, 254, 0.4);
 }
 
+.btn-accent {
+    background: linear-gradient(135deg, var(--accent-purple), #7209b7);
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(157, 78, 221, 0.3);
+}
+
+.btn-accent:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(157, 78, 221, 0.4);
+}
+
 .btn-secondary {
     background-color: var(--bg-card);
     color: var(--text-primary);
@@ -712,6 +723,230 @@ input:checked + .slider:before {
     font-family: var(--font-code);
 }
 
+/* Token Highlight Visualization Stream */
+.token-stream-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 0;
+}
+
+.token-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-family: var(--font-code);
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+}
+
+.token-badge.token-flag {
+    background: rgba(157, 78, 221, 0.25);
+    color: #d8b4fe;
+    border: 1px solid rgba(157, 78, 221, 0.5);
+    box-shadow: 0 0 10px rgba(157, 78, 221, 0.2);
+}
+
+.token-badge.token-esc-inserted {
+    background: rgba(245, 158, 11, 0.25);
+    color: #fde047;
+    border: 1px solid rgba(245, 158, 11, 0.5);
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+}
+
+.token-badge.token-stuffed-data {
+    background: rgba(0, 242, 254, 0.2);
+    color: var(--accent-cyan);
+    border: 1px solid rgba(0, 242, 254, 0.5);
+}
+
+.token-badge.token-stuffed-zero {
+    background: rgba(245, 158, 11, 0.25);
+    color: #fde047;
+    border: 1px solid rgba(245, 158, 11, 0.6);
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+    font-weight: 800;
+}
+
+.token-badge.token-data {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+/* --------------------------------------------------------------------------
+   2D Block Parity Matrix Table Styling
+   -------------------------------------------------------------------------- */
+.matrix-container {
+    overflow-x: auto;
+    margin-top: 14px;
+    margin-bottom: 14px;
+}
+
+.parity-matrix-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 4px;
+    font-family: var(--font-code);
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.parity-matrix-table th, 
+.parity-matrix-table td {
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+}
+
+.parity-matrix-table th {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.parity-cell-data {
+    background-color: var(--bg-surface);
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.parity-cell-row-p {
+    background-color: rgba(0, 242, 254, 0.12);
+    color: var(--accent-cyan);
+    font-weight: 700;
+    border: 1px solid rgba(0, 242, 254, 0.3);
+}
+
+.parity-cell-col-p {
+    background-color: rgba(157, 78, 221, 0.15);
+    color: #d8b4fe;
+    font-weight: 700;
+    border: 1px solid rgba(157, 78, 221, 0.3);
+}
+
+.parity-cell-corner {
+    background-color: rgba(245, 158, 11, 0.2);
+    color: #fde047;
+    font-weight: 800;
+    border: 1px solid rgba(245, 158, 11, 0.5);
+}
+
+.parity-cell-error {
+    background-color: rgba(239, 68, 68, 0.35) !important;
+    color: #ffffff !important;
+    border: 2px solid var(--accent-crimson) !important;
+    box-shadow: 0 0 14px rgba(239, 68, 68, 0.6);
+    animation: pulse 1.5s infinite;
+}
+
+/* --------------------------------------------------------------------------
+   Hamming Code Position Table Styling
+   -------------------------------------------------------------------------- */
+.hamming-table-container {
+    overflow-x: auto;
+    margin-top: 14px;
+    margin-bottom: 14px;
+}
+
+.hamming-pos-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 4px;
+    font-family: var(--font-code);
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.hamming-pos-table th,
+.hamming-pos-table td {
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+}
+
+.hamming-pos-table th {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.pos-cell-p {
+    background-color: rgba(157, 78, 221, 0.2);
+    color: #d8b4fe;
+    font-weight: 700;
+    border: 1px solid rgba(157, 78, 221, 0.4);
+}
+
+.pos-cell-d {
+    background-color: rgba(0, 242, 254, 0.12);
+    color: var(--accent-cyan);
+    font-weight: 600;
+}
+
+.pos-cell-err {
+    background-color: rgba(239, 68, 68, 0.35) !important;
+    color: #ffffff !important;
+    border: 2px solid var(--accent-crimson) !important;
+    box-shadow: 0 0 14px rgba(239, 68, 68, 0.6);
+    animation: pulse 1.5s infinite;
+}
+
+/* --------------------------------------------------------------------------
+   Hamming Distance Matrix & Comparison Table Styling
+   -------------------------------------------------------------------------- */
+.hdist-table-container {
+    overflow-x: auto;
+    margin-top: 14px;
+    margin-bottom: 14px;
+}
+
+.hdist-matrix-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 4px;
+    font-family: var(--font-code);
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.hdist-matrix-table th,
+.hdist-matrix-table td {
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+}
+
+.hdist-matrix-table th {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.hdist-cell-diag {
+    background-color: rgba(255, 255, 255, 0.03);
+    color: var(--text-muted);
+}
+
+.hdist-cell-min {
+    background-color: rgba(16, 185, 129, 0.25) !important;
+    color: var(--accent-emerald) !important;
+    font-weight: 700 !important;
+    border: 2px solid var(--accent-emerald) !important;
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+}
+
+.bit-diff-cell {
+    background-color: rgba(239, 68, 68, 0.25) !important;
+    color: var(--accent-crimson) !important;
+    font-weight: 700;
+    border: 1px solid rgba(239, 68, 68, 0.5);
+}
+
 /* Step-by-Step Box */
 .steps-container {
     background-color: var(--bg-surface);
@@ -742,6 +977,28 @@ input:checked + .slider:before {
     color: var(--text-primary);
     line-height: 1.6;
     min-height: 120px;
+}
+
+.step-row {
+    padding: 6px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.step-row:last-child {
+    border-bottom: none;
+}
+
+.step-row.highlight-step {
+    background-color: rgba(0, 242, 254, 0.05);
+    color: var(--accent-cyan);
+}
+
+.step-row.error-step {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: var(--accent-crimson);
 }
 
 .empty-state {
