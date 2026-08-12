@@ -270,10 +270,10 @@ document.addEventListener('DOMContentLoaded', () => {
         hamming: {
             name: "Hamming Code",
             title: "Hamming Code Simulator",
-            inputLabel: "Raw Data Bits Payload",
-            placeholder: "e.g. 1011 for (7,4) or 10110010110 for (15,11)",
+            inputLabel: "Data Payload (4 bits)",
+            placeholder: "e.g. 1011",
             defaultValue: "1011",
-            hint: "Requires exactly 4 bits for Hamming (7,4) or 11 bits for Hamming (15,11).",
+            hint: "Enter exactly 4 data bits. Example: 1011",
             paramsHtml: `
                 <div class="form-group">
                     <label for="param-hamming-mode">Hamming Mode</label>
@@ -302,8 +302,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         <i class="fa-solid fa-wrench"></i> Decode & Correct Error
                     </button>
                 </div>
-                <div class="form-group" style="grid-column: span 2; font-size: 0.78rem; color: var(--text-muted); background: var(--bg-surface); padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--accent-blue);">
-                    <i class="fa-solid fa-circle-info" style="color: var(--accent-blue);"></i> <strong>How it works:</strong> Hamming Code adds parity bits at power-of-two positions. The syndrome identifies the 1-indexed position of a single-bit error for auto-correction.
+                <div class="form-group" style="grid-column: span 2; font-size: 0.78rem; color: var(--text-muted); background: var(--bg-surface); padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--accent-blue);" id="hamming-educational-note">
+                    <i class="fa-solid fa-circle-info" style="color: var(--accent-blue);"></i> <span id="hamming-note-text">For Hamming (7,4), enter 4 data bits. The simulator automatically adds 3 parity bits to create the 7-bit codeword.</span>
                 </div>
             `
         },
@@ -417,15 +417,39 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('btn-crc-check-only')?.addEventListener('click', () => processSimulatorData('check'));
         } else if (techKey === 'hamming') {
             const hModeSelect = document.getElementById('param-hamming-mode');
-            hModeSelect?.addEventListener('change', (e) => {
-                if (e.target.value === '15,11') {
-                    if (primaryInput) primaryInput.value = "10110010110";
+            const updateHammingUI = (mode) => {
+                const noteSpan = document.getElementById('hamming-note-text');
+                if (mode === '15,11') {
+                    if (primaryInputLabel) primaryInputLabel.textContent = "Data Payload (11 bits)";
+                    if (primaryInputHint) primaryInputHint.textContent = "Enter exactly 11 data bits.";
+                    if (primaryInput) {
+                        primaryInput.placeholder = "e.g. 10110010110";
+                        if (primaryInput.value === "1011" || primaryInput.value === "") {
+                            primaryInput.value = "10110010110";
+                        }
+                    }
+                    if (noteSpan) noteSpan.textContent = "For Hamming (15,11), enter 11 data bits. The simulator automatically adds 4 parity bits to create the 15-bit codeword.";
                 } else {
-                    if (primaryInput) primaryInput.value = "1011";
+                    if (primaryInputLabel) primaryInputLabel.textContent = "Data Payload (4 bits)";
+                    if (primaryInputHint) primaryInputHint.textContent = "Enter exactly 4 data bits. Example: 1011";
+                    if (primaryInput) {
+                        primaryInput.placeholder = "e.g. 1011";
+                        if (primaryInput.value === "10110010110" || primaryInput.value === "") {
+                            primaryInput.value = "1011";
+                        }
+                    }
+                    if (noteSpan) noteSpan.textContent = "For Hamming (7,4), enter 4 data bits. The simulator automatically adds 3 parity bits to create the 7-bit codeword.";
                 }
-            });
-            document.getElementById('btn-hamming-encode-only')?.addEventListener('click', () => processSimulatorData('encode'));
-            document.getElementById('btn-hamming-decode-only')?.addEventListener('click', () => processSimulatorData('decode'));
+            };
+
+            if (hModeSelect) {
+                updateHammingUI(hModeSelect.value);
+                hModeSelect.addEventListener('change', (e) => {
+                    updateHammingUI(e.target.value);
+                });
+            }
+            document.getElementById('btn-hamming-encode-only')?.addEventListener('click', () => processSimulatorData('full_cycle'));
+            document.getElementById('btn-hamming-decode-only')?.addEventListener('click', () => processSimulatorData('full_cycle'));
         } else if (techKey === 'hamming_distance') {
             const hdistModeSelect = document.getElementById('param-hdist-mode');
             const c2Group = document.getElementById('param-c2-group');
@@ -753,12 +777,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (res.success === false) {
                     if (resultStatusIndicator) {
                         resultStatusIndicator.className = 'status-indicator-badge error-detected';
-                        resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> INVALID INPUT';
+                        resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> VALIDATION ERROR';
                     }
-                    if (tError) { tError.textContent = 'INVALID INPUT'; tError.className = 't-val t-danger'; }
-                    if (outputEncoded) outputEncoded.textContent = 'Invalid Input Payload';
-                    if (outputReceived) outputReceived.textContent = 'N/A';
-                    if (outputDecoded) outputDecoded.textContent = 'N/A';
+                    if (tError) { tError.textContent = 'VALIDATION ERROR'; tError.className = 't-val t-danger'; }
+                    if (outputEncoded) outputEncoded.textContent = 'VALIDATION ERROR';
+                    if (outputReceived) outputReceived.textContent = res.error || 'Invalid input payload';
+                    if (outputDecoded) outputDecoded.textContent = payload.input_data ? `Received Input Payload: ${payload.input_data}` : 'No input payload provided';
                     if (stepByStepDisplay) stepByStepDisplay.innerHTML = `<div class="step-row error-step"><i class="fa-solid fa-circle-exclamation"></i> <strong>Validation Error:</strong> ${res.error}</div>`;
                     return;
                 }
