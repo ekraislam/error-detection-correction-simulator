@@ -1,6 +1,6 @@
 """
 =============================================================================
-Error Detection & Correction Simulator - Main Flask Application
+Error Detection & Correction Simulator - Main Flask Application (v1.1)
 =============================================================================
 Course: Data Communication Lab
 Architecture: Clean Modular Flask Backend with Separate Algorithm Handlers
