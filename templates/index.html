@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error Detection & Correction Simulator | Data Communication Lab</title>
+    <!-- Meta Description for SEO -->
+    <meta name="description" content="Interactive Data Link Layer Error Detection, Correction, and Framing Simulator for Data Communication Course.">
+    <!-- Google Fonts: Inter for UI & Fira Code for Bitstreams -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Main Dashboard CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-network-wired"></i>
+                </div>
+                <div class="brand-text">
+                    <h2>Data Comm Lab</h2>
+                    <span>Simulator v1.0</span>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <div class="nav-section-title">Framing Techniques</div>
+                <a href="#byte_stuffing" class="nav-item active" data-technique="byte_stuffing">
+                    <i class="fa-solid fa-file-code"></i>
+                    <span>Byte Stuffing</span>
+                </a>
+                <a href="#bit_stuffing" class="nav-item" data-technique="bit_stuffing">
+                    <i class="fa-solid fa-microchip"></i>
+                    <span>Bit Stuffing</span>
+                </a>
+
+                <div class="nav-section-title">Error Detection</div>
+                <a href="#parity" class="nav-item" data-technique="parity">
+                    <i class="fa-solid fa-list-check"></i>
+                    <span>Parity Check</span>
+                </a>
+                <a href="#crc" class="nav-item" data-technique="crc">
+                    <i class="fa-solid fa-calculator"></i>
+                    <span>CRC (Checksum)</span>
+                </a>
+
+                <div class="nav-section-title">Error Correction</div>
+                <a href="#hamming" class="nav-item" data-technique="hamming">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>Hamming Code</span>
+                </a>
+                <a href="#hamming_distance" class="nav-item" data-technique="hamming_distance">
+                    <i class="fa-solid fa-ruler-combined"></i>
+                    <span>Hamming Distance</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="status-badge online">
+                    <span class="pulse-dot"></span> Flask Engine Active
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace View -->
+        <main class="main-content">
+            <!-- Top Navigation Header -->
+            <header class="top-header">
+                <div class="header-title">
+                    <h1>Error Detection & Correction Simulator</h1>
+                    <p class="subtitle">Interactive Data Link Layer Framing, Error Detection, and Correction Suite</p>
+                </div>
+                <div class="header-actions">
+                    <span class="course-badge"><i class="fa-solid fa-graduation-cap"></i> Data Comm Coursework</span>
+                </div>
+            </header>
+
+            <!-- Dashboard Content Scroll Area -->
+            <div class="dashboard-scroll">
+                
+                <!-- Overview Cards Section (All 6 Technique Cards) -->
+                <section class="techniques-overview" id="overview-cards">
+                    <h2 class="section-title"><i class="fa-solid fa-cubes"></i> Select a Lab Technique</h2>
+                    
+                    <div class="cards-grid">
+                        <!-- Card 1: Byte Stuffing -->
+                        <div class="technique-card active" data-technique="byte_stuffing" id="card-byte-stuffing">
+                            <div class="card-badge">Framing</div>
+                            <div class="card-icon cyan"><i class="fa-solid fa-file-code"></i></div>
+                            <h3>Byte / Character Stuffing</h3>
+                            <p>Inserts Escape (ESC) characters before internal flag occurrences to achieve byte-oriented delimiter transparency.</p>
+                            <button class="card-select-btn">Select Technique <i class="fa-solid fa-arrow-right"></i></button>
+                        </div>
+
+                        <!-- Card 2: Bit Stuffing -->
+                        <div class="technique-card" data-technique="bit_stuffing" id="card-bit-stuffing">
+                            <div class="card-badge">Framing</div>
+                            <div class="card-icon purple"><i class="fa-solid fa-microchip"></i></div>
+                            <h3>Bit Stuffing</h3>
+                            <p>Stuffs a '0' bit after five consecutive '1's in payload binary stream to prevent false flag (01111110) detection.</p>
+                            <button class="card-select-btn">Select Technique <i class="fa-solid fa-arrow-right"></i></button>
+                        </div>
+
+                        <!-- Card 3: Parity Check -->
+                        <div class="technique-card" data-technique="parity" id="card-parity">
+                            <div class="card-badge">Detection</div>
+                            <div class="card-icon emerald"><i class="fa-solid fa-list-check"></i></div>
+                            <h3>Parity Check (1D & 2D)</h3>
+                            <p>Computes even/odd parity bits across 1D binary vectors and 2D block matrices to detect single & multi-bit errors.</p>
+                            <button class="card-select-btn">Select Technique <i class="fa-solid fa-arrow-right"></i></button>
+                        </div>
+
+                        <!-- Card 4: CRC -->
+                        <div class="technique-card" data-technique="crc" id="card-crc">
+                            <div class="card-badge">Detection</div>
+                            <div class="card-icon amber"><i class="fa-solid fa-calculator"></i></div>
+                            <h3>Cyclic Redundancy Check (CRC)</h3>
+                            <p>Performs binary modulo-2 polynomial division to attach remainder checksums and verify frame integrity.</p>
+                            <button class="card-select-btn">Select Technique <i class="fa-solid fa-arrow-right"></i></button>
+                        </div>
+
+                        <!-- Card 5: Hamming Code -->
+                        <div class="technique-card" data-technique="hamming" id="card-hamming">
+                            <div class="card-badge correction">Correction</div>
+                            <div class="card-icon blue"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                            <h3>Hamming Code</h3>
+                            <p>Calculates parity bits at power-of-2 positions ($1, 2, 4, 8$) to pinpoint error bit indices and auto-correct bit flips.</p>
+                            <button class="card-select-btn">Select Technique <i class="fa-solid fa-arrow-right"></i></button>
+                        </div>
+
+                        <!-- Card 6: Hamming Distance -->
+                        <div class="technique-card" data-technique="hamming_distance" id="card-hamming-distance">
+                            <div class="card-badge">Theory</div>
+                            <div class="card-icon rose"><i class="fa-solid fa-ruler-combined"></i></div>
+                            <h3>Hamming Distance</h3>
+                            <p>Measures bitwise differences between codewords to determine minimum distance ($d_{min}$) detection thresholds.</p>
+                            <button class="card-select-btn">Select Technique <i class="fa-solid fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Interactive Simulator Studio Panel -->
+                <section class="simulator-studio" id="simulator-panel">
+                    <div class="studio-header">
+                        <div class="studio-title">
+                            <span class="active-tag" id="active-technique-tag">Byte Stuffing</span>
+                            <h2 id="active-technique-title">Byte / Character Stuffing Simulator</h2>
+                        </div>
+                        <div class="studio-controls">
+                            <button class="btn btn-secondary" id="reset-btn"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+                            <button class="btn btn-primary" id="process-btn"><i class="fa-solid fa-play"></i> Process Data</button>
+                        </div>
+                    </div>
+
+                    <!-- Input Controls Section -->
+                    <div class="input-panel-grid">
+                        <!-- Data Input Form -->
+                        <div class="input-card">
+                            <div class="card-header-sm">
+                                <h3><i class="fa-solid fa-keyboard"></i> Data Input Parameters</h3>
+                            </div>
+
+                            <form id="simulator-form" onsubmit="return false;">
+                                <!-- Primary Input Field -->
+                                <div class="form-group">
+                                    <label for="primary-input" id="primary-input-label">Data Payload</label>
+                                    <input type="text" id="primary-input" class="form-control code-input" placeholder="e.g. A FLAG B ESC C" value="A FLAG B ESC C" autocomplete="off">
+                                    <small class="form-hint" id="primary-input-hint">Enter sequence containing payload bytes</small>
+                                </div>
+
+                                <!-- Dynamic Parameters Container (Custom per technique) -->
+                                <div class="dynamic-params-grid" id="dynamic-params-container">
+                                    <div class="form-group">
+                                        <label for="param-flag">Flag Identifier</label>
+                                        <input type="text" id="param-flag" class="form-control" value="FLAG">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="param-esc">Escape (ESC) Byte</label>
+                                        <input type="text" id="param-esc" class="form-control" value="ESC">
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Error Injection Control Panel -->
+                        <div class="input-card error-injection-card">
+                            <div class="card-header-sm danger-header">
+                                <h3><i class="fa-solid fa-bug"></i> Error Injection Controls</h3>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="enable-error-toggle">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                            <p class="error-panel-desc">Intentionally introduce transmission errors into the transmitted frame to test error detection/correction capability.</p>
+
+                            <div class="error-controls-body disabled" id="error-controls-wrapper">
+                                <div class="form-group">
+                                    <label for="error-input-field">Corrupted / Modified Transmission Stream</label>
+                                    <input type="text" id="error-input-field" class="form-control code-input" placeholder="Enable toggle to inject error..." disabled>
+                                </div>
+                                <div class="quick-error-actions">
+                                    <button type="button" class="btn-sm btn-outline-danger" id="flip-bit-btn" disabled><i class="fa-solid fa-bolt"></i> Flip Random Bit</button>
+                                    <button type="button" class="btn-sm btn-outline-warning" id="corrupt-byte-btn" disabled><i class="fa-solid fa-triangle-exclamation"></i> Insert Flag Corruption</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Processing & Results Area -->
+                    <div class="result-section">
+                        <div class="result-header">
+                            <h3><i class="fa-solid fa-chart-diagram"></i> Transmission Analysis & Results</h3>
+                            <div class="status-indicator-badge neutral" id="result-status-indicator">
+                                <i class="fa-solid fa-circle-info"></i> Ready for Processing
+                            </div>
+                        </div>
+
+                        <!-- Main Results Box -->
+                        <div class="results-grid">
+                            <div class="result-box">
+                                <div class="result-label">Encoded Transmitted Data</div>
+                                <div class="result-value code-display" id="output-encoded">-- Awaiting Calculation --</div>
+                            </div>
+
+                            <div class="result-box">
+                                <div class="result-label">Received Frame (After Transmission)</div>
+                                <div class="result-value code-display" id="output-received">-- Awaiting Calculation --</div>
+                            </div>
+
+                            <div class="result-box">
+                                <div class="result-label">Decoded / Corrected Output</div>
+                                <div class="result-value code-display" id="output-decoded">-- Awaiting Calculation --</div>
+                            </div>
+                        </div>
+
+                        <!-- Step-by-Step Calculation Display -->
+                        <div class="steps-container">
+                            <div class="steps-header">
+                                <h4><i class="fa-solid fa-list-ol"></i> Step-by-Step Mathematical & Binary Calculation</h4>
+                            </div>
+                            <div class="steps-content" id="step-by-step-display">
+                                <div class="empty-state">
+                                    <i class="fa-solid fa-sliders"></i>
+                                    <p>Select a technique, configure inputs, and click <strong>Process Data</strong> to generate the step-by-step calculation trace.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Main JavaScript App Script -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
