@@ -270,19 +270,19 @@ document.addEventListener('DOMContentLoaded', () => {
         hamming: {
             name: "Hamming Code",
             title: "Hamming Code Simulator",
-            inputLabel: "Data Payload (4 bits)",
-            placeholder: "e.g. 1011",
+            inputLabel: "Data Payload (4 or 11 bits)",
+            placeholder: "e.g. 1011 or 10110010110",
             defaultValue: "1011",
-            hint: "Enter exactly 4 data bits. Example: 1011",
+            hint: "Enter 4 bits for Hamming (7,4) or 11 bits for Hamming (15,11). Mode is auto-detected!",
             paramsHtml: `
-                <div class="form-group">
-                    <label for="param-hamming-mode">Hamming Mode</label>
-                    <select id="param-hamming-mode" class="form-control">
-                        <option value="7,4" selected>Hamming (7,4) — 4 Data, 3 Parity</option>
-                        <option value="15,11">Hamming (15,11) — 11 Data, 4 Parity</option>
-                    </select>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label><i class="fa-solid fa-robot"></i> Mode Auto-Detection Indicator</label>
+                    <div id="hamming-auto-badge" class="form-control" style="background: rgba(34, 211, 238, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); font-weight: 600; display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 8px;">
+                        <span><i class="fa-solid fa-wand-magic-sparkles"></i> <strong>Detected:</strong> Hamming (7,4)</span>
+                        <span style="font-size: 0.8rem; opacity: 0.9;">Data: 4 bits | Codeword: 7 bits</span>
+                    </div>
                 </div>
-                <div class="form-group">
+                <div class="form-group" style="grid-column: span 2;">
                     <label for="param-hamming-parity">Parity Scheme</label>
                     <select id="param-hamming-parity" class="form-control">
                         <option value="even" selected>Even Parity</option>
@@ -296,14 +296,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="form-group" style="grid-column: span 2; display: flex; gap: 10px; margin-top: 6px;">
                     <button type="button" class="btn btn-sm btn-primary" id="btn-hamming-encode-only">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> Encode Hamming Code
-                    </button>
-                    <button type="button" class="btn btn-sm btn-accent" id="btn-hamming-decode-only">
-                        <i class="fa-solid fa-wrench"></i> Decode & Correct Error
+                        <i class="fa-solid fa-play"></i> Run Hamming Transmission Cycle
                     </button>
                 </div>
                 <div class="form-group" style="grid-column: span 2; font-size: 0.78rem; color: var(--text-muted); background: var(--bg-surface); padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--accent-blue);" id="hamming-educational-note">
-                    <i class="fa-solid fa-circle-info" style="color: var(--accent-blue);"></i> <span id="hamming-note-text">For Hamming (7,4), enter 4 data bits. The simulator automatically adds 3 parity bits to create the 7-bit codeword.</span>
+                    <i class="fa-solid fa-circle-info" style="color: var(--accent-blue);"></i> <span id="hamming-note-text">Classroom Convention: Positions are numbered Right-to-Left (P=7..1: D4 D3 D2 R3 D1 R2 R1). Data 1011 under Even Parity produces codeword 1010101.</span>
                 </div>
             `
         },
@@ -416,40 +413,34 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('btn-crc-encode-only')?.addEventListener('click', () => processSimulatorData('encode'));
             document.getElementById('btn-crc-check-only')?.addEventListener('click', () => processSimulatorData('check'));
         } else if (techKey === 'hamming') {
-            const hModeSelect = document.getElementById('param-hamming-mode');
-            const updateHammingUI = (mode) => {
-                const noteSpan = document.getElementById('hamming-note-text');
-                if (mode === '15,11') {
-                    if (primaryInputLabel) primaryInputLabel.textContent = "Data Payload (11 bits)";
-                    if (primaryInputHint) primaryInputHint.textContent = "Enter exactly 11 data bits.";
-                    if (primaryInput) {
-                        primaryInput.placeholder = "e.g. 10110010110";
-                        if (primaryInput.value === "1011" || primaryInput.value === "") {
-                            primaryInput.value = "10110010110";
-                        }
-                    }
-                    if (noteSpan) noteSpan.textContent = "For Hamming (15,11), enter 11 data bits. The simulator automatically adds 4 parity bits to create the 15-bit codeword.";
+            const updateHammingAutoBadge = () => {
+                const badge = document.getElementById('hamming-auto-badge');
+                if (!badge || !primaryInput) return;
+                const val = primaryInput.value.replace(/\s+/g, '');
+                const len = val.length;
+                if (len === 4) {
+                    badge.style.borderColor = 'var(--accent-cyan)';
+                    badge.style.color = 'var(--accent-cyan)';
+                    badge.style.background = 'rgba(34, 211, 238, 0.1)';
+                    badge.innerHTML = `<span><i class="fa-solid fa-robot"></i> <strong>Detected:</strong> Hamming (7,4)</span> <span style="font-size: 0.8rem; opacity: 0.9;">Data: 4 bits | Codeword: 7 bits</span>`;
+                } else if (len === 11) {
+                    badge.style.borderColor = 'var(--accent-violet)';
+                    badge.style.color = 'var(--accent-violet)';
+                    badge.style.background = 'rgba(168, 85, 247, 0.1)';
+                    badge.innerHTML = `<span><i class="fa-solid fa-robot"></i> <strong>Detected:</strong> Hamming (15,11)</span> <span style="font-size: 0.8rem; opacity: 0.9;">Data: 11 bits | Codeword: 15 bits</span>`;
                 } else {
-                    if (primaryInputLabel) primaryInputLabel.textContent = "Data Payload (4 bits)";
-                    if (primaryInputHint) primaryInputHint.textContent = "Enter exactly 4 data bits. Example: 1011";
-                    if (primaryInput) {
-                        primaryInput.placeholder = "e.g. 1011";
-                        if (primaryInput.value === "10110010110" || primaryInput.value === "") {
-                            primaryInput.value = "1011";
-                        }
-                    }
-                    if (noteSpan) noteSpan.textContent = "For Hamming (7,4), enter 4 data bits. The simulator automatically adds 3 parity bits to create the 7-bit codeword.";
+                    badge.style.borderColor = 'var(--color-warning)';
+                    badge.style.color = 'var(--color-warning)';
+                    badge.style.background = 'rgba(234, 179, 8, 0.1)';
+                    badge.innerHTML = `<span><i class="fa-solid fa-triangle-exclamation"></i> <strong>Payload Length:</strong> ${len} bits</span> <span style="font-size: 0.8rem; opacity: 0.9;">Expected 4 or 11 bits</span>`;
                 }
             };
 
-            if (hModeSelect) {
-                updateHammingUI(hModeSelect.value);
-                hModeSelect.addEventListener('change', (e) => {
-                    updateHammingUI(e.target.value);
-                });
+            if (primaryInput) {
+                updateHammingAutoBadge();
+                primaryInput.addEventListener('input', updateHammingAutoBadge);
             }
             document.getElementById('btn-hamming-encode-only')?.addEventListener('click', () => processSimulatorData('full_cycle'));
-            document.getElementById('btn-hamming-decode-only')?.addEventListener('click', () => processSimulatorData('full_cycle'));
         } else if (techKey === 'hamming_distance') {
             const hdistModeSelect = document.getElementById('param-hdist-mode');
             const c2Group = document.getElementById('param-c2-group');
@@ -565,7 +556,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const errPosVal = document.getElementById('param-error-pos')?.value;
             if (errPosVal) payload.params.error_pos = parseInt(errPosVal, 10);
         } else if (currentTechnique === 'hamming') {
-            payload.params.mode = document.getElementById('param-hamming-mode')?.value || '7,4';
+            payload.params.mode = 'auto';
             payload.params.parity_type = document.getElementById('param-hamming-parity')?.value || 'even';
             payload.params.action = actionOverride || 'full_cycle';
             const errPosVal = document.getElementById('param-error-pos')?.value;
@@ -903,22 +894,49 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (outputDecoded) outputDecoded.textContent = `Receiver Remainder: ${res.received_remainder} | ${res.error_detected ? 'CORRUPTED' : 'DATA INTACT'}`;
                     }
                 } else if (currentTechnique === 'hamming') {
-                    // Render Hamming Code
+                    // Render Professional Hamming Code Engineering Simulation Output
                     if (resultStatusIndicator) {
                         if (!res.error_detected) {
                             resultStatusIndicator.className = 'status-indicator-badge success';
-                            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> CODEWORD INTACT (Syndrome = 0)';
+                            resultStatusIndicator.innerHTML = `<i class="fa-solid fa-circle-check"></i> HAMMING (${res.mode}) VERIFIED — NO ERROR (Syndrome = ${res.syndrome_string || '000'})`;
                             if (tError) { tError.textContent = 'NO ERROR'; tError.className = 't-val t-success'; }
                         } else {
                             resultStatusIndicator.className = 'status-indicator-badge corrected';
-                            resultStatusIndicator.innerHTML = `<i class="fa-solid fa-wrench"></i> ERROR CORRECTED (Position ${res.error_position})`;
+                            resultStatusIndicator.innerHTML = `<i class="fa-solid fa-wrench"></i> HAMMING (${res.mode}) AUTO-CORRECTED — Error Pos ${res.error_position} (Syndrome S = ${res.syndrome_string})`;
                             if (tError) { tError.textContent = `CORRECTED (POS ${res.error_position})`; tError.className = 't-val t-success'; }
                         }
                     }
 
-                    if (outputEncoded) outputEncoded.innerHTML = `<strong>Transmitted (${res.mode}):</strong> ${res.encoded_codeword}` + renderHammingPosTable(res.pos_table);
-                    if (outputReceived) outputReceived.textContent = `Received: ${res.received_codeword} | Syndrome S = ${res.syndrome_string} (Pos ${res.error_position})`;
-                    if (outputDecoded) outputDecoded.textContent = res.error_detected ? `Corrected Codeword: ${res.corrected_codeword} -> Extracted Data: ${res.extracted_data}` : `Extracted Data: ${res.extracted_data}`;
+                    if (outputEncoded) {
+                        outputEncoded.innerHTML = `
+                            <div style="margin-bottom: 8px;">
+                                <strong>Original Input Data:</strong> <code style="font-size: 1.05rem;">${res.original_data}</code> &nbsp;|&nbsp; 
+                                <strong>Auto-Detected Mode:</strong> <code style="color: var(--accent-cyan);">Hamming (${res.mode})</code> &nbsp;|&nbsp; 
+                                <strong>Encoded Transmitted Codeword:</strong> <code style="color: var(--accent-cyan); font-weight:700; font-size: 1.05rem;">${res.encoded_codeword}</code>
+                            </div>
+                        ` + renderHammingPosTable(res.pos_table);
+                    }
+
+                    if (outputReceived) {
+                        const errColor = res.error_detected ? 'var(--color-danger)' : 'var(--accent-cyan)';
+                        outputReceived.innerHTML = `
+                            <div>
+                                <strong>Received Codeword:</strong> <code style="color: ${errColor}; font-weight: 700; font-size: 1.05rem;">${res.received_codeword}</code> &nbsp;|&nbsp; 
+                                <strong>Syndrome (S):</strong> <code style="color: ${res.error_detected ? 'var(--color-warning)' : 'var(--color-success)'}; font-weight:700;">${res.syndrome_string}</code> &nbsp;|&nbsp; 
+                                <strong>Detected Error Position:</strong> <code>${res.error_position === 0 ? '0 (No Error)' : 'Position ' + res.error_position}</code>
+                            </div>
+                        `;
+                    }
+
+                    if (outputDecoded) {
+                        outputDecoded.innerHTML = `
+                            <div style="display: flex; gap: 14px; flex-wrap: wrap; align-items: center;">
+                                <span><strong>Corrected Codeword:</strong> <code style="color: var(--color-success); font-weight:700;">${res.corrected_codeword}</code></span>
+                                <span><strong>Extracted Payload Data:</strong> <code style="color: var(--color-success); font-size: 1.1rem; font-weight: 800;">${res.extracted_data}</code></span>
+                                <span class="badge ${res.integrity_match ? 'badge-success' : 'badge-danger'}" style="padding: 4px 10px; border-radius: 6px;">${res.integrity_match ? '✓ INTEGRITY MATCH' : '✗ INTEGRITY MISMATCH'}</span>
+                            </div>
+                        `;
+                    }
                 } else if (currentTechnique === 'hamming_distance') {
                     // Render Hamming Distance & d_min
                     if (res.mode === 'multi') {

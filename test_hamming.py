@@ -1,7 +1,8 @@
 """
 =============================================================================
 Test Suite for Hamming Code Error Detection & Correction Implementation
-Verifies all specified test scenarios for Hamming (7,4) and Hamming (15,11).
+Verifies all specified test scenarios for Hamming (7,4) and Hamming (15,11)
+under the Right-to-Left positional convention (Pos 7..1: D4 D3 D2 R3 D1 R2 R1).
 =============================================================================
 """
 
@@ -18,7 +19,7 @@ def run_tests():
     print("RUNNING HAMMING CODE ERROR DETECTION & CORRECTION TEST SUITE")
     print("=" * 70)
 
-    # REQUIRED TEST 1: 1011 + Hamming (7,4) + even => PASS
+    # REQUIRED TEST 1: 1011 + Hamming (7,4) + even => PASS (Expected 1010101)
     print("\n--- TEST 1: 1011 + Hamming (7,4) + Even Parity ---")
     proc1 = process_hamming("1011", mode="7,4", parity_type="even", action="full_cycle")
     print("Success:", proc1["success"])
@@ -34,12 +35,12 @@ def run_tests():
 
     assert proc1["success"] == True
     assert proc1["original_data"] == "1011"
-    assert proc1["encoded_codeword"] == "0110011"
-    assert proc1["received_codeword"] == "0110011"
+    assert proc1["encoded_codeword"] == "1010101"
+    assert proc1["received_codeword"] == "1010101"
     assert proc1["syndrome_string"] == "000"
     assert proc1["error_position"] == 0
     assert proc1["error_detected"] == False
-    assert proc1["corrected_codeword"] == "0110011"
+    assert proc1["corrected_codeword"] == "1010101"
     assert proc1["extracted_data"] == "1011"
     assert proc1["integrity_match"] == True
     print("[PASSED] TEST 1")
@@ -80,8 +81,8 @@ def run_tests():
     print("\n--- TEST 6: 1011 + Hamming (7,4) + Odd Parity ---")
     proc6 = process_hamming("1011", mode="7,4", parity_type="odd", action="full_cycle")
     assert proc6["success"] == True
-    assert proc6["parity_bits"] == {"P1": "1", "P2": "0", "P4": "1"}
-    assert proc6["encoded_codeword"] == "1011011"
+    assert proc6["parity_bits"] == {"R1": "0", "R2": "1", "R4": "1"}
+    assert proc6["encoded_codeword"] == "1011110"
     assert proc6["extracted_data"] == "1011"
     print("[PASSED] TEST 6")
 
@@ -95,8 +96,8 @@ def run_tests():
     assert proc7["integrity_match"] == True
     print("[PASSED] TEST 7")
 
-    # ERROR INJECTION TEST: 1011 -> 0110011 -> Flip Pos 3 -> 0100011 -> Syndrome 011 -> Auto-correct to 0110011 -> Extract 1011
-    print("\n--- ERROR INJECTION TEST: Flip Position 3 (0110011 -> 0100011) ---")
+    # ERROR INJECTION TEST: 1011 -> 1010101 -> Flip Pos 3 -> 1010001 -> Syndrome 011 -> Auto-correct to 1010101 -> Extract 1011
+    print("\n--- ERROR INJECTION TEST: Flip Position 3 (1010101 -> 1010001) ---")
     proc_err = process_hamming("1011", mode="7,4", parity_type="even", error_pos=3, action="full_cycle")
     print("Transmitted Codeword:", proc_err["encoded_codeword"])
     print("Received Corrupted Codeword:", proc_err["received_codeword"])
@@ -106,12 +107,12 @@ def run_tests():
     print("Extracted Data:", proc_err["extracted_data"])
 
     assert proc_err["success"] == True
-    assert proc_err["encoded_codeword"] == "0110011"
-    assert proc_err["received_codeword"] == "0100011"
+    assert proc_err["encoded_codeword"] == "1010101"
+    assert proc_err["received_codeword"] == "1010001"
     assert proc_err["syndrome_string"] == "011"
     assert proc_err["error_position"] == 3
     assert proc_err["error_detected"] == True
-    assert proc_err["corrected_codeword"] == "0110011"
+    assert proc_err["corrected_codeword"] == "1010101"
     assert proc_err["extracted_data"] == "1011"
     assert proc_err["integrity_match"] == True
     print("[PASSED] ERROR INJECTION TEST")
@@ -130,6 +131,29 @@ def run_tests():
     assert proc15["error_position"] == 9
     assert proc15["integrity_match"] == True
     print("[PASSED] HAMMING (15,11) ERROR INJECTION TEST")
+
+    # MODE AUTO-DETECTION TESTS
+    print("\n--- AUTO-DETECTION TEST 1: 4 bits ('1011') with mode='auto' ---")
+    proc_auto4 = process_hamming("1011", mode="auto", parity_type="even", action="full_cycle")
+    assert proc_auto4["success"] == True
+    assert proc_auto4["mode"] == "7,4"
+    assert proc_auto4["encoded_codeword"] == "1010101"
+    assert proc_auto4["extracted_data"] == "1011"
+    print("[PASSED] AUTO-DETECTION 4-BIT TEST (Auto-detected 7,4)")
+
+    print("\n--- AUTO-DETECTION TEST 2: 11 bits ('10110010110') with mode='auto' ---")
+    proc_auto11 = process_hamming("10110010110", mode="auto", parity_type="even", action="full_cycle")
+    assert proc_auto11["success"] == True
+    assert proc_auto11["mode"] == "15,11"
+    assert len(proc_auto11["encoded_codeword"]) == 15
+    assert proc_auto11["extracted_data"] == "10110010110"
+    print("[PASSED] AUTO-DETECTION 11-BIT TEST (Auto-detected 15,11)")
+
+    print("\n--- AUTO-DETECTION TEST 3: Invalid length 5 bits ('10110') with mode='auto' ---")
+    proc_auto_err = process_hamming("10110", mode="auto")
+    assert proc_auto_err["success"] == False
+    assert "invalid payload length of 5 bits" in proc_auto_err["error"].lower()
+    print("[PASSED] AUTO-DETECTION INVALID LENGTH TEST")
 
     print("\n" + "=" * 70)
     print("ALL HAMMING CODE AUTOMATED TEST SUITES PASSED SUCCESSFULLY!")

@@ -131,11 +131,11 @@ def run_qa_audit():
         "input_data": "1011",
         "params": {"mode": "7,4", "parity_type": "even", "action": "full_cycle", "error_pos": 3}
     }).get_json()
-    assert res5["result"]["encoded_codeword"] == "0110011"
+    assert res5["result"]["encoded_codeword"] == "1010101"
     assert res5["result"]["error_position"] == 3
-    assert res5["result"]["corrected_codeword"] == "0110011"
+    assert res5["result"]["corrected_codeword"] == "1010101"
     assert res5["result"]["extracted_data"] == "1011"
-    print("[PASS] Hamming (7,4) 1011 -> 0110011 -> Pos 3 Error Syndrome 011 -> Auto-corrected to 1011")
+    print("[PASS] Hamming (7,4) 1011 -> 1010101 -> Pos 3 Error Syndrome 011 -> Auto-corrected to 1011")
 
     # 8. Test Module 6: Hamming Distance API (Mode A & B)
     print("\n--- Phase 8: Module 6 — Hamming Distance Audit ---")

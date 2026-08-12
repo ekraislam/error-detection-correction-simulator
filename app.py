@@ -96,7 +96,7 @@ def process_data():
         )
         
     elif technique == "hamming":
-        mode = params.get("mode", "7,4")
+        mode = params.get("mode", "auto")
         parity_type = params.get("parity_type", "even")
         action = params.get("action", "full_cycle")
         error_pos = params.get("error_pos")

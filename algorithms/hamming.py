@@ -20,9 +20,10 @@ Features:
 =============================================================================
 """
 
-def validate_hamming_input(data: str, mode: str = "7,4") -> dict:
+def validate_hamming_input(data: str, mode: str = "auto") -> dict:
     """
     Validates binary payload length and binary format according to Hamming mode.
+    Supports auto-detection ('auto') based on payload length (4 bits -> 7,4 or 11 bits -> 15,11).
     """
     if data is None or len(str(data).strip()) == 0:
         return {"valid": False, "error": "Input binary data payload cannot be empty."}
@@ -32,13 +33,29 @@ def validate_hamming_input(data: str, mode: str = "7,4") -> dict:
         if ch not in ('0', '1'):
             return {"valid": False, "error": f"Invalid non-binary character '{ch}' in payload. Only '0' and '1' are allowed."}
 
-    norm_mode = str(mode).replace(" ", "")
+    norm_mode = str(mode).replace(" ", "") if mode else "auto"
+
+    if norm_mode == "auto":
+        if len(raw_data) == 4:
+            norm_mode = "7,4"
+        elif len(raw_data) == 11:
+            norm_mode = "15,11"
+        else:
+            return {
+                "valid": False,
+                "error": f"Invalid payload length of {len(raw_data)} bits. Hamming code auto-detection requires either exactly 4 data bits for Hamming (7,4) or 11 data bits for Hamming (15,11)."
+            }
+
     if norm_mode not in ("7,4", "15,11"):
         return {"valid": False, "error": f"Invalid Hamming mode '{mode}'. Supported modes are '7,4' and '15,11'."}
 
     req_len = 4 if norm_mode == "7,4" else 11
     if len(raw_data) != req_len:
-        return {"valid": False, "error": f"Invalid payload length for Hamming ({norm_mode}). Required exactly {req_len} data bits, but received {len(raw_data)} bits."}
+        if len(raw_data) in (4, 11):
+            norm_mode = "7,4" if len(raw_data) == 4 else "15,11"
+            req_len = len(raw_data)
+        else:
+            return {"valid": False, "error": f"Invalid payload length for Hamming ({norm_mode}). Required exactly {req_len} data bits, but received {len(raw_data)} bits."}
 
     return {"valid": True, "raw_data": raw_data, "mode": norm_mode, "req_len": req_len}
 
@@ -74,12 +91,12 @@ def calculate_parity_bit_val(ones_count: int, parity_type: str = "even") -> str:
         return '1' if (ones_count % 2 == 0) else '0'
 
 
-def hamming_encode(data: str, mode: str = "7,4", parity_type: str = "even") -> dict:
+def hamming_encode(data: str, mode: str = "auto", parity_type: str = "even") -> dict:
     """
-    Encodes binary data payload using Hamming (7,4) or Hamming (15,11).
+    Encodes binary data payload using Hamming (7,4) or Hamming (15,11) under Right-to-Left positional convention.
 
     :param data: Binary data payload string (4 or 11 bits).
-    :param mode: '7,4' or '15,11'.
+    :param mode: 'auto', '7,4' or '15,11'.
     :param parity_type: 'even' or 'odd'.
     :return: Dictionary containing position map, parity bits, encoded codeword, and steps.
     """
@@ -94,15 +111,16 @@ def hamming_encode(data: str, mode: str = "7,4", parity_type: str = "even") -> d
         return {"success": False, "error": f"Invalid parity type '{parity_type}'. Must be 'even' or 'odd'."}
 
     total_bits, parity_positions, data_positions = get_hamming_positions(norm_mode)
-    codeword_arr = ['?'] * (total_bits + 1)  # 1-indexed
+    cw_arr = ['?'] * (total_bits + 1)  # 1-indexed by Right-to-Left position P (1..total_bits)
 
-    # Map data bits to data positions
-    for idx, data_pos in enumerate(data_positions):
-        codeword_arr[data_pos] = raw_data[idx]
+    # Map data bits to data positions from highest position to lowest (D4 to D1 for 7,4)
+    desc_data_positions = list(reversed(data_positions))
+    for idx, data_pos in enumerate(desc_data_positions):
+        cw_arr[data_pos] = raw_data[idx]
 
     steps = [
         f"Hamming ({norm_mode}) Encode Step 1: Input payload = '{raw_data}' ({len(raw_data)} bits), Scheme = '{p_type.upper()}' Parity",
-        f"Hamming ({norm_mode}) Encode Step 2: Map data bits to non-power-of-2 positions: {dict(zip(data_positions, raw_data))}"
+        f"Hamming ({norm_mode}) Encode Step 2: Map data bits to positions (Right-to-Left numbering P={total_bits}..1): {dict(zip(desc_data_positions, raw_data))}"
     ]
 
     parity_bits_calculated = {}
@@ -110,28 +128,27 @@ def hamming_encode(data: str, mode: str = "7,4", parity_type: str = "even") -> d
     # Calculate parity bits for each power of 2 position
     for p_pos in parity_positions:
         coverage = get_coverage_positions(p_pos, total_bits)
-        # Covered data positions (excluding the parity bit itself)
         covered_data_positions = [pos for pos in coverage if pos in data_positions]
-        covered_bits = [codeword_arr[pos] for pos in covered_data_positions]
+        covered_bits = [cw_arr[pos] for pos in covered_data_positions]
         ones_count = covered_bits.count('1')
 
         p_val = calculate_parity_bit_val(ones_count, parity_type=p_type)
-        codeword_arr[p_pos] = p_val
-        parity_bits_calculated[f"P{p_pos}"] = p_val
+        cw_arr[p_pos] = p_val
+        parity_bits_calculated[f"R{p_pos}"] = p_val
 
-        steps.append(f"Step 3 (P{p_pos}): Coverage positions = {coverage}. Data bits covered = {dict(zip(covered_data_positions, covered_bits))} (1s count = {ones_count}) -> P{p_pos} = '{p_val}'")
+        steps.append(f"Step 3 (R{p_pos}): Coverage positions = {coverage}. Data bits covered = {dict(zip(covered_data_positions, covered_bits))} (1s count = {ones_count}) -> R{p_pos} = '{p_val}'")
 
-    encoded_codeword = "".join(codeword_arr[1:])
-    steps.append(f"Hamming ({norm_mode}) Encode Step 4: Final Transmitted Codeword = '{encoded_codeword}'")
+    encoded_codeword = "".join(cw_arr[pos] for pos in range(total_bits, 0, -1))
+    steps.append(f"Hamming ({norm_mode}) Encode Step 4: Final Transmitted Codeword (Pos {total_bits}..1) = '{encoded_codeword}'")
 
-    # Build position map table for UI
+    # Build position map table for UI ordered from Pos N down to 1
     pos_table = []
-    for pos in range(1, total_bits + 1):
+    for pos in range(total_bits, 0, -1):
         if pos in parity_positions:
-            pos_table.append({"pos": pos, "type": f"P{pos}", "is_parity": True, "value": codeword_arr[pos]})
+            pos_table.append({"pos": pos, "type": f"R{pos}", "is_parity": True, "value": cw_arr[pos]})
         else:
             d_idx = data_positions.index(pos) + 1
-            pos_table.append({"pos": pos, "type": f"D{d_idx}", "is_parity": False, "value": codeword_arr[pos]})
+            pos_table.append({"pos": pos, "type": f"D{d_idx}", "is_parity": False, "value": cw_arr[pos]})
 
     return {
         "success": True,
@@ -150,7 +167,7 @@ def hamming_encode(data: str, mode: str = "7,4", parity_type: str = "even") -> d
 
 def calculate_syndrome(received_codeword: str, mode: str = "7,4", parity_type: str = "even") -> dict:
     """
-    Calculates syndrome bits and 1-indexed error position for a received codeword.
+    Calculates syndrome bits and 1-indexed error position for a received codeword (Right-to-Left position numbering).
 
     :param received_codeword: Received binary codeword string (7 or 15 bits).
     :param mode: '7,4' or '15,11'.
@@ -169,12 +186,14 @@ def calculate_syndrome(received_codeword: str, mode: str = "7,4", parity_type: s
         if ch not in ('0', '1'):
             return {"success": False, "error": f"Invalid non-binary character '{ch}' in codeword."}
 
-    cw_arr = ['?'] + list(raw_cw)  # 1-indexed
+    cw_arr = ['?'] * (total_bits + 1)
+    for pos in range(1, total_bits + 1):
+        cw_arr[pos] = raw_cw[total_bits - pos]
 
     syndrome_bits_dict = {}
     syndrome_bit_list = []
     steps = [
-        f"Hamming ({norm_mode}) Decode Step 1: Received codeword = '{raw_cw}'",
+        f"Hamming ({norm_mode}) Decode Step 1: Received codeword = '{raw_cw}' (Positions {total_bits}..1)",
         f"Hamming ({norm_mode}) Decode Step 2: Parity Check Syndrome Evaluation under '{p_type.upper()}' parity:"
     ]
 
@@ -224,7 +243,9 @@ def hamming_decode(received_codeword: str, mode: str = "7,4", parity_type: str =
     err_pos = syn_res["error_position"]
 
     total_bits, parity_positions, data_positions = get_hamming_positions(norm_mode)
-    cw_arr = ['?'] + list(raw_cw)  # 1-indexed
+    cw_arr = ['?'] * (total_bits + 1)
+    for pos in range(1, total_bits + 1):
+        cw_arr[pos] = raw_cw[total_bits - pos]
 
     steps = list(syn_res["steps"])
     original_bit = None
@@ -237,24 +258,25 @@ def hamming_decode(received_codeword: str, mode: str = "7,4", parity_type: str =
         original_bit = cw_arr[err_pos]
         corrected_bit = '1' if original_bit == '0' else '0'
         cw_arr[err_pos] = corrected_bit
-        corrected_cw = "".join(cw_arr[1:])
-        steps.append(f"Hamming Decode Step 4: Syndrome S = {syn_res['syndrome_string']} -> ERROR DETECTED at Position {err_pos} (Array Index {err_pos - 1})")
+        corrected_cw = "".join(cw_arr[pos] for pos in range(total_bits, 0, -1))
+        steps.append(f"Hamming Decode Step 4: Syndrome S = {syn_res['syndrome_string']} -> ERROR DETECTED at Right-to-Left Position {err_pos}")
         steps.append(f"Hamming Decode Step 5: AUTO-CORRECTING bit at Position {err_pos} ('{original_bit}' -> '{corrected_bit}')")
         steps.append(f"Hamming Decode Step 6: Corrected Codeword = '{corrected_cw}'")
     else:
         steps.append(f"Hamming Decode Step 4: Syndrome S = {syn_res['syndrome_string']} (Position {err_pos}) is outside codeword length {total_bits} -> Multi-bit / invalid corruption!")
 
-    # Extract original payload data from data positions
-    extracted_data_bits = "".join(cw_arr[pos] for pos in data_positions)
-    steps.append(f"Hamming Decode Step 7: Extracted Payload Data Bits from positions {data_positions} = '{extracted_data_bits}'")
+    # Extract original payload data from data positions in D4..D1 order
+    desc_data_positions = list(reversed(data_positions))
+    extracted_data_bits = "".join(cw_arr[pos] for pos in desc_data_positions)
+    steps.append(f"Hamming Decode Step 7: Extracted Payload Data Bits from positions {desc_data_positions} = '{extracted_data_bits}'")
 
-    # Position Table for visualization
+    # Position Table for visualization ordered from Pos N down to 1
     pos_table = []
-    for pos in range(1, total_bits + 1):
+    for pos in range(total_bits, 0, -1):
         is_err = (pos == err_pos)
         val = cw_arr[pos]
         if pos in parity_positions:
-            pos_table.append({"pos": pos, "type": f"P{pos}", "is_parity": True, "value": val, "is_error": is_err})
+            pos_table.append({"pos": pos, "type": f"R{pos}", "is_parity": True, "value": val, "is_error": is_err})
         else:
             d_idx = data_positions.index(pos) + 1
             pos_table.append({"pos": pos, "type": f"D{d_idx}", "is_parity": False, "value": val, "is_error": is_err})
@@ -276,27 +298,33 @@ def hamming_decode(received_codeword: str, mode: str = "7,4", parity_type: str =
     }
 
 
-def process_hamming(data_bits: str, mode: str = "7,4", parity_type: str = "even", action: str = "full_cycle", injected_error: str = None, error_pos: int = None) -> dict:
+def process_hamming(data_bits: str, mode: str = "auto", parity_type: str = "even", action: str = "full_cycle", injected_error: str = None, error_pos: int = None) -> dict:
     """
     Main entry point for Hamming Code encoding, bit flipping error injection, syndrome evaluation, and error correction.
 
     :param data_bits: Binary data payload string (4 bits for 7,4 or 11 bits for 15,11).
-    :param mode: '7,4' or '15,11'.
+    :param mode: 'auto', '7,4' or '15,11'.
     :param parity_type: 'even' or 'odd'.
     :param action: 'encode', 'decode', or 'full_cycle'.
     :param injected_error: Explicit corrupted codeword string.
-    :param error_pos: 1-indexed bit position in codeword to flip.
+    :param error_pos: 1-indexed bit position in codeword to flip (numbered Right-to-Left).
     :return: Comprehensive result dictionary.
     """
-    norm_mode = str(mode).replace(" ", "") if mode else "7,4"
+    norm_mode = str(mode).replace(" ", "") if mode else "auto"
     p_type = parity_type.lower() if parity_type else "even"
 
     if action == "decode":
+        # If action is decode, data_bits is the codeword string (7 or 15 bits)
+        if norm_mode == "auto":
+            cw_len = len(str(data_bits).replace(" ", ""))
+            norm_mode = "7,4" if cw_len == 7 else ("15,11" if cw_len == 15 else "7,4")
         return hamming_decode(data_bits, mode=norm_mode, parity_type=p_type)
 
     encode_res = hamming_encode(data_bits, mode=norm_mode, parity_type=p_type)
     if not encode_res["success"]:
         return encode_res
+
+    norm_mode = encode_res["mode"]
 
     if action == "encode":
         return encode_res
@@ -310,14 +338,14 @@ def process_hamming(data_bits: str, mode: str = "7,4", parity_type: str = "even"
     if error_pos is not None and str(error_pos).isdigit():
         pos = int(error_pos)
         if 1 <= pos <= encode_res["total_bits"]:
-            idx = pos - 1
+            idx = encode_res["total_bits"] - pos
             cw_chars = list(transmitted_cw)
             orig_bit = cw_chars[idx]
             flipped_bit = '1' if orig_bit == '0' else '0'
             cw_chars[idx] = flipped_bit
             received_cw = "".join(cw_chars)
             error_applied = True
-            error_details = f"Flipped bit at 1-indexed Position {pos} (Array Index {idx}) ('{orig_bit}' -> '{flipped_bit}')"
+            error_details = f"Flipped bit at 1-indexed Right-to-Left Position {pos} (String Index {idx}) ('{orig_bit}' -> '{flipped_bit}')"
         else:
             return {"success": False, "error": f"Invalid error position {error_pos}. Must be between 1 and codeword length ({encode_res['total_bits']})."}
     elif injected_error and len(str(injected_error).strip()) > 0:
