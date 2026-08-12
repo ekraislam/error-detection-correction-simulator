@@ -1,7 +1,7 @@
 /**
- * Error Detection & Correction Simulator - Frontend JavaScript App
- * Handles dynamic UI state, mobile sidebar toggle, technique selection, Byte/Bit Stuffing,
- * 1D/2D Parity Check, CRC Checksum, Hamming Code, Hamming Distance visualizations, error injection controls, and API calls.
+ * ERROR DETECTION & CORRECTION LAB - Futuristic JavaScript App
+ * Handles particle canvas background, metric count-up animations, UI state manager,
+ * dynamic technique configurations, error injection controls, and API calls.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -37,6 +37,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const outputDecoded = document.getElementById('output-decoded');
     const stepByStepDisplay = document.getElementById('step-by-step-display');
 
+    // Canvas Background Particle Matrix Generator
+    initBackgroundCanvas();
+
+    // Metric Count-up Animation
+    initMetricCountUp();
+
     // Mobile Sidebar Drawer Toggle
     if (mobileMenuBtn && sidebarDrawer) {
         mobileMenuBtn.addEventListener('click', (e) => {
@@ -48,6 +54,80 @@ document.addEventListener('DOMContentLoaded', () => {
             if (sidebarDrawer.classList.contains('open') && !sidebarDrawer.contains(e.target) && e.target !== mobileMenuBtn) {
                 sidebarDrawer.classList.remove('open');
             }
+        });
+    }
+
+    /**
+     * Futuristic Background Matrix Canvas Animation
+     */
+    function initBackgroundCanvas() {
+        const canvas = document.getElementById('bg-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
+
+        const particles = [];
+        const numParticles = Math.floor(width / 30);
+
+        for (let i = 0; i < numParticles; i++) {
+            particles.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                speed: 0.5 + Math.random() * 1.5,
+                char: Math.random() > 0.5 ? '1' : '0',
+                size: 10 + Math.random() * 10,
+                opacity: 0.1 + Math.random() * 0.4
+            });
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+            ctx.font = '12px "Fira Code", monospace';
+
+            particles.forEach(p => {
+                ctx.fillStyle = `rgba(0, 242, 254, ${p.opacity})`;
+                ctx.fillText(p.char, p.x, p.y);
+                p.y += p.speed;
+
+                if (p.y > height) {
+                    p.y = 0;
+                    p.x = Math.random() * width;
+                    p.char = Math.random() > 0.5 ? '1' : '0';
+                }
+            });
+
+            requestAnimationFrame(draw);
+        }
+
+        draw();
+    }
+
+    /**
+     * Metric Value Count-up Animation
+     */
+    function initMetricCountUp() {
+        const metricValues = document.querySelectorAll('.metric-value');
+        metricValues.forEach(el => {
+            const target = parseInt(el.getAttribute('data-target') || '0', 10);
+            let count = 0;
+            const duration = 1200;
+            const increment = target / (duration / 16);
+
+            const timer = setInterval(() => {
+                count += increment;
+                if (count >= target) {
+                    el.textContent = target;
+                    clearInterval(timer);
+                } else {
+                    el.textContent = Math.floor(count);
+                }
+            }, 16);
         });
     }
 
@@ -107,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <i class="fa-solid fa-file-import"></i> De-stuff Frame
                     </button>
                 </div>
-                <div class="form-group" style="grid-column: span 2; font-size: 0.78rem; color: var(--text-muted); background: var(--bg-surface); padding: 8px 12px; border-radius: 6px; border-left: 3px solid var(--accent-amber);">
+                <div class="form-group" style="grid-column: span 2; font-size: 0.78rem; color: var(--text-muted); background: var(--bg-surface); padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--accent-amber);">
                     <i class="fa-solid fa-circle-info" style="color: var(--accent-amber);"></i> <strong>Note:</strong> Bit stuffing is primarily a <em>framing/transparency mechanism</em>. Error detection normally requires techniques like Parity or CRC.
                 </div>
             `
@@ -153,8 +233,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         <input type="number" id="param-error-col" class="form-control" placeholder="Col e.g. 3" min="1">
                     </div>
                 </div>
-                <div class="form-group" style="grid-column: span 2; font-size: 0.78rem; color: var(--text-muted); background: var(--bg-surface); padding: 8px 12px; border-radius: 6px; border-left: 3px solid var(--accent-cyan);">
-                    <i class="fa-solid fa-circle-info" style="color: var(--accent-cyan);"></i> <strong>Concept:</strong> Simple 1D parity detects odd number of bit errors (e.g. 1 bit flip), but fails on even number of bit errors (e.g. 2 bit flips). 2D parity pinpoints single-bit error locations at Row $r$, Column $c$.
+                <div class="form-group" style="grid-column: span 2; font-size: 0.78rem; color: var(--text-muted); background: var(--bg-surface); padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--accent-cyan);">
+                    <i class="fa-solid fa-circle-info" style="color: var(--accent-cyan);"></i> <strong>Concept:</strong> Simple 1D parity detects odd number of bit errors (e.g. 1 bit flip), but fails on even number of bit errors. 2D parity pinpoints single-bit error locations at Row $r$, Column $c$.
                 </div>
             `
         },
@@ -183,8 +263,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         <i class="fa-solid fa-check-double"></i> Check Receiver Codeword
                     </button>
                 </div>
-                <div class="form-group" style="grid-column: span 2; font-size: 0.78rem; color: var(--text-muted); background: var(--bg-surface); padding: 8px 12px; border-radius: 6px; border-left: 3px solid var(--accent-purple);">
-                    <i class="fa-solid fa-circle-info" style="color: var(--accent-purple);"></i> <strong>What is CRC?</strong> CRC uses polynomial-based modulo-2 XOR division to calculate a remainder appended to original data. The receiver repeats division. A non-zero remainder indicates an error. CRC detects transmission errors but does not itself correct them.
+                <div class="form-group" style="grid-column: span 2; font-size: 0.78rem; color: var(--text-muted); background: var(--bg-surface); padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--accent-purple);">
+                    <i class="fa-solid fa-circle-info" style="color: var(--accent-purple);"></i> <strong>What is CRC?</strong> CRC uses polynomial-based modulo-2 XOR division to calculate a remainder appended to original data. A non-zero remainder indicates an error.
                 </div>
             `
         },
@@ -223,8 +303,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         <i class="fa-solid fa-wrench"></i> Decode & Correct Error
                     </button>
                 </div>
-                <div class="form-group" style="grid-column: span 2; font-size: 0.78rem; color: var(--text-muted); background: var(--bg-surface); padding: 8px 12px; border-radius: 6px; border-left: 3px solid var(--accent-blue);">
-                    <i class="fa-solid fa-circle-info" style="color: var(--accent-blue);"></i> <strong>How it works:</strong> Hamming Code adds parity bits at power-of-two positions (1, 2, 4, 8...). At the receiver, parity checks generate a syndrome identifying the 1-indexed position of a single-bit error, allowing auto-correction.
+                <div class="form-group" style="grid-column: span 2; font-size: 0.78rem; color: var(--text-muted); background: var(--bg-surface); padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--accent-blue);">
+                    <i class="fa-solid fa-circle-info" style="color: var(--accent-blue);"></i> <strong>How it works:</strong> Hamming Code adds parity bits at power-of-two positions (1, 2, 4, 8...). The syndrome identifies the 1-indexed position of a single-bit error for auto-correction.
                 </div>
             `
         },
@@ -253,8 +333,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <textarea id="param-codewords-list" class="form-control code-input" rows="3" placeholder="e.g.&#10;101101&#10;100111&#10;111101&#10;001101">101101, 100111, 111101, 001101</textarea>
                     <small class="form-hint">Enter 2 or more equal-length binary codewords.</small>
                 </div>
-                <div class="form-group" style="grid-column: span 2; font-size: 0.78rem; color: var(--text-muted); background: var(--bg-surface); padding: 8px 12px; border-radius: 6px; border-left: 3px solid var(--accent-emerald);">
-                    <i class="fa-solid fa-circle-info" style="color: var(--accent-emerald);"></i> <strong>Theory:</strong> Hamming Distance $d(c_1, c_2)$ measures the number of differing bit positions. For a codeword set, $d_{min}$ is the smallest distance between any pair. Maximum detectable errors $s = d_{min} - 1$, Maximum correctable errors $t = \\lfloor(d_{min}-1)/2\\rfloor$.
+                <div class="form-group" style="grid-column: span 2; font-size: 0.78rem; color: var(--text-muted); background: var(--bg-surface); padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--accent-emerald);">
+                    <i class="fa-solid fa-circle-info" style="color: var(--accent-emerald);"></i> <strong>Theory:</strong> Hamming Distance $d(c_1, c_2)$ measures differing bit positions. Maximum detectable errors $s = d_{min} - 1$, Maximum correctable errors $t = \\lfloor(d_{min}-1)/2\\rfloor$.
                 </div>
             `
         }
@@ -404,8 +484,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (stepByStepDisplay) {
             stepByStepDisplay.innerHTML = `
                 <div class="empty-state">
-                    <i class="fa-solid fa-sliders"></i>
-                    <p>Select inputs and click <strong>Process Data</strong> to execute step-by-step calculations.</p>
+                    <div class="empty-icon"><i class="fa-solid fa-network-wired"></i></div>
+                    <p class="empty-title">SELECT A DATA COMMUNICATION TECHNIQUE</p>
+                    <p class="empty-desc">Choose a protocol, configure payload parameters, and click <strong>Process Data</strong> to initiate real-time mathematical simulation.</p>
                 </div>
             `;
         }
@@ -634,7 +715,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (resultStatusIndicator) {
             resultStatusIndicator.className = 'status-indicator-badge neutral';
-            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing Backend...';
+            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing Transmission...';
         }
 
         try {
@@ -669,7 +750,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (res.action === 'stuff') {
                         if (resultStatusIndicator) {
                             resultStatusIndicator.className = 'status-indicator-badge success';
-                            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-check-circle"></i> Data Stuffed';
+                            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-check-circle"></i> Frame Stuffed';
                         }
                         if (outputEncoded) outputEncoded.textContent = res.original_data;
                         if (outputReceived) outputReceived.innerHTML = renderStuffedTokens(res.stuffed_tokens) || res.stuffed_frame;
@@ -690,7 +771,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 resultStatusIndicator.innerHTML = '<i class="fa-solid fa-shield-check"></i> Integrity Verified (Exact Match)';
                             } else {
                                 resultStatusIndicator.className = 'status-indicator-badge error-detected';
-                                resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Error / Frame Mismatch';
+                                resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Frame Mismatch / Error';
                             }
                         }
 
@@ -707,7 +788,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         } else {
                             resultStatusIndicator.className = 'status-indicator-badge error-detected';
                             if (res.pinpointed_location) {
-                                resultStatusIndicator.innerHTML = `<i class="fa-solid fa-crosshairs"></i> ERROR DETECTED & PINPOINTED (Row ${res.pinpointed_location.row}, Col ${res.pinpointed_location.col})`;
+                                resultStatusIndicator.innerHTML = `<i class="fa-solid fa-crosshairs"></i> ERROR PINPOINTED (Row ${res.pinpointed_location.row}, Col ${res.pinpointed_location.col})`;
                             } else {
                                 resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ERROR DETECTED';
                             }
@@ -720,7 +801,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (outputDecoded) outputDecoded.textContent = res.error_detected ? 'ERROR DETECTED (Corrupted Codeword)' : `Payload Intact: ${res.original_data}`;
                     } else {
                         // 2D Mode
-                        if (outputEncoded) outputEncoded.textContent = `2D Grid (${res.rows}x${res.columns}) | Parity Scheme: ${res.parity_type.toUpperCase()}`;
+                        if (outputEncoded) outputEncoded.textContent = `2D Grid (${res.rows}x${res.columns}) | Scheme: ${res.parity_type.toUpperCase()}`;
                         if (outputReceived) outputReceived.innerHTML = render2DParityMatrix(res);
                         if (outputDecoded) {
                             if (res.pinpointed_location) {
@@ -744,7 +825,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (resultStatusIndicator) {
                             if (!res.error_detected) {
                                 resultStatusIndicator.className = 'status-indicator-badge success';
-                                resultStatusIndicator.innerHTML = '<i class="fa-solid fa-shield-check"></i> NO ERROR DETECTED (Remainder = 0)';
+                                resultStatusIndicator.innerHTML = '<i class="fa-solid fa-shield-check"></i> NO ERROR (Remainder = 0)';
                             } else {
                                 resultStatusIndicator.className = 'status-indicator-badge error-detected';
                                 resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ERROR DETECTED (Non-zero Remainder)';
@@ -776,7 +857,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             resultStatusIndicator.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> CODEWORD INTACT (Syndrome = 0)';
                         } else {
                             resultStatusIndicator.className = 'status-indicator-badge corrected';
-                            resultStatusIndicator.innerHTML = `<i class="fa-solid fa-wrench"></i> ERROR DETECTED & AUTO-CORRECTED (Position ${res.error_position})`;
+                            resultStatusIndicator.innerHTML = `<i class="fa-solid fa-wrench"></i> ERROR AUTO-CORRECTED (Position ${res.error_position})`;
                         }
                     }
 
@@ -792,7 +873,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                         if (outputEncoded) outputEncoded.textContent = `Codewords Set: [ ${res.codewords.join(', ')} ] (Count = ${res.num_codewords}, Length = ${res.codeword_length})`;
                         if (outputReceived) outputReceived.innerHTML = renderHammingDistanceMatrixTable(res);
-                        if (outputDecoded) outputDecoded.innerHTML = `<strong>Theoretical Capabilities:</strong> Max Detectable Errors <code>s = ${res.detectable_errors_s}</code> | Max Correctable Errors <code>t = ${res.correctable_errors_t}</code>`;
+                        if (outputDecoded) outputDecoded.innerHTML = `<strong>Capabilities:</strong> Detectable Errors <code>s = ${res.detectable_errors_s}</code> | Correctable Errors <code>t = ${res.correctable_errors_t}</code>`;
                     } else {
                         // Pair Comparison Mode
                         if (resultStatusIndicator) {

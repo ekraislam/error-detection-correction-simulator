@@ -3,73 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Error Detection & Correction Simulator</title>
+    <title>Error Detection & Correction Simulator | ERROR DETECTION & CORRECTION LAB</title>
     <!-- Meta Description for SEO -->
-    <meta name="description" content="Interactive Error Detection & Correction Simulator.">
+    <meta name="description" content="Futuristic Interactive Data Communication Error Detection, Correction, and Framing Laboratory Simulator.">
     <!-- Google Fonts: Inter for UI & Fira Code for Bitstreams -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- Font Awesome Icons CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Main Dashboard CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
+    <!-- Background Futuristic Canvas Particle Stream -->
+    <canvas id="bg-canvas"></canvas>
+
     <div class="app-container">
         <!-- Sidebar Navigation Drawer -->
         <aside class="sidebar" id="sidebar-drawer">
             <div class="brand">
-                <div class="brand-icon">
-                    <i class="fa-solid fa-network-wired"></i>
+                <div class="brand-icon glowing-pulse">
+                    <i class="fa-solid fa-atom"></i>
                 </div>
                 <div class="brand-text">
-                    <h2>ERROR DETECTION LAB</h2>
-                    <span>Simulator v1.0</span>
+                    <h2>EDC LAB STUDIO</h2>
+                    <span>Engineering Suite v2.0</span>
                 </div>
             </div>
 
             <nav class="nav-menu">
-                <div class="nav-section-title">Navigation</div>
+                <div class="nav-section-title"><i class="fa-solid fa-compass"></i> NAVIGATION</div>
                 <a href="#overview" class="nav-item active" data-technique="overview">
                     <i class="fa-solid fa-house-signal"></i>
-                    <span>Simulator Overview</span>
+                    <div class="nav-item-content">
+                        <span class="nav-title">Lab Overview</span>
+                        <span class="nav-sub">Simulator Dashboard</span>
+                    </div>
                 </a>
 
-                <div class="nav-section-title">Framing Techniques</div>
+                <div class="nav-section-title"><i class="fa-solid fa-layer-group"></i> FRAMING</div>
                 <a href="#byte_stuffing" class="nav-item" data-technique="byte_stuffing">
                     <i class="fa-solid fa-file-code"></i>
-                    <span>Byte Stuffing</span>
+                    <div class="nav-item-content">
+                        <span class="nav-title">Byte Stuffing</span>
+                        <span class="nav-sub">Character Framing</span>
+                    </div>
                 </a>
                 <a href="#bit_stuffing" class="nav-item" data-technique="bit_stuffing">
                     <i class="fa-solid fa-microchip"></i>
-                    <span>Bit Stuffing</span>
+                    <div class="nav-item-content">
+                        <span class="nav-title">Bit Stuffing</span>
+                        <span class="nav-sub">Flag Transparency</span>
+                    </div>
                 </a>
 
-                <div class="nav-section-title">Error Detection</div>
+                <div class="nav-section-title"><i class="fa-solid fa-shield-halved"></i> ERROR DETECTION</div>
                 <a href="#parity" class="nav-item" data-technique="parity">
                     <i class="fa-solid fa-list-check"></i>
-                    <span>Parity Check</span>
+                    <div class="nav-item-content">
+                        <span class="nav-title">Parity Check</span>
+                        <span class="nav-sub">1D & 2D Matrix</span>
+                    </div>
                 </a>
                 <a href="#crc" class="nav-item" data-technique="crc">
                     <i class="fa-solid fa-calculator"></i>
-                    <span>CRC (Checksum)</span>
+                    <div class="nav-item-content">
+                        <span class="nav-title">CRC (Checksum)</span>
+                        <span class="nav-sub">Modulo-2 Division</span>
+                    </div>
                 </a>
 
-                <div class="nav-section-title">Error Correction</div>
+                <div class="nav-section-title"><i class="fa-solid fa-wand-magic-sparkles"></i> ERROR CORRECTION</div>
                 <a href="#hamming" class="nav-item" data-technique="hamming">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i>
-                    <span>Hamming Code</span>
+                    <i class="fa-solid fa-terminal"></i>
+                    <div class="nav-item-content">
+                        <span class="nav-title">Hamming Code</span>
+                        <span class="nav-sub">SEC Auto-Correct</span>
+                    </div>
                 </a>
                 <a href="#hamming_distance" class="nav-item" data-technique="hamming_distance">
                     <i class="fa-solid fa-ruler-combined"></i>
-                    <span>Hamming Distance</span>
+                    <div class="nav-item-content">
+                        <span class="nav-title">Hamming Distance</span>
+                        <span class="nav-sub">Minimum Distance d_min</span>
+                    </div>
                 </a>
             </nav>
 
             <div class="sidebar-footer">
                 <div class="status-badge online">
-                    <span class="pulse-dot"></span> System Online
+                    <span class="pulse-dot"></span> SYSTEM ONLINE
                 </div>
             </div>
         </aside>
@@ -83,108 +107,124 @@
                         <i class="fa-solid fa-bars"></i>
                     </button>
                     <div class="header-title">
-                        <h1>Error Detection & Correction Simulator</h1>
-                        <p class="subtitle">Interactive Framing, Error Detection & Correction Suite</p>
+                        <h1>ERROR DETECTION & CORRECTION LAB</h1>
+                        <p class="subtitle">Interactive Data Communication Simulator</p>
                     </div>
                 </div>
                 <div class="header-actions">
-                    <span class="course-badge"><i class="fa-solid fa-microchip"></i> Interactive Engineering Simulator</span>
-                    <span class="status-badge online header-status"><span class="pulse-dot"></span> System Online</span>
+                    <span class="course-badge"><i class="fa-solid fa-network-wired"></i> Engineering Suite</span>
+                    <span class="status-badge online header-status"><span class="pulse-dot"></span> SYSTEM ONLINE</span>
                 </div>
             </header>
 
             <!-- Dashboard Content Scroll Area -->
             <div class="dashboard-scroll">
                 
-                <!-- Hero & Lab Metrics Overview Section -->
+                <!-- Hero & Metrics Overview Section -->
                 <section class="techniques-overview" id="overview-cards">
-                    <div class="hero-banner">
+                    <div class="hero-banner glass-panel">
                         <div class="hero-text">
-                            <span class="hero-tag"><i class="fa-solid fa-sliders"></i> Simulator Studio</span>
-                            <h2>Error Detection & Correction Simulator</h2>
-                            <p>Simulate Data Link Layer framing, error detection, polynomial modulo-2 CRC division, Hamming single-bit error correction, and minimum Hamming distance theory.</p>
+                            <span class="hero-tag"><i class="fa-solid fa-bolt"></i> Interactive Telecommunications Studio</span>
+                            <h2>ERROR DETECTION & CORRECTION LAB</h2>
+                            <p>An advanced interactive Data Communication laboratory for real-time data-link framing, polynomial modulo-2 CRC division, 2D block parity pinpointing, Hamming single-error correction, and minimum distance theory.</p>
                         </div>
                         <div class="metrics-grid">
-                            <div class="metric-card">
-                                <div class="metric-value">6</div>
+                            <div class="metric-card glass-card">
+                                <div class="metric-icon cyan"><i class="fa-solid fa-cubes"></i></div>
+                                <div class="metric-value" data-target="6">6</div>
                                 <div class="metric-label">Protocols</div>
                             </div>
-                            <div class="metric-card">
-                                <div class="metric-value">3</div>
-                                <div class="metric-label">Error Detectors</div>
+                            <div class="metric-card glass-card">
+                                <div class="metric-icon emerald"><i class="fa-solid fa-shield-check"></i></div>
+                                <div class="metric-value" data-target="3">3</div>
+                                <div class="metric-label">Detectors</div>
                             </div>
-                            <div class="metric-card">
-                                <div class="metric-value">1</div>
-                                <div class="metric-label">Error Corrector</div>
+                            <div class="metric-card glass-card">
+                                <div class="metric-icon blue"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                                <div class="metric-value" data-target="1">1</div>
+                                <div class="metric-label">Corrector</div>
                             </div>
-                            <div class="metric-card">
-                                <div class="metric-value">2</div>
-                                <div class="metric-label">Framing Methods</div>
+                            <div class="metric-card glass-card">
+                                <div class="metric-icon purple"><i class="fa-solid fa-layer-group"></i></div>
+                                <div class="metric-value" data-target="2">2</div>
+                                <div class="metric-label">Framing Modes</div>
                             </div>
                         </div>
                     </div>
 
-                    <h3 class="section-title"><i class="fa-solid fa-cubes"></i> Select a Technique</h3>
+                    <h3 class="section-title"><i class="fa-solid fa-microchip"></i> Select a Protocol to Simulate</h3>
                     
                     <div class="cards-grid">
                         <!-- Card 1: Byte Stuffing -->
-                        <div class="technique-card" data-technique="byte_stuffing" id="card-byte-stuffing">
-                            <div class="card-badge">Framing</div>
+                        <div class="technique-card glass-card" data-technique="byte_stuffing" id="card-byte-stuffing">
+                            <div class="card-badge cyan">Framing</div>
                             <div class="card-icon cyan"><i class="fa-solid fa-file-code"></i></div>
                             <h3>Byte / Character Stuffing</h3>
-                            <p>Inserts Escape (ESC) bytes before internal flag occurrences to achieve character-oriented delimiter transparency.</p>
-                            <button class="card-select-btn">Select Protocol <i class="fa-solid fa-arrow-right"></i></button>
+                            <p>Inserts Escape (ESC) bytes before internal flag occurrences for character-oriented framing.</p>
+                            <div class="card-footer-action">
+                                <button class="card-select-btn">OPEN SIMULATOR <i class="fa-solid fa-arrow-right"></i></button>
+                            </div>
                         </div>
 
                         <!-- Card 2: Bit Stuffing -->
-                        <div class="technique-card" data-technique="bit_stuffing" id="card-bit-stuffing">
-                            <div class="card-badge">Framing</div>
+                        <div class="technique-card glass-card" data-technique="bit_stuffing" id="card-bit-stuffing">
+                            <div class="card-badge purple">Framing</div>
                             <div class="card-icon purple"><i class="fa-solid fa-microchip"></i></div>
                             <h3>Bit Stuffing</h3>
-                            <p>Stuffs a '0' bit after five consecutive '1's in payload binary stream to prevent false flag (01111110) detection.</p>
-                            <button class="card-select-btn">Select Protocol <i class="fa-solid fa-arrow-right"></i></button>
+                            <p>Stuffs a '0' bit after five consecutive '1's in payload stream to prevent false flag detection.</p>
+                            <div class="card-footer-action">
+                                <button class="card-select-btn">OPEN SIMULATOR <i class="fa-solid fa-arrow-right"></i></button>
+                            </div>
                         </div>
 
                         <!-- Card 3: Parity Check -->
-                        <div class="technique-card" data-technique="parity" id="card-parity">
-                            <div class="card-badge">Detection</div>
+                        <div class="technique-card glass-card" data-technique="parity" id="card-parity">
+                            <div class="card-badge emerald">Detection</div>
                             <div class="card-icon emerald"><i class="fa-solid fa-list-check"></i></div>
                             <h3>Parity Check (1D & 2D)</h3>
-                            <p>Computes even/odd parity bits across 1D binary vectors and 2D block matrices to detect single & multi-bit errors.</p>
-                            <button class="card-select-btn">Select Protocol <i class="fa-solid fa-arrow-right"></i></button>
+                            <p>Computes even/odd parity across 1D binary vectors and 2D block matrices to pinpoint errors.</p>
+                            <div class="card-footer-action">
+                                <button class="card-select-btn">OPEN SIMULATOR <i class="fa-solid fa-arrow-right"></i></button>
+                            </div>
                         </div>
 
                         <!-- Card 4: CRC -->
-                        <div class="technique-card" data-technique="crc" id="card-crc">
-                            <div class="card-badge">Detection</div>
+                        <div class="technique-card glass-card" data-technique="crc" id="card-crc">
+                            <div class="card-badge amber">Detection</div>
                             <div class="card-icon amber"><i class="fa-solid fa-calculator"></i></div>
                             <h3>Cyclic Redundancy Check (CRC)</h3>
-                            <p>Performs binary modulo-2 polynomial division to attach remainder checksums and verify frame integrity.</p>
-                            <button class="card-select-btn">Select Protocol <i class="fa-solid fa-arrow-right"></i></button>
+                            <p>Performs binary modulo-2 polynomial division to generate checksum remainders and verify frames.</p>
+                            <div class="card-footer-action">
+                                <button class="card-select-btn">OPEN SIMULATOR <i class="fa-solid fa-arrow-right"></i></button>
+                            </div>
                         </div>
 
                         <!-- Card 5: Hamming Code -->
-                        <div class="technique-card" data-technique="hamming" id="card-hamming">
-                            <div class="card-badge correction">Correction</div>
+                        <div class="technique-card glass-card" data-technique="hamming" id="card-hamming">
+                            <div class="card-badge blue">Correction</div>
                             <div class="card-icon blue"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
                             <h3>Hamming Code</h3>
-                            <p>Calculates parity bits at power-of-2 positions ($1, 2, 4, 8$) to pinpoint error bit indices and auto-correct bit flips.</p>
-                            <button class="card-select-btn">Select Protocol <i class="fa-solid fa-arrow-right"></i></button>
+                            <p>Calculates parity bits at power-of-2 positions to calculate syndrome and auto-correct bit flips.</p>
+                            <div class="card-footer-action">
+                                <button class="card-select-btn">OPEN SIMULATOR <i class="fa-solid fa-arrow-right"></i></button>
+                            </div>
                         </div>
 
                         <!-- Card 6: Hamming Distance -->
-                        <div class="technique-card" data-technique="hamming_distance" id="card-hamming-distance">
-                            <div class="card-badge">Theory</div>
+                        <div class="technique-card glass-card" data-technique="hamming_distance" id="card-hamming-distance">
+                            <div class="card-badge rose">Theory</div>
                             <div class="card-icon rose"><i class="fa-solid fa-ruler-combined"></i></div>
                             <h3>Hamming Distance</h3>
-                            <p>Measures bitwise differences between codewords to determine minimum distance ($d_{min}$) detection thresholds.</p>
-                            <button class="card-select-btn">Select Protocol <i class="fa-solid fa-arrow-right"></i></button>
+                            <p>Measures bitwise differences between codewords to determine minimum distance thresholds.</p>
+                            <div class="card-footer-action">
+                                <button class="card-select-btn">OPEN SIMULATOR <i class="fa-solid fa-arrow-right"></i></button>
+                            </div>
                         </div>
                     </div>
                 </section>
 
                 <!-- Interactive Simulator Studio Panel -->
-                <section class="simulator-studio" id="simulator-panel">
+                <section class="simulator-studio glass-panel" id="simulator-panel">
                     <div class="studio-header">
                         <div class="studio-title">
                             <span class="active-tag" id="active-technique-tag">Byte Stuffing</span>
@@ -192,16 +232,34 @@
                         </div>
                         <div class="studio-controls">
                             <button class="btn btn-secondary" id="reset-btn"><i class="fa-solid fa-rotate-left"></i> Reset</button>
-                            <button class="btn btn-primary" id="process-btn"><i class="fa-solid fa-play"></i> Process Data</button>
+                            <button class="btn btn-primary glowing-btn" id="process-btn"><i class="fa-solid fa-play"></i> Process Data</button>
+                        </div>
+                    </div>
+
+                    <!-- Pipeline Flow Visualizer Stage -->
+                    <div class="pipeline-flow-container">
+                        <div class="pipeline-node node-input">
+                            <div class="node-icon"><i class="fa-solid fa-keyboard"></i></div>
+                            <div class="node-label">INPUT DATA</div>
+                        </div>
+                        <div class="pipeline-connector"><div class="flow-pulse"></div></div>
+                        <div class="pipeline-node node-process">
+                            <div class="node-icon"><i class="fa-solid fa-gears"></i></div>
+                            <div class="node-label">PROCESSING / CHANNEL</div>
+                        </div>
+                        <div class="pipeline-connector"><div class="flow-pulse"></div></div>
+                        <div class="pipeline-node node-output">
+                            <div class="node-icon"><i class="fa-solid fa-display"></i></div>
+                            <div class="node-label">RESULT & DECODED OUTPUT</div>
                         </div>
                     </div>
 
                     <!-- Input Controls Section -->
                     <div class="input-panel-grid">
-                        <!-- Data Input Form -->
-                        <div class="input-card">
+                        <!-- Data Input Form Card -->
+                        <div class="input-card glass-card">
                             <div class="card-header-sm">
-                                <h3><i class="fa-solid fa-keyboard"></i> Data Input Parameters</h3>
+                                <h3><i class="fa-solid fa-terminal"></i> Data Input Parameters</h3>
                             </div>
 
                             <form id="simulator-form" onsubmit="return false;">
@@ -227,7 +285,7 @@
                         </div>
 
                         <!-- Error Injection Control Panel -->
-                        <div class="input-card error-injection-card">
+                        <div class="input-card glass-card error-injection-card">
                             <div class="card-header-sm danger-header">
                                 <h3><i class="fa-solid fa-bug"></i> Error Injection Controls</h3>
                                 <label class="toggle-switch">
@@ -253,39 +311,40 @@
                     <!-- Processing & Results Area -->
                     <div class="result-section">
                         <div class="result-header">
-                            <h3><i class="fa-solid fa-chart-diagram"></i> Transmission Analysis & Results</h3>
+                            <h3><i class="fa-solid fa-chart-line"></i> Transmission Analysis & Results</h3>
                             <div class="status-indicator-badge neutral" id="result-status-indicator">
                                 <i class="fa-solid fa-circle-info"></i> Ready for Processing
                             </div>
                         </div>
 
-                        <!-- Main Results Box -->
+                        <!-- Main Results Box Grid -->
                         <div class="results-grid">
-                            <div class="result-box">
-                                <div class="result-label">Encoded Transmitted Data</div>
+                            <div class="result-box glass-card">
+                                <div class="result-label"><i class="fa-solid fa-arrow-up-from-bracket"></i> Encoded Transmitted Data</div>
                                 <div class="result-value code-display" id="output-encoded">-- Awaiting Calculation --</div>
                             </div>
 
-                            <div class="result-box">
-                                <div class="result-label">Received Frame (After Transmission)</div>
+                            <div class="result-box glass-card">
+                                <div class="result-label"><i class="fa-solid fa-wifi"></i> Received Frame Stream</div>
                                 <div class="result-value code-display" id="output-received">-- Awaiting Calculation --</div>
                             </div>
 
-                            <div class="result-box">
-                                <div class="result-label">Decoded / Corrected Output</div>
+                            <div class="result-box glass-card">
+                                <div class="result-label"><i class="fa-solid fa-check-double"></i> Decoded / Corrected Output</div>
                                 <div class="result-value code-display" id="output-decoded">-- Awaiting Calculation --</div>
                             </div>
                         </div>
 
-                        <!-- Step-by-Step Calculation Display -->
-                        <div class="steps-container">
+                        <!-- Step-by-Step Calculation Display Container -->
+                        <div class="steps-container glass-card">
                             <div class="steps-header">
                                 <h4><i class="fa-solid fa-list-ol"></i> Step-by-Step Mathematical & Binary Calculation</h4>
                             </div>
                             <div class="steps-content" id="step-by-step-display">
                                 <div class="empty-state">
-                                    <i class="fa-solid fa-sliders"></i>
-                                    <p>Select a technique, configure inputs, and click <strong>Process Data</strong> to generate the step-by-step calculation trace.</p>
+                                    <div class="empty-icon"><i class="fa-solid fa-network-wired"></i></div>
+                                    <p class="empty-title">SELECT A DATA COMMUNICATION TECHNIQUE</p>
+                                    <p class="empty-desc">Choose a protocol, configure payload parameters, and click <strong>Process Data</strong> to initiate real-time mathematical simulation.</p>
                                 </div>
                             </div>
                         </div>
