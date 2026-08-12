@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Error Detection & Correction Simulator | EDC Simulator</title>
     <!-- Meta Description for SEO -->
-    <meta name="description" content="Interactive Data-Link Layer Simulation for framing, error detection, error correction, and transmission integrity.">
+    <meta name="description" content="Interactive Data Communication Transmission & Error Analysis Platform for Data Link Layer framing, error detection, error correction, and codeword theory.">
     <!-- Google Fonts: Inter for UI & Fira Code for Bitstreams -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,15 +20,15 @@
     <canvas id="bg-canvas"></canvas>
 
     <div class="app-container">
-        <!-- Slim Vertical Navigation Rail / Sidebar -->
+        <!-- Slim Vertical Navigation Sidebar / Rail -->
         <aside class="sidebar" id="sidebar-drawer">
             <div class="brand">
                 <div class="brand-icon glowing-pulse">
                     <i class="fa-solid fa-microchip"></i>
                 </div>
                 <div class="brand-text">
-                    <h2>EDC Simulator</h2>
-                    <span>Error Detection & Correction</span>
+                    <h2>EDC SIMULATOR</h2>
+                    <span>Version 1.0</span>
                 </div>
             </div>
 
@@ -38,7 +38,7 @@
                     <i class="fa-solid fa-house-signal"></i>
                     <div class="nav-item-content">
                         <span class="nav-title">Overview</span>
-                        <span class="nav-sub">System Control</span>
+                        <span class="nav-sub">System Dashboard</span>
                     </div>
                 </a>
 
@@ -62,8 +62,8 @@
                 <a href="#parity" class="nav-item" data-technique="parity">
                     <i class="fa-solid fa-list-check"></i>
                     <div class="nav-item-content">
-                        <span class="nav-title">Parity</span>
-                        <span class="nav-sub">1D & 2D Checksum</span>
+                        <span class="nav-title">Parity Check</span>
+                        <span class="nav-sub">1D / 2D Matrix</span>
                     </div>
                 </a>
                 <a href="#crc" class="nav-item" data-technique="crc">
@@ -74,11 +74,11 @@
                     </div>
                 </a>
 
-                <div class="nav-section-title"><i class="fa-solid fa-wand-magic-sparkles"></i> CORRECTION & THEORY</div>
+                <div class="nav-section-title"><i class="fa-solid fa-wand-magic-sparkles"></i> ERROR CORRECTION</div>
                 <a href="#hamming" class="nav-item" data-technique="hamming">
                     <i class="fa-solid fa-terminal"></i>
                     <div class="nav-item-content">
-                        <span class="nav-title">Hamming</span>
+                        <span class="nav-title">Hamming Code</span>
                         <span class="nav-sub">Single-Bit SEC</span>
                     </div>
                 </a>
@@ -86,82 +86,101 @@
                     <i class="fa-solid fa-ruler-combined"></i>
                     <div class="nav-item-content">
                         <span class="nav-title">Hamming Distance</span>
-                        <span class="nav-sub">Distance Analysis</span>
+                        <span class="nav-sub">Codeword Theory</span>
                     </div>
                 </a>
             </nav>
 
             <div class="sidebar-footer">
                 <div class="status-badge online">
-                    <span class="pulse-dot"></span> SYSTEM ONLINE
+                    <span class="pulse-dot"></span> ● SYSTEM ONLINE
                 </div>
             </div>
         </aside>
 
         <!-- Main Simulation Workspace -->
         <main class="main-content">
-            <!-- Top Header -->
+            <!-- Top Navigation Header -->
             <header class="top-header">
                 <div class="header-left">
                     <button class="mobile-toggle-btn" id="mobile-menu-btn" aria-label="Toggle Navigation Menu">
                         <i class="fa-solid fa-bars"></i>
                     </button>
                     <div class="header-title">
-                        <h1>EDC Simulator</h1>
-                        <p class="subtitle">Interactive Data-Link Layer Simulation</p>
+                        <h1>EDC SIMULATOR</h1>
+                        <p class="subtitle" id="top-header-subtitle">Error Detection & Correction Simulator</p>
                     </div>
                 </div>
                 <div class="header-actions">
-                    <span class="course-badge"><i class="fa-solid fa-network-wired"></i> Transmission Engine</span>
+                    <span class="course-badge" id="top-header-tech-badge"><i class="fa-solid fa-layer-group"></i> OVERVIEW WORKSPACE</span>
                     <span class="status-badge online header-status"><span class="pulse-dot"></span> SYSTEM ONLINE</span>
                 </div>
             </header>
 
-            <!-- Workspace Grid with Telemetry Panel -->
+            <!-- Workspace Grid & Content Scroll Area -->
             <div class="workspace-layout">
-                <!-- Center Dashboard Content Area -->
                 <div class="dashboard-scroll">
                     
-                    <!-- Hero Section -->
+                    <!-- Overview Screen Section -->
                     <section class="techniques-overview" id="overview-cards">
                         <div class="hero-banner glass-panel">
                             <div class="hero-text">
-                                <span class="hero-tag"><i class="fa-solid fa-bolt"></i> Interactive Telecommunications Studio</span>
-                                <h2>Error Detection & Correction</h2>
-                                <p>Explore how digital communication protects data against framing errors, transmission noise, and bit corruption.</p>
+                                <span class="hero-tag"><i class="fa-solid fa-bolt"></i> DATA LINK LAYER SIMULATION PLATFORM</span>
+                                <h2>ERROR DETECTION & CORRECTION SIMULATOR</h2>
+                                <p>Interactive Data Communication Transmission & Error Analysis Platform</p>
                                 <div class="hero-cta-group">
                                     <button class="btn btn-primary glowing-btn" id="hero-launch-btn"><i class="fa-solid fa-rocket"></i> Launch Simulator</button>
                                     <button class="btn btn-secondary" id="hero-explore-btn"><i class="fa-solid fa-compass"></i> Explore Techniques</button>
                                 </div>
                             </div>
+
+                            <!-- Overview Project Metrics -->
                             <div class="metrics-grid">
                                 <div class="metric-card glass-card">
                                     <div class="metric-icon cyan"><i class="fa-solid fa-cubes"></i></div>
                                     <div class="metric-value">06</div>
-                                    <div class="metric-label">MODULES</div>
+                                    <div class="metric-label">TECHNIQUES</div>
                                 </div>
                                 <div class="metric-card glass-card">
-                                    <div class="metric-icon emerald"><i class="fa-solid fa-layer-group"></i></div>
-                                    <div class="metric-value">03</div>
-                                    <div class="metric-label">CORE AREAS</div>
+                                    <div class="metric-icon emerald"><i class="fa-solid fa-list-check"></i></div>
+                                    <div class="metric-value">81</div>
+                                    <div class="metric-label">AUTOMATED TESTS</div>
                                 </div>
                                 <div class="metric-card glass-card">
-                                    <div class="metric-icon blue"><i class="fa-solid fa-desktop"></i></div>
+                                    <div class="metric-icon blue"><i class="fa-solid fa-shield-check"></i></div>
+                                    <div class="metric-value">100%</div>
+                                    <div class="metric-label">TEST PASS RATE</div>
+                                </div>
+                                <div class="metric-card glass-card">
+                                    <div class="metric-icon purple"><i class="fa-solid fa-desktop"></i></div>
                                     <div class="metric-value">01</div>
-                                    <div class="metric-label">STUDIO WORKSPACE</div>
-                                </div>
-                                <div class="metric-card glass-card">
-                                    <div class="metric-icon purple"><i class="fa-solid fa-infinity"></i></div>
-                                    <div class="metric-value">∞</div>
-                                    <div class="metric-label">SIMULATION STATES</div>
+                                    <div class="metric-label">INTERACTIVE ENGINE</div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Technique Modules Grid Header -->
+                        <!-- Transmission Pipeline Visualizer -->
+                        <div class="pipeline-overview-box glass-panel">
+                            <div class="pipeline-title"><i class="fa-solid fa-route"></i> END-TO-END TRANSMISSION PIPELINE</div>
+                            <div class="pipeline-flow">
+                                <div class="pipe-step"><span class="pipe-icon"><i class="fa-solid fa-database"></i></span><span class="pipe-name">SOURCE</span></div>
+                                <div class="pipe-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+                                <div class="pipe-step"><span class="pipe-icon"><i class="fa-solid fa-gears"></i></span><span class="pipe-name">ENCODER</span></div>
+                                <div class="pipe-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+                                <div class="pipe-step"><span class="pipe-icon"><i class="fa-solid fa-wifi"></i></span><span class="pipe-name">TRANSMISSION</span></div>
+                                <div class="pipe-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+                                <div class="pipe-step"><span class="pipe-icon"><i class="fa-solid fa-bug"></i></span><span class="pipe-name">ERROR INJECTION</span></div>
+                                <div class="pipe-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+                                <div class="pipe-step"><span class="pipe-icon"><i class="fa-solid fa-filter"></i></span><span class="pipe-name">DECODER</span></div>
+                                <div class="pipe-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+                                <div class="pipe-step"><span class="pipe-icon"><i class="fa-solid fa-circle-check"></i></span><span class="pipe-name">VERIFICATION</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Technique Modules Selection Section Header -->
                         <div class="section-title-wrap">
                             <h3 class="section-title"><i class="fa-solid fa-microchip"></i> SIMULATOR MODULES</h3>
-                            <p class="section-desc">Select a protocol below to launch real-time transmission simulation.</p>
+                            <p class="section-desc">Select a technique to begin simulation.</p>
                         </div>
                         
                         <!-- Technique Cards Grid -->
@@ -258,7 +277,7 @@
                         </div>
                     </section>
 
-                    <!-- Interactive Simulator Studio Panel -->
+                    <!-- Main Simulator Workspace Panel (Split Layout) -->
                     <section class="simulator-studio glass-panel" id="simulator-panel">
                         <div class="studio-header">
                             <div class="studio-title">
@@ -268,145 +287,107 @@
                             </div>
                             <div class="studio-controls">
                                 <button class="btn btn-secondary" id="reset-btn"><i class="fa-solid fa-rotate-left"></i> Reset</button>
-                                <button class="btn btn-primary glowing-btn" id="process-btn"><i class="fa-solid fa-play"></i> Run Simulation</button>
+                                <button class="btn btn-primary glowing-btn" id="process-btn"><i class="fa-solid fa-play"></i> RUN SIMULATION</button>
                             </div>
                         </div>
 
-                        <!-- Live System Transmission Pipeline Nodes -->
-                        <div class="pipeline-flow-container" id="pipeline-nodes-wrapper">
-                            <div class="pipeline-node node-tx" id="node-tx">
-                                <div class="node-icon"><i class="fa-solid fa-paper-plane"></i></div>
-                                <div class="node-text">
-                                    <span class="node-label">TRANSMITTER</span>
-                                    <span class="node-sub">Source Payload</span>
-                                </div>
-                            </div>
-                            <div class="pipeline-connector"><div class="flow-pulse"></div></div>
-                            <div class="pipeline-node node-enc" id="node-enc">
-                                <div class="node-icon"><i class="fa-solid fa-gears"></i></div>
-                                <div class="node-text">
-                                    <span class="node-label">ENCODER</span>
-                                    <span class="node-sub">Framing / Checksum</span>
-                                </div>
-                            </div>
-                            <div class="pipeline-connector"><div class="flow-pulse"></div></div>
-                            <div class="pipeline-node node-channel" id="node-channel">
-                                <div class="node-icon"><i class="fa-solid fa-wifi"></i></div>
-                                <div class="node-text">
-                                    <span class="node-label">CHANNEL</span>
-                                    <span class="node-sub">Noise / Error Injection</span>
-                                </div>
-                            </div>
-                            <div class="pipeline-connector"><div class="flow-pulse"></div></div>
-                            <div class="pipeline-node node-dec" id="node-dec">
-                                <div class="node-icon"><i class="fa-solid fa-filter"></i></div>
-                                <div class="node-text">
-                                    <span class="node-label">DECODER</span>
-                                    <span class="node-sub">Syndrome / Recovery</span>
-                                </div>
-                            </div>
-                            <div class="pipeline-connector"><div class="flow-pulse"></div></div>
-                            <div class="pipeline-node node-rx" id="node-rx">
-                                <div class="node-icon"><i class="fa-solid fa-circle-check"></i></div>
-                                <div class="node-text">
-                                    <span class="node-label">RECEIVER</span>
-                                    <span class="node-sub">Decoded Payload</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Input Controls Section -->
-                        <div class="input-panel-grid">
-                            <!-- Data Input Form Card -->
-                            <div class="input-card glass-card">
-                                <div class="card-header-sm">
-                                    <h3><i class="fa-solid fa-terminal"></i> Input Configuration</h3>
-                                </div>
-
-                                <form id="simulator-form" onsubmit="return false;">
-                                    <!-- Primary Input Field -->
-                                    <div class="form-group">
-                                        <label for="primary-input" id="primary-input-label">Data Payload</label>
-                                        <input type="text" id="primary-input" class="form-control code-input" placeholder="e.g. ABCFE" value="ABCFE" autocomplete="off">
-                                        <small class="form-hint" id="primary-input-hint">Enter sequence containing payload bytes</small>
+                        <!-- Split Workspace: Left Input Controls & Right Live Transmission -->
+                        <div class="split-workspace-grid">
+                            <!-- Left Column: Input & Controls -->
+                            <div class="left-controls-column">
+                                <div class="input-card glass-card">
+                                    <div class="card-header-sm">
+                                        <h3><i class="fa-solid fa-terminal"></i> Data Parameters</h3>
                                     </div>
 
-                                    <!-- Dynamic Parameters Container (Custom per technique) -->
-                                    <div class="dynamic-params-grid" id="dynamic-params-container">
+                                    <form id="simulator-form" onsubmit="return false;">
+                                        <!-- Primary Input Field -->
                                         <div class="form-group">
-                                            <label for="param-flag">Flag Identifier</label>
-                                            <input type="text" id="param-flag" class="form-control" value="FLAG">
+                                            <label for="primary-input" id="primary-input-label">Data Payload</label>
+                                            <input type="text" id="primary-input" class="form-control code-input" placeholder="e.g. ABCFE" value="ABCFE" autocomplete="off">
+                                            <small class="form-hint" id="primary-input-hint">Enter sequence containing payload bytes</small>
                                         </div>
+
+                                        <!-- Dynamic Parameters Container (Custom per technique) -->
+                                        <div class="dynamic-params-grid" id="dynamic-params-container">
+                                            <div class="form-group">
+                                                <label for="param-flag">Flag Identifier</label>
+                                                <input type="text" id="param-flag" class="form-control" value="FLAG">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="param-esc">Escape (ESC) Byte</label>
+                                                <input type="text" id="param-esc" class="form-control" value="ESC">
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+
+                                <!-- Error Injection Panel -->
+                                <div class="input-card glass-card error-injection-card">
+                                    <div class="card-header-sm danger-header">
+                                        <h3><i class="fa-solid fa-bug"></i> Error Injection Panel</h3>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="enable-error-toggle">
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </div>
+                                    <p class="error-panel-desc">Simulate transmission corruption across noisy channel.</p>
+
+                                    <div class="error-controls-body disabled" id="error-controls-wrapper">
                                         <div class="form-group">
-                                            <label for="param-esc">Escape (ESC) Byte</label>
-                                            <input type="text" id="param-esc" class="form-control" value="ESC">
+                                            <label for="error-input-field">Corrupted / Modified Transmission Stream</label>
+                                            <input type="text" id="error-input-field" class="form-control code-input" placeholder="Enable toggle to inject error..." disabled>
+                                        </div>
+                                        <div class="quick-error-actions">
+                                            <button type="button" class="btn-sm btn-outline-danger" id="flip-bit-btn" disabled><i class="fa-solid fa-bolt"></i> Flip Bit</button>
+                                            <button type="button" class="btn-sm btn-outline-warning" id="corrupt-byte-btn" disabled><i class="fa-solid fa-triangle-exclamation"></i> Flag Corrupt</button>
                                         </div>
                                     </div>
-                                </form>
+                                </div>
                             </div>
 
-                            <!-- Error Injection Control Panel -->
-                            <div class="input-card glass-card error-injection-card">
-                                <div class="card-header-sm danger-header">
-                                    <h3><i class="fa-solid fa-bug"></i> Error Injection Controls</h3>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="enable-error-toggle">
-                                        <span class="slider round"></span>
-                                    </label>
-                                </div>
-                                <p class="error-panel-desc">Intentionally introduce transmission errors into the transmitted frame to test error detection/correction capability.</p>
-
-                                <div class="error-controls-body disabled" id="error-controls-wrapper">
-                                    <div class="form-group">
-                                        <label for="error-input-field">Corrupted / Modified Transmission Stream</label>
-                                        <input type="text" id="error-input-field" class="form-control code-input" placeholder="Enable toggle to inject error..." disabled>
+                            <!-- Right Column: Live Transmission & Instant Result -->
+                            <div class="right-results-column">
+                                <div class="result-section">
+                                    <div class="result-header">
+                                        <h3><i class="fa-solid fa-chart-line"></i> Transmission Output</h3>
+                                        <div class="status-indicator-badge neutral" id="result-status-indicator">
+                                            <i class="fa-solid fa-circle-info"></i> READY TO SIMULATE
+                                        </div>
                                     </div>
-                                    <div class="quick-error-actions">
-                                        <button type="button" class="btn-sm btn-outline-danger" id="flip-bit-btn" disabled><i class="fa-solid fa-bolt"></i> Flip Random Bit</button>
-                                        <button type="button" class="btn-sm btn-outline-warning" id="corrupt-byte-btn" disabled><i class="fa-solid fa-triangle-exclamation"></i> Insert Flag Corruption</button>
+
+                                    <!-- Top-Level Result Cards Grid -->
+                                    <div class="results-grid">
+                                        <div class="result-box glass-card">
+                                            <div class="result-label"><i class="fa-solid fa-arrow-up-from-bracket"></i> Encoded Data</div>
+                                            <div class="result-value code-display" id="output-encoded">-- Awaiting Calculation --</div>
+                                        </div>
+
+                                        <div class="result-box glass-card">
+                                            <div class="result-label"><i class="fa-solid fa-wifi"></i> Received Frame</div>
+                                            <div class="result-value code-display" id="output-received">-- Awaiting Calculation --</div>
+                                        </div>
+
+                                        <div class="result-box glass-card">
+                                            <div class="result-label"><i class="fa-solid fa-check-double"></i> Decoded Result</div>
+                                            <div class="result-value code-display" id="output-decoded">-- Awaiting Calculation --</div>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
 
-                        <!-- Processing & Results Area -->
-                        <div class="result-section">
-                            <div class="result-header">
-                                <h3><i class="fa-solid fa-chart-line"></i> Simulation Analysis</h3>
-                                <div class="status-indicator-badge neutral" id="result-status-indicator">
-                                    <i class="fa-solid fa-circle-info"></i> Ready for Simulation
-                                </div>
-                            </div>
-
-                            <!-- Main Results Box Grid -->
-                            <div class="results-grid">
-                                <div class="result-box glass-card">
-                                    <div class="result-label"><i class="fa-solid fa-arrow-up-from-bracket"></i> Encoded Data</div>
-                                    <div class="result-value code-display" id="output-encoded">-- Awaiting Calculation --</div>
-                                </div>
-
-                                <div class="result-box glass-card">
-                                    <div class="result-label"><i class="fa-solid fa-wifi"></i> Received Frame</div>
-                                    <div class="result-value code-display" id="output-received">-- Awaiting Calculation --</div>
-                                </div>
-
-                                <div class="result-box glass-card">
-                                    <div class="result-label"><i class="fa-solid fa-check-double"></i> Decoded Result</div>
-                                    <div class="result-value code-display" id="output-decoded">-- Awaiting Calculation --</div>
-                                </div>
-                            </div>
-
-                            <!-- Step-by-Step Calculation Display Container -->
-                            <div class="steps-container glass-card">
-                                <div class="steps-header">
-                                    <h4><i class="fa-solid fa-list-ol"></i> Step-by-Step Calculation Trace</h4>
-                                </div>
-                                <div class="steps-content" id="step-by-step-display">
-                                    <div class="empty-state">
-                                        <div class="empty-icon"><i class="fa-solid fa-network-wired"></i></div>
-                                        <p class="empty-title">SELECT A MODULE</p>
-                                        <p class="empty-desc">Choose a technique above to begin an interactive data transmission simulation.</p>
-                                    </div>
+                                    <!-- Collapsible Mathematical Calculation Steps Accordion -->
+                                    <details class="steps-details-accordion glass-card" id="calculation-steps-accordion" open>
+                                        <summary class="steps-summary-toggle">
+                                            <span><i class="fa-solid fa-calculator"></i> CALCULATION TRACE & STEP-BY-STEP PROOF</span>
+                                            <i class="fa-solid fa-chevron-down accordion-arrow"></i>
+                                        </summary>
+                                        <div class="steps-content" id="step-by-step-display">
+                                            <div class="empty-state">
+                                                <div class="empty-icon"><i class="fa-solid fa-network-wired"></i></div>
+                                                <p class="empty-title">READY TO SIMULATE</p>
+                                                <p class="empty-desc">Enter your data and click <strong>RUN SIMULATION</strong> to execute data transmission.</p>
+                                            </div>
+                                        </div>
+                                    </details>
                                 </div>
                             </div>
                         </div>
@@ -435,7 +416,7 @@
                         </div>
                         <div class="telemetry-item">
                             <span class="t-label">TRANSMISSION STATE</span>
-                            <span class="t-val" id="t-state">IDLE</span>
+                            <span class="t-val" id="t-state">READY</span>
                         </div>
                         <div class="telemetry-item">
                             <span class="t-label">ERROR STATUS</span>
@@ -445,7 +426,7 @@
 
                     <div class="telemetry-box">
                         <div class="t-box-title"><i class="fa-solid fa-microchip"></i> LATENCY & PIPELINE</div>
-                        <div class="t-box-row"><span>API Response:</span><span id="t-latency">12 ms</span></div>
+                        <div class="t-box-row"><span>API Response:</span><span id="t-latency">-- ms</span></div>
                         <div class="t-box-row"><span>Channel State:</span><span id="t-channel">CLEAN</span></div>
                     </div>
                 </aside>

@@ -1,7 +1,7 @@
 /**
- * EDC SIMULATOR - Futuristic Interactive Engineering Simulator JavaScript App
- * Controls particle matrix canvas, telemetry side panel, transmission pipeline nodes,
- * module selection, dynamic forms, error injection controls, and API calls.
+ * EDC SIMULATOR - Educational Simulator JavaScript Application
+ * Manages matrix particle stream, technique selection, dynamic form controls,
+ * split workspace results rendering, telemetry updates, and relative API requests.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const activeTechniqueTag = document.getElementById('active-technique-tag');
     const activeTechniqueTitle = document.getElementById('active-technique-title');
+    const topHeaderTechBadge = document.getElementById('top-header-tech-badge');
     
     const primaryInput = document.getElementById('primary-input');
     const primaryInputLabel = document.getElementById('primary-input-label');
@@ -112,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.font = '12px "Fira Code", monospace';
 
             particles.forEach(p => {
-                ctx.fillStyle = `rgba(0, 242, 254, ${p.opacity})`;
+                ctx.fillStyle = `rgba(34, 211, 238, ${p.opacity})`;
                 ctx.fillText(p.char, p.x, p.y);
                 p.y += p.speed;
 
@@ -185,8 +186,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         <i class="fa-solid fa-file-import"></i> De-stuff Frame
                     </button>
                 </div>
-                <div class="form-group" style="grid-column: span 2; font-size: 0.78rem; color: var(--text-muted); background: var(--bg-surface); padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--accent-amber);">
-                    <i class="fa-solid fa-circle-info" style="color: var(--accent-amber);"></i> <strong>Note:</strong> Bit stuffing is primarily a <em>framing/transparency mechanism</em>. Error detection normally requires techniques like Parity or CRC.
+                <div class="form-group" style="grid-column: span 2; font-size: 0.78rem; color: var(--text-muted); background: var(--bg-surface); padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--color-warning);">
+                    <i class="fa-solid fa-circle-info" style="color: var(--color-warning);"></i> <strong>Note:</strong> Bit stuffing is primarily a <em>framing/transparency mechanism</em>. Error detection normally requires techniques like Parity or CRC.
                 </div>
             `
         },
@@ -261,8 +262,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         <i class="fa-solid fa-check-double"></i> Check Receiver Codeword
                     </button>
                 </div>
-                <div class="form-group" style="grid-column: span 2; font-size: 0.78rem; color: var(--text-muted); background: var(--bg-surface); padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--accent-purple);">
-                    <i class="fa-solid fa-circle-info" style="color: var(--accent-purple);"></i> <strong>What is CRC?</strong> CRC uses polynomial-based modulo-2 XOR division to calculate a remainder appended to original data. A non-zero remainder indicates an error.
+                <div class="form-group" style="grid-column: span 2; font-size: 0.78rem; color: var(--text-muted); background: var(--bg-surface); padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--accent-violet);">
+                    <i class="fa-solid fa-circle-info" style="color: var(--accent-violet);"></i> <strong>What is CRC?</strong> CRC uses polynomial-based modulo-2 XOR division to calculate a remainder appended to original data. A non-zero remainder indicates an error.
                 </div>
             `
         },
@@ -331,8 +332,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <textarea id="param-codewords-list" class="form-control code-input" rows="3" placeholder="e.g.&#10;101101&#10;100111&#10;111101&#10;001101">101101, 100111, 111101, 001101</textarea>
                     <small class="form-hint">Enter 2 or more equal-length binary codewords.</small>
                 </div>
-                <div class="form-group" style="grid-column: span 2; font-size: 0.78rem; color: var(--text-muted); background: var(--bg-surface); padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--accent-emerald);">
-                    <i class="fa-solid fa-circle-info" style="color: var(--accent-emerald);"></i> <strong>Theory:</strong> Hamming Distance $d(c_1, c_2)$ measures differing bit positions. Maximum detectable errors $s = d_{min} - 1$, Maximum correctable errors $t = \\lfloor(d_{min}-1)/2\\rfloor$.
+                <div class="form-group" style="grid-column: span 2; font-size: 0.78rem; color: var(--text-muted); background: var(--bg-surface); padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--color-success);">
+                    <i class="fa-solid fa-circle-info" style="color: var(--color-success);"></i> <strong>Theory:</strong> Hamming Distance $d(c_1, c_2)$ measures differing bit positions. Maximum detectable errors $s = d_{min} - 1$, Maximum correctable errors $t = \\lfloor(d_{min}-1)/2\\rfloor$.
                 </div>
             `
         }
@@ -349,6 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
             navItems.forEach(item => {
                 item.classList.toggle('active', item.getAttribute('data-technique') === 'overview');
             });
+            if (topHeaderTechBadge) topHeaderTechBadge.innerHTML = `<i class="fa-solid fa-layer-group"></i> OVERVIEW WORKSPACE`;
             return;
         }
 
@@ -366,9 +368,10 @@ document.addEventListener('DOMContentLoaded', () => {
             card.classList.toggle('active', card.getAttribute('data-technique') === techKey);
         });
 
-        // Update Header Titles
+        // Update Header Titles & Badges
         if (activeTechniqueTag) activeTechniqueTag.textContent = config.name;
         if (activeTechniqueTitle) activeTechniqueTitle.textContent = config.title;
+        if (topHeaderTechBadge) topHeaderTechBadge.innerHTML = `<i class="fa-solid fa-microchip"></i> ${config.name.toUpperCase()}`;
 
         // Update Form Inputs
         if (primaryInputLabel) primaryInputLabel.textContent = config.inputLabel;
@@ -384,7 +387,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Update Telemetry Panel
         if (tModule) tModule.textContent = config.name;
         if (tSize) tSize.textContent = `${primaryInput ? primaryInput.value.length : 0} Bits/Chars`;
-        if (tState) tState.textContent = 'IDLE';
+        if (tState) tState.textContent = 'READY';
 
         // Attach action button handlers
         if (techKey === 'byte_stuffing') {
@@ -469,8 +472,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 errorInputField.disabled = true;
                 errorInputField.value = '';
             }
-            if (flipBitBtn) flipBitBtn.disabled = false;
-            if (corruptByteBtn) corruptByteBtn.disabled = false;
+            if (flipBitBtn) flipBitBtn.disabled = true;
+            if (corruptByteBtn) corruptByteBtn.disabled = true;
             if (tChannel) tChannel.textContent = 'CLEAN';
         }
     }
@@ -481,7 +484,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function resetResultsDisplay() {
         if (resultStatusIndicator) {
             resultStatusIndicator.className = 'status-indicator-badge neutral';
-            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-circle-info"></i> Ready for Simulation';
+            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-circle-info"></i> READY TO SIMULATE';
         }
         if (outputEncoded) outputEncoded.textContent = '-- Awaiting Calculation --';
         if (outputReceived) outputReceived.textContent = '-- Awaiting Calculation --';
@@ -490,8 +493,8 @@ document.addEventListener('DOMContentLoaded', () => {
             stepByStepDisplay.innerHTML = `
                 <div class="empty-state">
                     <div class="empty-icon"><i class="fa-solid fa-network-wired"></i></div>
-                    <p class="empty-title">SELECT A MODULE</p>
-                    <p class="empty-desc">Choose a technique above to begin an interactive data transmission simulation.</p>
+                    <p class="empty-title">READY TO SIMULATE</p>
+                    <p class="empty-desc">Enter your data and click <strong>RUN SIMULATION</strong> to execute data transmission.</p>
                 </div>
             `;
         }
@@ -719,10 +722,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const startTime = performance.now();
         const payload = buildRequestPayload(actionOverride);
 
-        if (tState) tState.textContent = 'TRANSMITTING';
+        if (tState) tState.textContent = 'RUNNING...';
+        if (processBtn) {
+            processBtn.disabled = true;
+            processBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> RUNNING SIMULATION...';
+        }
         if (resultStatusIndicator) {
             resultStatusIndicator.className = 'status-indicator-badge neutral';
-            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Transmitting Frame...';
+            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> TRANSMITTING FRAME...';
         }
 
         try {
@@ -742,17 +749,17 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.success && data.result) {
                 const res = data.result;
 
-                // Handle Error Response from Algorithm Validation
+                // Handle User-Friendly Input Validation Error
                 if (res.success === false) {
                     if (resultStatusIndicator) {
                         resultStatusIndicator.className = 'status-indicator-badge error-detected';
-                        resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Error';
+                        resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> INVALID INPUT';
                     }
                     if (tError) { tError.textContent = 'INVALID INPUT'; tError.className = 't-val t-danger'; }
-                    if (outputEncoded) outputEncoded.textContent = 'Validation Error';
+                    if (outputEncoded) outputEncoded.textContent = 'Invalid Input Payload';
                     if (outputReceived) outputReceived.textContent = 'N/A';
                     if (outputDecoded) outputDecoded.textContent = 'N/A';
-                    if (stepByStepDisplay) stepByStepDisplay.innerHTML = `<div class="step-row error-step"><i class="fa-solid fa-circle-exclamation"></i> ${res.error}</div>`;
+                    if (stepByStepDisplay) stepByStepDisplay.innerHTML = `<div class="step-row error-step"><i class="fa-solid fa-circle-exclamation"></i> <strong>Validation Error:</strong> ${res.error}</div>`;
                     return;
                 }
 
@@ -761,7 +768,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (res.action === 'stuff') {
                         if (resultStatusIndicator) {
                             resultStatusIndicator.className = 'status-indicator-badge success';
-                            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-check-circle"></i> Frame Stuffed';
+                            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-check-circle"></i> FRAME STUFFED';
                         }
                         if (tError) { tError.textContent = 'NO ERROR'; tError.className = 't-val t-success'; }
                         if (outputEncoded) outputEncoded.textContent = res.original_data;
@@ -770,7 +777,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else if (res.action === 'destuff') {
                         if (resultStatusIndicator) {
                             resultStatusIndicator.className = 'status-indicator-badge success';
-                            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-check-circle"></i> Frame De-stuffed';
+                            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-check-circle"></i> FRAME DE-STUFFED';
                         }
                         if (tError) { tError.textContent = 'NO ERROR'; tError.className = 't-val t-success'; }
                         if (outputEncoded) outputEncoded.textContent = 'N/A (De-stuff Mode)';
@@ -781,11 +788,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (resultStatusIndicator) {
                             if (res.integrity_match) {
                                 resultStatusIndicator.className = 'status-indicator-badge success';
-                                resultStatusIndicator.innerHTML = '<i class="fa-solid fa-shield-check"></i> Integrity Verified (Exact Match)';
+                                resultStatusIndicator.innerHTML = '<i class="fa-solid fa-shield-check"></i> TRANSMISSION VERIFIED';
                                 if (tError) { tError.textContent = 'FRAME MATCH'; tError.className = 't-val t-success'; }
                             } else {
                                 resultStatusIndicator.className = 'status-indicator-badge error-detected';
-                                resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Frame Mismatch / Error';
+                                resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> FRAME MISMATCH';
                                 if (tError) { tError.textContent = 'CORRUPTED'; tError.className = 't-val t-danger'; }
                             }
                         }
@@ -833,9 +840,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (res.action === 'encode') {
                         if (resultStatusIndicator) {
                             resultStatusIndicator.className = 'status-indicator-badge success';
-                            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-check-circle"></i> CRC Encoded';
+                            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-check-circle"></i> CRC ENCODED';
                         }
-                        if (tError) { tError.textContent = 'CHECKSUM GENERATED'; tError.className = 't-val t-success'; }
+                        if (tError) { tError.textContent = 'CHECKSUM CREATED'; tError.className = 't-val t-success'; }
                         if (outputEncoded) outputEncoded.textContent = `Payload: ${res.original_data} | Appended Zeros: ${res.appended_data}`;
                         if (outputReceived) outputReceived.textContent = `CRC Remainder: ${res.crc_remainder}`;
                         if (outputDecoded) outputDecoded.textContent = `Transmitted Codeword: ${res.transmitted_codeword}`;
@@ -880,7 +887,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             if (tError) { tError.textContent = 'NO ERROR'; tError.className = 't-val t-success'; }
                         } else {
                             resultStatusIndicator.className = 'status-indicator-badge corrected';
-                            resultStatusIndicator.innerHTML = `<i class="fa-solid fa-wrench"></i> ERROR AUTO-CORRECTED (Position ${res.error_position})`;
+                            resultStatusIndicator.innerHTML = `<i class="fa-solid fa-wrench"></i> ERROR CORRECTED (Position ${res.error_position})`;
                             if (tError) { tError.textContent = `CORRECTED (POS ${res.error_position})`; tError.className = 't-val t-success'; }
                         }
                     }
@@ -926,17 +933,22 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 if (resultStatusIndicator) {
                     resultStatusIndicator.className = 'status-indicator-badge error-detected';
-                    resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Error';
+                    resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ERROR';
                 }
-                if (stepByStepDisplay) stepByStepDisplay.textContent = data.error || 'Server processing error occurred.';
+                if (stepByStepDisplay) stepByStepDisplay.innerHTML = `<div class="step-row error-step"><i class="fa-solid fa-triangle-exclamation"></i> ${data.error || 'Server processing error occurred.'}</div>`;
             }
         } catch (err) {
             console.error('API Call Error:', err);
             if (resultStatusIndicator) {
                 resultStatusIndicator.className = 'status-indicator-badge error-detected';
-                resultStatusIndicator.innerHTML = '<i class="fa-solid fa-plug-circle-xmark"></i> Connection Error';
+                resultStatusIndicator.innerHTML = '<i class="fa-solid fa-plug-circle-xmark"></i> CONNECTION ERROR';
             }
-            if (stepByStepDisplay) stepByStepDisplay.textContent = 'Failed to connect to Flask server backend at /api/process.';
+            if (stepByStepDisplay) stepByStepDisplay.innerHTML = `<div class="step-row error-step"><i class="fa-solid fa-plug-circle-xmark"></i> Failed to connect to backend relative endpoint at /api/process.</div>`;
+        } finally {
+            if (processBtn) {
+                processBtn.disabled = false;
+                processBtn.innerHTML = '<i class="fa-solid fa-play"></i> RUN SIMULATION';
+            }
         }
     }
 
