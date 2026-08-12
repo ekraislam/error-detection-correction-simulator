@@ -270,16 +270,16 @@ document.addEventListener('DOMContentLoaded', () => {
         hamming: {
             name: "Hamming Code",
             title: "Hamming Code Simulator",
-            inputLabel: "Data Payload (4 or 11 bits)",
-            placeholder: "e.g. 1011 or 10110010110",
+            inputLabel: "Data Payload (Any Length)",
+            placeholder: "e.g. 1011, 10110010, 10110010110",
             defaultValue: "1011",
-            hint: "Enter 4 bits for Hamming (7,4) or 11 bits for Hamming (15,11). Mode is auto-detected!",
+            hint: "Enter any binary data payload. Dynamic Hamming(n,k) mode is auto-detected!",
             paramsHtml: `
                 <div class="form-group" style="grid-column: span 2;">
-                    <label><i class="fa-solid fa-robot"></i> Mode Auto-Detection Indicator</label>
+                    <label><i class="fa-solid fa-robot"></i> Dynamic Mode Auto-Detection Indicator</label>
                     <div id="hamming-auto-badge" class="form-control" style="background: rgba(34, 211, 238, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); font-weight: 600; display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 8px;">
-                        <span><i class="fa-solid fa-wand-magic-sparkles"></i> <strong>Detected:</strong> Hamming (7,4)</span>
-                        <span style="font-size: 0.8rem; opacity: 0.9;">Data: 4 bits | Codeword: 7 bits</span>
+                        <span><i class="fa-solid fa-wand-magic-sparkles"></i> <strong>⚡ AUTO-DETECTED:</strong> Hamming (7,4)</span>
+                        <span style="font-size: 0.8rem; opacity: 0.9;">Data: 4 bits | Parity: 3 bits | Total: 7 bits</span>
                     </div>
                 </div>
                 <div class="form-group" style="grid-column: span 2;">
@@ -290,17 +290,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     </select>
                 </div>
                 <div class="form-group" style="grid-column: span 2;">
-                    <label for="param-error-pos">Codeword Bit Flip Position (1-indexed)</label>
-                    <input type="number" id="param-error-pos" class="form-control" placeholder="e.g. 3 to flip 3rd bit" min="1" max="15">
+                    <label for="param-error-pos">Codeword Bit Flip Position (1-indexed Right-to-Left)</label>
+                    <input type="number" id="param-error-pos" class="form-control" placeholder="e.g. 3 to flip 3rd bit from right" min="1" max="64">
                     <small class="form-hint">Syndrome calculation will pinpoint and auto-correct bit flip!</small>
                 </div>
                 <div class="form-group" style="grid-column: span 2; display: flex; gap: 10px; margin-top: 6px;">
                     <button type="button" class="btn btn-sm btn-primary" id="btn-hamming-encode-only">
-                        <i class="fa-solid fa-play"></i> Run Hamming Transmission Cycle
+                        <i class="fa-solid fa-play"></i> Run Dynamic Hamming Transmission Cycle
                     </button>
                 </div>
                 <div class="form-group" style="grid-column: span 2; font-size: 0.78rem; color: var(--text-muted); background: var(--bg-surface); padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--accent-blue);" id="hamming-educational-note">
-                    <i class="fa-solid fa-circle-info" style="color: var(--accent-blue);"></i> <span id="hamming-note-text">Classroom Convention: Positions are numbered Right-to-Left (P=7..1: D4 D3 D2 R3 D1 R2 R1). Data 1011 under Even Parity produces codeword 1010101.</span>
+                    <i class="fa-solid fa-circle-info" style="color: var(--accent-blue);"></i> <span id="hamming-note-text">Dynamic Hamming(n,k) mode automatically calculates minimum parity bits r (2^r &ge; k + r + 1) and applies Right-to-Left position numbering (1..n).</span>
                 </div>
             `
         },
@@ -415,25 +415,29 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (techKey === 'hamming') {
             const updateHammingAutoBadge = () => {
                 const badge = document.getElementById('hamming-auto-badge');
-                if (!badge || !primaryInput) return;
-                const val = primaryInput.value.replace(/\s+/g, '');
-                const len = val.length;
-                if (len === 4) {
-                    badge.style.borderColor = 'var(--accent-cyan)';
-                    badge.style.color = 'var(--accent-cyan)';
-                    badge.style.background = 'rgba(34, 211, 238, 0.1)';
-                    badge.innerHTML = `<span><i class="fa-solid fa-robot"></i> <strong>Detected:</strong> Hamming (7,4)</span> <span style="font-size: 0.8rem; opacity: 0.9;">Data: 4 bits | Codeword: 7 bits</span>`;
-                } else if (len === 11) {
-                    badge.style.borderColor = 'var(--accent-violet)';
-                    badge.style.color = 'var(--accent-violet)';
-                    badge.style.background = 'rgba(168, 85, 247, 0.1)';
-                    badge.innerHTML = `<span><i class="fa-solid fa-robot"></i> <strong>Detected:</strong> Hamming (15,11)</span> <span style="font-size: 0.8rem; opacity: 0.9;">Data: 11 bits | Codeword: 15 bits</span>`;
-                } else {
+                const val = primaryInput ? primaryInput.value.trim() : '';
+                const isBinary = /^[01]+$/.test(val);
+                const k = val.length;
+
+                if (!val || !isBinary || k < 1) {
                     badge.style.borderColor = 'var(--color-warning)';
                     badge.style.color = 'var(--color-warning)';
                     badge.style.background = 'rgba(234, 179, 8, 0.1)';
-                    badge.innerHTML = `<span><i class="fa-solid fa-triangle-exclamation"></i> <strong>Payload Length:</strong> ${len} bits</span> <span style="font-size: 0.8rem; opacity: 0.9;">Expected 4 or 11 bits</span>`;
+                    badge.innerHTML = `<span><i class="fa-solid fa-triangle-exclamation"></i> <strong>Invalid Input</strong></span> <span style="font-size: 0.8rem; opacity: 0.9;">Enter binary data (0s and 1s)</span>`;
+                    return;
                 }
+
+                // Dynamic r calculation: 2^r >= k + r + 1
+                let r = 1;
+                while ((1 << r) < (k + r + 1)) {
+                    r++;
+                }
+                const n = k + r;
+
+                badge.style.borderColor = 'var(--accent-cyan)';
+                badge.style.color = 'var(--accent-cyan)';
+                badge.style.background = 'rgba(34, 211, 238, 0.1)';
+                badge.innerHTML = `<span><i class="fa-solid fa-wand-magic-sparkles"></i> <strong>⚡ AUTO-DETECTED:</strong> Hamming (${n},${k})</span> <span style="font-size: 0.8rem; opacity: 0.9;">Data: ${k} bits | Parity: ${r} bits | Total: ${n} bits</span>`;
             };
 
             if (primaryInput) {
