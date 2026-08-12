@@ -768,7 +768,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('API Call Error:', err);
             resultStatusIndicator.className = 'status-indicator-badge error-detected';
             resultStatusIndicator.innerHTML = '<i class="fa-solid fa-plug-circle-xmark"></i> Connection Error';
-            stepByStepDisplay.textContent = 'Failed to connect to Flask server backend at http://127.0.0.1:5000.';
+            stepByStepDisplay.textContent = 'Failed to connect to Flask server backend at /api/process.';
         }
     }
 
