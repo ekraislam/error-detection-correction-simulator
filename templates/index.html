@@ -15,6 +15,7 @@
     <canvas id="bg-canvas"></canvas>
 
     <div class="app-container">
+        <div class="app-body">
         <!-- Sidebar Navigation -->
         <aside class="sidebar" id="sidebar-drawer">
             <div class="brand">
@@ -433,6 +434,22 @@
                 </div><!-- end .dashboard-scroll -->
             </div><!-- end .workspace-layout -->
         </main>
+
+        </div><!-- end .app-body -->
+
+        <!-- ── Site Footer ── -->
+        <footer class="site-footer" id="site-footer">
+            <div class="footer-inner">
+                <span class="footer-brand">EDC Simulator <span class="footer-version">v1.0</span></span>
+                <span class="footer-divider">|</span>
+                <span class="footer-author">Designed &amp; Developed by <span class="footer-name">Ohi</span></span>
+                <span class="footer-divider">|</span>
+                <span class="footer-meta">
+                    6 Techniques &nbsp;•&nbsp; 81 Automated Tests &nbsp;•&nbsp; 100% Test Pass Rate &nbsp;•&nbsp; 2026
+                </span>
+            </div>
+        </footer>
+
     </div>
 
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
