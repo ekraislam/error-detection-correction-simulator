@@ -62,7 +62,8 @@ def process_data():
         flag_pattern = params.get("flag_pattern", "01111110")
         action = params.get("action", "full_cycle")
         error_pos = params.get("error_pos")
-        result = process_bit_stuffing(input_data, flag_pattern=flag_pattern, action=action, injected_error=injected_error, error_pos=error_pos)
+        original_data = params.get("original_data")
+        result = process_bit_stuffing(input_data, flag_pattern=flag_pattern, action=action, injected_error=injected_error, error_pos=error_pos, original_data=original_data)
         
     elif technique == "parity":
         parity_type = params.get("parity_type", "even")
