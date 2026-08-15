@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastBitTransmittedFrame = ''; // Clean transmitted frame for Bit Stuffing
     let lastBitInputData = '';        // Payload used to generate bit frame
     let lastBitFlagPattern = '';      // Flag pattern used to generate bit frame
+    let cachedParityPositions = [];   // 1-indexed parity positions for bit grid
     let flippedPositions = new Set(); // 0-based indices of flipped bits
 
     function escapeHtml(str) {
@@ -628,8 +629,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /** Populate the interactive bit grid from a binary string */
-    function buildBitGrid(binaryStr, parityPositions = []) {
+    function buildBitGrid(binaryStr, parityPositions = cachedParityPositions) {
         if (!interactiveBitGrid) return;
+        cachedParityPositions = parityPositions || [];
         cleanEncodedBits = binaryStr;
         if (!corruptedBits || corruptedBits.length !== binaryStr.length) {
             corruptedBits = binaryStr;
@@ -638,27 +640,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
         interactiveBitGrid.innerHTML = '';
         const n = binaryStr.length;
+        const isRightToLeft = (currentTechnique === 'hamming');
 
         for (let i = 0; i < n; i++) {
             const chip = document.createElement('div');
             chip.className = 'bit-chip';
             chip.textContent = corruptedBits[i];
             chip.setAttribute('data-index', i);
-            chip.title = `Bit ${i + 1}`;
+            const posNum = isRightToLeft ? (n - i) : (i + 1);
+            chip.title = `Bit Position ${posNum}`;
 
             // Mark parity bits
-            if (parityPositions.includes(n - i)) {
+            const isParity = isRightToLeft
+                ? cachedParityPositions.includes(n - i)
+                : cachedParityPositions.includes(i + 1);
+
+            if (isParity) {
                 chip.classList.add('parity-bit');
-                chip.title = `Parity bit P${n - i}`;
+                chip.title = `Parity bit P${posNum}`;
             }
 
             // Mark already flipped bits
             if (flippedPositions.has(i)) chip.classList.add('flipped');
 
-            // Position label (shown above chip)
+            // Position label (shown above chip, 1-indexed Left-to-Right for Parity)
             const pos = document.createElement('span');
             pos.className = 'bit-chip-pos';
-            pos.textContent = n - i; // right-to-left position label
+            pos.textContent = posNum;
             chip.appendChild(pos);
 
             chip.addEventListener('click', () => toggleBit(i));
@@ -686,9 +694,11 @@ document.addEventListener('DOMContentLoaded', () => {
             chips[index].textContent = arr[index];
             chips[index].classList.toggle('flipped', flippedPositions.has(index));
             // Re-append position label since textContent overwrote it
+            const isRightToLeft = (currentTechnique === 'hamming');
+            const posNum = isRightToLeft ? (corruptedBits.length - index) : (index + 1);
             const pos = document.createElement('span');
             pos.className = 'bit-chip-pos';
-            pos.textContent = corruptedBits.length - index;
+            pos.textContent = posNum;
             chips[index].appendChild(pos);
         }
 
@@ -1394,8 +1404,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (outputReceived) outputReceived.textContent = res.received_codeword;
                 if (outputDecoded)  outputDecoded.textContent  = hasErr ? 'ERROR DETECTED (Corrupted Codeword)' : `Payload Intact: ${res.original_data}`;
 
-                // Populate bit grid from codeword for interactive error injection
-                if (res.received_codeword) setCleanBitsForInjector(res.received_codeword);
+                // Populate bit grid from codeword for interactive error injection (1-indexed LTR, parity bit is at last position)
+                if (res.encoded_codeword) setCleanBitsForInjector(res.encoded_codeword, [res.encoded_codeword.length]);
 
             } else {
                 if (outputEncoded)  outputEncoded.textContent  = `2D Grid (${res.rows}×${res.columns}) | ${res.parity_type.toUpperCase()} Parity`;
@@ -1553,12 +1563,13 @@ document.addEventListener('DOMContentLoaded', () => {
     /** Store clean bits in the injector after a successful encoding */
     function setCleanBitsForInjector(binaryStr, parityPositions = []) {
         cleanEncodedBits = binaryStr;
+        cachedParityPositions = parityPositions || [];
         if (!flippedPositions.size) {
             corruptedBits = binaryStr;
         }
         if (enableErrorToggle?.checked && bitGridContainer) {
             bitGridContainer.style.display = 'block';
-            buildBitGrid(binaryStr, parityPositions);
+            buildBitGrid(binaryStr, cachedParityPositions);
         }
         // Enable the error injector quick-buttons even when not yet toggled
         // so the user sees them as available after running
