@@ -1,110 +1,146 @@
 """
-Test script for Byte Stuffing & De-stuffing algorithm implementation.
-Verifies all 7 user-specified test scenarios.
+=============================================================================
+Test Suite: Generic Byte Stuffing & De-stuffing Simulator
+=============================================================================
+Verifies dynamic execution for any Data, FLAG, and ESC characters, including
+all edge cases and the prompt's required test cases.
+=============================================================================
 """
 
 from algorithms.byte_stuffing import process_byte_stuffing, byte_stuff, byte_destuff
 
 def run_tests():
-    print("=" * 70)
-    print("RUNNING BYTE STUFFING & DE-STUFFING ALGORITHM TEST SUITE")
-    print("=" * 70)
+    print("=" * 80)
+    print("RUNNING COMPREHENSIVE GENERIC BYTE STUFFING TEST SUITE")
+    print("=" * 80)
 
-    # Test 1: Data = ABCD (No stuffing inside payload)
-    print("\n--- TEST 1: Data = ABCD (No FLAG or ESC inside payload) ---")
-    res1 = process_byte_stuffing("ABCD", flag="F", esc="E")
-    print("Success:", res1["success"])
-    print("Original Data:", res1["original_data"])
-    print("Stuffed Frame:", res1["stuffed_frame"])
-    print("Destuffed Data:", res1["destuffed_data"])
-    print("Integrity Match:", res1["integrity_match"])
-    assert res1["success"] == True
-    assert res1["stuffed_frame"] == "FABCDF"
-    assert res1["destuffed_data"] == "ABCD"
-    assert res1["integrity_match"] == True
-    print("[PASSED] TEST 1")
+    # ── TEST CASE A: Data = "ABC#DEF", FLAG = "#", ESC = "\" ──
+    print("\n--- TEST A: Data = 'ABC#DEF', FLAG = '#', ESC = '\\' ---")
+    res_a = process_byte_stuffing("ABC#DEF", flag="#", esc="\\")
+    print("Stuffed Payload:", res_a["stuffed_payload"])
+    print("Transmitted Frame:", res_a["stuffed_frame"])
+    print("Recovered Data:", res_a["destuffed_data"])
+    assert res_a["success"] == True
+    assert res_a["stuffed_payload"] == "ABC\\#DEF"
+    assert res_a["stuffed_frame"] == "#ABC\\#DEF#"
+    assert res_a["destuffed_data"] == "ABC#DEF"
+    assert res_a["integrity_match"] == True
+    print("[PASSED] TEST A")
 
-    # Test 2: Data contains FLAG (e.g. ABFC)
-    print("\n--- TEST 2: Data contains FLAG ('ABFC') ---")
-    res2 = process_byte_stuffing("ABFC", flag="F", esc="E")
-    print("Original Data:", res2["original_data"])
-    print("Stuffed Frame:", res2["stuffed_frame"])
-    print("Destuffed Data:", res2["destuffed_data"])
-    assert res2["stuffed_frame"] == "FABEFCF"
-    assert res2["destuffed_data"] == "ABFC"
-    assert res2["integrity_match"] == True
-    print("[PASSED] TEST 2")
+    # ── TEST CASE B: Data = "ABC\DEF", FLAG = "#", ESC = "\" ──
+    print("\n--- TEST B: Data = 'ABC\\DEF', FLAG = '#', ESC = '\\' ---")
+    res_b = process_byte_stuffing("ABC\\DEF", flag="#", esc="\\")
+    print("Stuffed Payload:", res_b["stuffed_payload"])
+    print("Transmitted Frame:", res_b["stuffed_frame"])
+    print("Recovered Data:", res_b["destuffed_data"])
+    assert res_b["success"] == True
+    assert res_b["stuffed_payload"] == "ABC\\\\DEF"
+    assert res_b["stuffed_frame"] == "#ABC\\\\DEF#"
+    assert res_b["destuffed_data"] == "ABC\\DEF"
+    assert res_b["integrity_match"] == True
+    print("[PASSED] TEST B")
 
-    # Test 3: Data contains ESC (e.g. ABEC)
-    print("\n--- TEST 3: Data contains ESC ('ABEC') ---")
-    res3 = process_byte_stuffing("ABEC", flag="F", esc="E")
-    print("Original Data:", res3["original_data"])
-    print("Stuffed Frame:", res3["stuffed_frame"])
-    print("Destuffed Data:", res3["destuffed_data"])
-    assert res3["stuffed_frame"] == "FABEECF"
-    assert res3["destuffed_data"] == "ABEC"
-    assert res3["integrity_match"] == True
-    print("[PASSED] TEST 3")
+    # ── TEST CASE C: Data = "POIAUYTAREWAQ", FLAG = "A", ESC = "X" ──
+    print("\n--- TEST C: Data = 'POIAUYTAREWAQ', FLAG = 'A', ESC = 'X' ---")
+    res_c = process_byte_stuffing("POIAUYTAREWAQ", flag="A", esc="X")
+    print("Stuffed Payload:", res_c["stuffed_payload"])
+    print("Transmitted Frame:", res_c["stuffed_frame"])
+    print("Recovered Data:", res_c["destuffed_data"])
+    assert res_c["success"] == True
+    assert res_c["stuffed_payload"] == "POIXAUYTXAREWXAQ"
+    assert res_c["stuffed_frame"] == "APOIXAUYTXAREWXAQA"
+    assert res_c["destuffed_data"] == "POIAUYTAREWAQ"
+    assert res_c["integrity_match"] == True
+    print("[PASSED] TEST C")
 
-    # Test 4: Data contains both FLAG and ESC (e.g. ABCFE)
-    print("\n--- TEST 4: Data contains both FLAG and ESC ('ABCFE') ---")
-    res4 = process_byte_stuffing("ABCFE", flag="F", esc="E")
-    print("Original Data:", res4["original_data"])
-    print("Stuffed Frame:", res4["stuffed_frame"])
-    print("Destuffed Data:", res4["destuffed_data"])
-    assert res4["stuffed_frame"] == "FABCEFEEF"
-    assert res4["destuffed_data"] == "ABCFE"
-    assert res4["integrity_match"] == True
-    print("[PASSED] TEST 4")
+    # ── TEST CASE D: Classic Data = "ABCFE", FLAG = "F", ESC = "E" ──
+    print("\n--- TEST D: Classic 'ABCFE', FLAG = 'F', ESC = 'E' ---")
+    res_d = process_byte_stuffing("ABCFE", flag="F", esc="E")
+    assert res_d["stuffed_frame"] == "FABCEFEEF"
+    assert res_d["destuffed_data"] == "ABCFE"
+    assert res_d["integrity_match"] == True
+    print("[PASSED] TEST D")
 
-    # Test 5: Empty input
-    print("\n--- TEST 5: Empty Input Validation ---")
-    res5 = process_byte_stuffing("", flag="F", esc="E")
-    print("Result:", res5)
-    assert res5["success"] == False
-    assert "empty" in res5["error"].lower()
-    print("[PASSED] TEST 5")
+    # ── TEST CASE E: Multiple Consecutive FLAGs & ESCs ──
+    print("\n--- TEST E: Multiple Consecutive Delimiters ---")
+    res_e1 = process_byte_stuffing("###", flag="#", esc="\\")
+    assert res_e1["stuffed_frame"] == "#\\#\\#\\##"
+    assert res_e1["destuffed_data"] == "###"
 
-    # Test 6: FLAG == ESC
-    print("\n--- TEST 6: FLAG == ESC Conflict Validation ---")
-    res6 = process_byte_stuffing("ABCD", flag="F", esc="F")
-    print("Result:", res6)
-    assert res6["success"] == False
-    assert "same character" in res6["error"].lower()
-    print("[PASSED] TEST 6")
+    res_e2 = process_byte_stuffing("\\\\\\", flag="#", esc="\\")
+    assert res_e2["stuffed_frame"] == "#\\\\\\\\\\\\#"
+    assert res_e2["destuffed_data"] == "\\\\\\"
+    print("[PASSED] TEST E")
 
-    # Test 7: Stuff -> De-stuff roundtrip integrity across varied payloads
-    print("\n--- TEST 7: Roundtrip Integrity Suite ---")
-    test_inputs = ["F", "E", "FE", "EF", "HELLO WORLD", "A F B E C F"]
-    for inp in test_inputs:
-        res = process_byte_stuffing(inp, flag="F", esc="E")
-        print(f"Input: '{inp}' -> Frame: '{res['stuffed_frame']}' -> Destuffed: '{res['destuffed_data']}' | Match: {res['integrity_match']}")
-        assert res["success"] == True
-        assert res["integrity_match"] == True
-    print("[PASSED] TEST 7")
+    # ── TEST CASE F: Single Character Data ──
+    print("\n--- TEST F: Single Character Payloads ---")
+    assert process_byte_stuffing("#", flag="#", esc="\\")["destuffed_data"] == "#"
+    assert process_byte_stuffing("\\", flag="#", esc="\\")["destuffed_data"] == "\\"
+    assert process_byte_stuffing("Z", flag="#", esc="\\")["destuffed_data"] == "Z"
+    print("[PASSED] TEST F")
 
-    # Test 8: De-stuffing corrupt frames (Error validation)
-    print("\n--- TEST 8: Invalid Frame Validation ---")
-    err1 = byte_destuff("ABCF", flag="F", esc="E")  # Doesn't start with F
-    assert err1["success"] == False
-    print("Missing start FLAG check:", err1["error"])
+    # ── TEST CASE G: Payload with Spaces ──
+    print("\n--- TEST G: Payload containing Spaces ---")
+    res_g = process_byte_stuffing("HELLO # WORLD \\ END", flag="#", esc="\\")
+    assert res_g["stuffed_frame"] == "#HELLO \\# WORLD \\\\ END#"
+    assert res_g["destuffed_data"] == "HELLO # WORLD \\ END"
+    assert res_g["integrity_match"] == True
+    print("[PASSED] TEST G")
 
-    err2 = byte_destuff("FABC", flag="F", esc="E")  # Doesn't end with F
-    assert err2["success"] == False
-    print("Missing end FLAG check:", err2["error"])
+    # ── TEST CASE H: Conflict Validation (FLAG == ESC) ──
+    print("\n--- TEST H: Validation: FLAG == ESC ---")
+    res_h = process_byte_stuffing("HELLO", flag="#", esc="#")
+    assert res_h["success"] == False
+    assert "same character" in res_h["error"].lower()
+    print("[PASSED] TEST H")
 
-    err3 = byte_destuff("FABE F", flag="F", esc="E") # Dangling ESC
-    assert err3["success"] == False
-    print("Dangling ESC check:", err3["error"])
+    # ── TEST CASE I: Empty Data Validation ──
+    print("\n--- TEST I: Validation: Empty Data ---")
+    res_i = process_byte_stuffing("", flag="#", esc="\\")
+    assert res_i["success"] == False
+    assert "empty" in res_i["error"].lower()
+    print("[PASSED] TEST I")
 
-    err4 = byte_destuff("FABE X F", flag="F", esc="E") # Invalid byte after ESC
-    assert err4["success"] == False
-    print("Invalid ESC byte check:", err4["error"])
-    print("[PASSED] TEST 8")
+    # ── TEST CASE J: Error Injection Simulation ──
+    print("\n--- TEST J: Error Injection Simulation ---")
+    # 1. Corrupt by changing a byte in payload
+    clean_frame = res_a["stuffed_frame"] # "#ABC\#DEF#"
+    corrupted_frame = "#ABC\\#DZF#"
+    res_err1 = process_byte_stuffing("ABC#DEF", flag="#", esc="\\", injected_error=corrupted_frame)
+    print("Corrupted destuffed:", res_err1["destuffed_data"])
+    assert res_err1["destuff_success"] == True
+    assert res_err1["destuffed_data"] == "ABC#DZF"
+    assert res_err1["integrity_match"] == False # mismatch detected
 
-    print("\n" + "=" * 70)
-    print("ALL 8 TEST SUITES PASSED SUCCESSFULLY!")
-    print("=" * 70)
+    # 2. Corrupt by stripping starting flag
+    res_err2 = process_byte_stuffing("ABC#DEF", flag="#", esc="\\", injected_error="ABC\\#DEF#")
+    assert res_err2["destuff_success"] == False
+    assert "missing starting flag" in res_err2["destuff_error"].lower()
+
+    # 3. Corrupt by dangling ESC
+    res_err3 = process_byte_stuffing("ABC#DEF", flag="#", esc="\\", injected_error="#ABC\\#DEF\\#")
+    assert res_err3["destuff_success"] == False
+    assert "invalid escape sequence" in res_err3["destuff_error"].lower() or "dangling esc" in res_err3["destuff_error"].lower()
+
+    # 4. Corrupt by unescaped FLAG in payload
+    res_err4 = process_byte_stuffing("ABC#DEF", flag="#", esc="\\", injected_error="#ABC#DEF#")
+    assert res_err4["destuff_success"] == False
+    assert "unescaped flag" in res_err4["destuff_error"].lower()
+    print("[PASSED] TEST J")
+
+    # ── TEST CASE K: Dynamic Statistics ──
+    print("\n--- TEST K: Dynamic Statistics ---")
+    stats = res_a["stats"]
+    assert stats["original_length"] == len("ABC#DEF")
+    assert stats["stuffed_length"] == len("ABC\\#DEF")
+    assert stats["frame_length"] == len("#ABC\\#DEF#")
+    assert stats["added_bytes"] == 1
+    assert stats["recovery_status"] == "Success"
+    print("[PASSED] TEST K")
+
+    print("\n" + "=" * 80)
+    print("ALL GENERIC BYTE STUFFING TESTS PASSED!")
+    print("=" * 80)
 
 if __name__ == "__main__":
     run_tests()

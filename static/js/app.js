@@ -12,7 +12,33 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentTechnique = 'byte_stuffing';
     let cleanEncodedBits = '';   // The clean encoded bitstream after a run
     let corruptedBits    = '';   // Current (possibly flipped) bitstream
+    let lastTransmittedText = ''; // Clean transmitted frame text (for non-binary modules like Byte Stuffing)
     let flippedPositions = new Set(); // 0-based indices of flipped bits
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function computeGenericByteStuffing(data, flag, esc) {
+        if (!data || !flag || !esc || flag === esc) return '';
+        let stuffed = '';
+        for (let i = 0; i < data.length; i++) {
+            const ch = data[i];
+            if (ch === flag) {
+                stuffed += esc + flag;
+            } else if (ch === esc) {
+                stuffed += esc + esc;
+            } else {
+                stuffed += ch;
+            }
+        }
+        return flag + stuffed + flag;
+    }
 
     // ═══════════════════════════════════════════════════════════
     // DOM REFERENCES
@@ -527,7 +553,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (textErrorContainer) textErrorContainer.style.display = 'block';
                 if (errorInputField) {
                     errorInputField.disabled = false;
-                    errorInputField.value    = primaryInput ? primaryInput.value : '';
+                    // For Byte Stuffing, populate with the transmitted frame (FLAG + StuffedData + FLAG), NOT raw input
+                    const flag = document.getElementById('param-flag')?.value || 'F';
+                    const esc  = document.getElementById('param-esc')?.value  || 'E';
+                    const data = primaryInput ? primaryInput.value : '';
+                    const frameToCorrupt = lastTransmittedText || computeGenericByteStuffing(data, flag, esc) || '';
+                    errorInputField.value = frameToCorrupt;
+                    errorInputField.placeholder = frameToCorrupt ? `e.g. ${frameToCorrupt} (edit to corrupt frame)` : 'Enter modified frame for channel...';
                 }
             }
         } else {
@@ -541,11 +573,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function resetErrorInjector() {
         cleanEncodedBits = '';
         corruptedBits    = '';
+        lastTransmittedText = '';
         flippedPositions.clear();
         if (interactiveBitGrid) interactiveBitGrid.innerHTML = '';
         if (bitDiffDisplay)     bitDiffDisplay.style.display = 'none';
         if (bitGridContainer)   bitGridContainer.style.display = 'none';
         if (textErrorContainer) textErrorContainer.style.display = 'none';
+        if (errorInputField) {
+            errorInputField.disabled = true;
+            errorInputField.value = '';
+        }
         if (tChannel) { tChannel.textContent = 'CLEAN'; tChannel.className = 'hud-val t-success'; }
     }
 
@@ -1069,19 +1106,92 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderResult(res, payload, elapsed) {
         const tech = currentTechnique;
 
-        // ── Byte/Bit Stuffing ──
-        if (tech === 'byte_stuffing' || tech === 'bit_stuffing') {
+        // ── Byte Stuffing ──
+        if (tech === 'byte_stuffing') {
+            lastTransmittedText = res.stuffed_frame || '';
+            const flag = payload.params.flag || 'F';
+            const esc  = payload.params.esc  || 'E';
+
             if (res.action === 'stuff') {
                 setPipelineState('success');
-                setStatus('success', '<i class="fa-solid fa-check-circle"></i> FRAME STUFFED');
-                if (outputEncoded)  outputEncoded.textContent   = res.original_data;
+                setStatus('success', `<i class="fa-solid fa-check-circle"></i> FRAME STUFFED (FLAG: '${flag}', ESC: '${esc}')`);
+                if (outputEncoded)  outputEncoded.textContent = res.stuffed_frame;
+                if (outputReceived) outputReceived.innerHTML  = renderStuffedTokens(res.stuffed_tokens) || escapeHtml(res.stuffed_frame);
+                if (outputDecoded)  outputDecoded.textContent = `N/A — Stuffing Mode (Original: ${res.original_data})`;
+                updateTelemetry({ encoded: res.stuffed_frame, errorPos: '—', status: 'STUFFED', statusClass: 't-success' });
+            } else if (res.action === 'destuff') {
+                const ok = res.success && !res.error;
+                setPipelineState(ok ? 'success' : 'error');
+                setStatus(ok ? 'success' : 'error-detected',
+                    ok ? `<i class="fa-solid fa-check-circle"></i> FRAME DE-STUFFED`
+                       : `<i class="fa-solid fa-triangle-exclamation"></i> DE-STUFFING FAILED: ${res.error || 'Invalid Frame'}`);
+                if (outputEncoded)  outputEncoded.textContent = `N/A — De-stuffing Mode`;
+                if (outputReceived) outputReceived.textContent = payload.input_data;
+                if (outputDecoded)  outputDecoded.textContent  = ok ? res.destuffed_data : `Failed: ${res.error || 'Invalid frame delimiters'}`;
+                updateTelemetry({ encoded: ok ? res.destuffed_data : '—', errorPos: '—', status: ok ? 'RECOVERED' : 'FAILED', statusClass: ok ? 't-success' : 't-danger' });
+            } else {
+                // Full cycle
+                const ok = res.integrity_match;
+                const destuffOk = res.destuff_success;
+                const frameCorrupted = res.received_frame !== res.stuffed_frame;
+
+                setPipelineState(ok ? 'success' : 'error');
+                
+                let statusText = '';
+                if (ok) {
+                    statusText = '<i class="fa-solid fa-shield-check"></i> TRANSMISSION VERIFIED';
+                } else if (!destuffOk) {
+                    statusText = `<i class="fa-solid fa-triangle-exclamation"></i> RECOVERY FAILED: ${res.destuff_error || 'Invalid Frame'}`;
+                } else {
+                    statusText = '<i class="fa-solid fa-triangle-exclamation"></i> FRAME MISMATCH (Corrupted in Channel)';
+                }
+                setStatus(ok ? 'success' : 'error-detected', statusText);
+
+                // Box 1: Transmitted Frame (FLAG + StuffedData + FLAG)
+                if (outputEncoded)  outputEncoded.textContent = res.stuffed_frame;
+
+                // Box 2: Received Frame
+                if (outputReceived) {
+                    if (frameCorrupted) {
+                        outputReceived.innerHTML = `<span style="color:var(--color-danger); font-weight:600;"><i class="fa-solid fa-bolt"></i> ${escapeHtml(res.received_frame)}</span>`;
+                    } else {
+                        outputReceived.innerHTML = renderStuffedTokens(res.stuffed_tokens) || escapeHtml(res.stuffed_frame);
+                    }
+                }
+
+                // Box 3: Decoded / Verified Result
+                if (outputDecoded) {
+                    if (destuffOk) {
+                        outputDecoded.textContent = ok ? res.destuffed_data : `${res.destuffed_data} [FRAME MISMATCH]`;
+                    } else {
+                        outputDecoded.textContent = `Failed: ${res.destuff_error || 'Recovery failed'}`;
+                    }
+                }
+
+                // If error injector is open, update its field with the transmitted frame if clean
+                if (errorInputField && !enableErrorToggle?.checked) {
+                    errorInputField.value = res.stuffed_frame;
+                }
+
+                const errPosLabel = frameCorrupted ? 'Channel Noise' : 'None';
+                const statusLabel = ok ? 'VERIFIED' : (destuffOk ? 'MISMATCH' : 'FAILED');
+                updateTelemetry({ encoded: res.stuffed_frame, errorPos: errPosLabel, status: statusLabel, statusClass: ok ? 't-success' : 't-danger' });
+            }
+        }
+
+        // ── Bit Stuffing ──
+        else if (tech === 'bit_stuffing') {
+            if (res.action === 'stuff') {
+                setPipelineState('success');
+                setStatus('success', '<i class="fa-solid fa-check-circle"></i> BIT-STREAM STUFFED');
+                if (outputEncoded)  outputEncoded.textContent   = res.stuffed_frame;
                 if (outputReceived) outputReceived.innerHTML    = renderStuffedTokens(res.stuffed_tokens) || res.stuffed_frame;
-                if (outputDecoded)  outputDecoded.textContent   = 'N/A — Stuffing mode only';
+                if (outputDecoded)  outputDecoded.textContent   = `N/A — Stuffing Mode (Original: ${res.original_data})`;
                 updateTelemetry({ encoded: res.stuffed_frame, errorPos: '—', status: 'STUFFED', statusClass: 't-success' });
             } else if (res.action === 'destuff') {
                 setPipelineState('success');
-                setStatus('success', '<i class="fa-solid fa-check-circle"></i> FRAME DE-STUFFED');
-                if (outputEncoded)  outputEncoded.textContent = 'N/A — De-stuffing mode';
+                setStatus('success', '<i class="fa-solid fa-check-circle"></i> BIT-STREAM DE-STUFFED');
+                if (outputEncoded)  outputEncoded.textContent = 'N/A — De-stuffing Mode';
                 if (outputReceived) outputReceived.textContent = payload.input_data;
                 if (outputDecoded)  outputDecoded.textContent  = res.destuffed_data;
                 updateTelemetry({ encoded: res.destuffed_data, errorPos: '—', status: 'RECOVERED', statusClass: 't-success' });
@@ -1092,12 +1202,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 setStatus(ok ? 'success' : 'error-detected',
                     ok ? '<i class="fa-solid fa-shield-check"></i> TRANSMISSION VERIFIED'
                        : '<i class="fa-solid fa-triangle-exclamation"></i> FRAME MISMATCH');
-                if (outputEncoded)  outputEncoded.textContent = res.original_data;
+                if (outputEncoded)  outputEncoded.textContent = res.stuffed_frame;
                 if (outputReceived) outputReceived.innerHTML  = renderStuffedTokens(res.stuffed_tokens) || res.stuffed_frame;
-                if (outputDecoded)  outputDecoded.textContent = res.destuff_success ? res.destuffed_data : `Failed: ${res.destuff_error}`;
+                if (outputDecoded)  outputDecoded.textContent = res.destuff_success ? res.destuffed_data : `Failed: ${res.destuff_error || 'Recovery failed'}`;
 
                 // After a full cycle, populate the bit grid with the stuffed payload (binary modules)
-                if (tech === 'bit_stuffing' && res.stuffed_payload && enableErrorToggle?.checked) {
+                if (res.stuffed_payload && enableErrorToggle?.checked) {
                     buildBitGrid(res.stuffed_payload);
                 }
                 updateTelemetry({ encoded: res.stuffed_frame, errorPos: '—', status: ok ? 'VERIFIED' : 'MISMATCH', statusClass: ok ? 't-success' : 't-danger' });
