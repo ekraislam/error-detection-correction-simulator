@@ -55,7 +55,8 @@ def process_data():
         flag = params.get("flag", "F")
         esc = params.get("esc", "E")
         action = params.get("action", "full_cycle")
-        result = process_byte_stuffing(input_data, flag=flag, esc=esc, action=action, injected_error=injected_error)
+        original_data = params.get("original_data")
+        result = process_byte_stuffing(input_data, flag=flag, esc=esc, action=action, injected_error=injected_error, original_data=original_data)
         
     elif technique == "bit_stuffing":
         flag_pattern = params.get("flag_pattern", "01111110")

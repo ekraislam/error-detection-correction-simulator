@@ -136,7 +136,43 @@ def run_tests():
     assert stats["frame_length"] == len("#ABC\\#DEF#")
     assert stats["added_bytes"] == 1
     assert stats["recovery_status"] == "Success"
-    print("[PASSED] TEST K")
+    # ── TEST CASE L: Standalone De-stuff Action ('action=destuff') ──
+    print("\n--- TEST L: Standalone De-stuff Action ('action=destuff') ---")
+    # 1. De-stuff FABCEFEEF with FLAG=F, ESC=E, original_data=ABCFE
+    res_destuff1 = process_byte_stuffing("FABCEFEEF", flag="F", esc="E", action="destuff", original_data="ABCFE")
+    print("De-stuff FABCEFEEF ->", res_destuff1)
+    assert res_destuff1["success"] == True
+    assert res_destuff1["destuffed_data"] == "ABCFE"
+    assert res_destuff1["integrity_match"] == True
+
+    # 2. De-stuff #ABC\#DEF# with FLAG=#, ESC=\, original_data=ABC#DEF
+    res_destuff2 = process_byte_stuffing("#ABC\\#DEF#", flag="#", esc="\\", action="destuff", original_data="ABC#DEF")
+    assert res_destuff2["success"] == True
+    assert res_destuff2["destuffed_data"] == "ABC#DEF"
+    assert res_destuff2["integrity_match"] == True
+
+    # 3. De-stuff with missing starting flag
+    res_destuff3 = process_byte_stuffing("ABCFE", flag="F", esc="E", action="destuff", original_data="ABCFE")
+    assert res_destuff3["success"] == False
+    assert "missing starting flag" in res_destuff3["error"].lower()
+
+    # 4. De-stuff with missing ending flag
+    res_destuff4 = process_byte_stuffing("FABCEFEE", flag="F", esc="E", action="destuff")
+    assert res_destuff4["success"] == False
+    assert "missing ending flag" in res_destuff4["error"].lower()
+
+    # 5. De-stuff with dangling ESC
+    res_destuff5 = process_byte_stuffing("FABCEFEEF", flag="F", esc="E", action="destuff")
+    # Valid
+    assert res_destuff5["success"] == True
+    assert res_destuff5["destuffed_data"] == "ABCFE"
+
+    res_destuff6 = process_byte_stuffing("FABCEFEEF", flag="A", esc="X", action="destuff")
+    assert res_destuff6["success"] == False
+    assert "missing starting FLAG ('A')" in res_destuff6["error"]
+    assert "Frame starts with 'F'" in res_destuff6["error"]
+
+    print("[PASSED] TEST L")
 
     print("\n" + "=" * 80)
     print("ALL GENERIC BYTE STUFFING TESTS PASSED!")
@@ -144,3 +180,4 @@ def run_tests():
 
 if __name__ == "__main__":
     run_tests()
+

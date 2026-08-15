@@ -14,7 +14,8 @@ Core Rules:
 4. Other payload bytes remain unchanged.
 5. Transmitted Frame = FLAG + StuffedData + FLAG.
 6. De-stuffing reverses the process:
-   - Verifies starting and ending FLAG.
+   - Verifies starting and ending FLAG with the current dynamic FLAG.
+   - Strips starting and ending FLAG.
    - Unescapes (ESC + FLAG -> FLAG) and (ESC + ESC -> ESC).
    - Validates that no unescaped FLAG or dangling ESC exists.
    - Recovers the exact original payload.
@@ -30,7 +31,6 @@ def byte_stuff(data: str, flag: str = "F", esc: str = "E") -> dict:
     :param esc: Escape character string.
     :return: Dictionary containing status, stuffed frame, tokens, stats, and step-by-step trace.
     """
-    # Validation checks
     if data is None or len(str(data)) == 0:
         return {
             "success": False,
@@ -60,7 +60,6 @@ def byte_stuff(data: str, flag: str = "F", esc: str = "E") -> dict:
     steps.append(f"Step 2: Configured Delimiters -> Delimiter FLAG = '{flag_str}', Escape ESC = '{esc_str}'")
     steps.append(f"Step 3: Begin frame with starting delimiter FLAG ('{flag_str}')")
 
-    # Add initial starting FLAG token
     tokens.append({"value": flag_str, "type": "flag", "label": "START_FLAG"})
 
     stuffed_chars = []
@@ -89,8 +88,6 @@ def byte_stuff(data: str, flag: str = "F", esc: str = "E") -> dict:
             step_count += 1
 
     stuffed_payload = "".join(stuffed_chars)
-
-    # Add ending FLAG token
     tokens.append({"value": flag_str, "type": "flag", "label": "END_FLAG"})
     stuffed_frame = f"{flag_str}{stuffed_payload}{flag_str}"
 
@@ -98,7 +95,6 @@ def byte_stuff(data: str, flag: str = "F", esc: str = "E") -> dict:
     step_count += 1
     steps.append(f"Step {step_count}: Final Transmitted Frame = '{stuffed_frame}' (FLAG + StuffedData + FLAG)")
 
-    # Dynamic Statistics
     orig_len = len(data_str)
     stuff_len = len(stuffed_payload)
     frame_len = len(stuffed_frame)
@@ -168,23 +164,24 @@ def byte_destuff(frame: str, flag: str = "F", esc: str = "E") -> dict:
             "error": f"Invalid frame: missing delimiters. Frame length is too short to contain starting and ending FLAG ('{flag_str}')."
         }
 
-    # Verify starting FLAG
+    # 1. Verify starting FLAG
     if not frame_str.startswith(flag_str):
+        first_char = frame_str[:flag_len]
         return {
             "success": False,
-            "error": f"Invalid frame: missing starting FLAG ('{flag_str}'). Frame starts with '{frame_str[:flag_len]}'."
+            "error": f"Invalid frame: missing starting FLAG ('{flag_str}'). Frame starts with '{first_char}'."
         }
 
-    # Verify ending FLAG
+    # 2. Verify ending FLAG
     if not frame_str.endswith(flag_str):
         return {
             "success": False,
-            "error": f"Invalid frame: missing ending FLAG ('{flag_str}'). Frame ends with '{frame_str[-flag_len:]}'."
+            "error": f"Invalid frame: missing ending FLAG ('{flag_str}')."
         }
 
     steps.append(f"De-stuff Step 3: Validated starting FLAG ('{flag_str}') and ending FLAG ('{flag_str}'). Stripping delimiters.")
 
-    # Extract stuffed payload
+    # 3. Extract stuffed payload
     payload_str = frame_str[flag_len : len(frame_str) - flag_len]
     steps.append(f"De-stuff Step 4: Extracted stuffed payload = '{payload_str}'")
 
@@ -201,7 +198,7 @@ def byte_destuff(frame: str, flag: str = "F", esc: str = "E") -> dict:
             if i + 1 >= payload_len:
                 return {
                     "success": False,
-                    "error": f"Invalid escape sequence: Dangling ESC ('{esc_str}') at position {pos} without a following byte."
+                    "error": "Invalid escape sequence: ESC appears without a following character."
                 }
 
             next_char = payload_str[i + 1]
@@ -241,7 +238,7 @@ def byte_destuff(frame: str, flag: str = "F", esc: str = "E") -> dict:
     }
 
 
-def process_byte_stuffing(data: str, flag: str = "F", esc: str = "E", action: str = "full_cycle", injected_error: str = None) -> dict:
+def process_byte_stuffing(data: str, flag: str = "F", esc: str = "E", action: str = "full_cycle", injected_error: str = None, original_data: str = None) -> dict:
     """
     Main entry point for Byte Stuffing and De-stuffing simulation.
 
@@ -250,6 +247,7 @@ def process_byte_stuffing(data: str, flag: str = "F", esc: str = "E", action: st
     :param esc: Escape character (default 'E').
     :param action: 'stuff', 'destuff', or 'full_cycle'.
     :param injected_error: Optional modified frame text for error simulation.
+    :param original_data: Optional original payload to verify recovered data against.
     :return: Comprehensive result dictionary.
     """
     flag = str(flag) if (flag is not None and len(str(flag)) > 0) else "F"
@@ -258,19 +256,45 @@ def process_byte_stuffing(data: str, flag: str = "F", esc: str = "E", action: st
     if action == "destuff":
         res = byte_destuff(data, flag=flag, esc=esc)
         if not res["success"]:
-            return res
+            return {
+                "success": False,
+                "action": "destuff",
+                "error": res["error"],
+                "flag": flag,
+                "escape_character": esc,
+                "received_frame": data,
+                "steps": res.get("steps", [f"De-stuffing failed: {res['error']}"]),
+                "stats": {
+                    "received_length": len(str(data)),
+                    "recovery_status": "Failed"
+                }
+            }
+
+        destuffed = res["destuffed_data"]
+        steps = list(res["steps"])
+        has_orig = original_data is not None and len(str(original_data)) > 0
+        orig_str = str(original_data) if has_orig else None
+        integrity_match = (destuffed == orig_str) if has_orig else True
+
+        if has_orig:
+            steps.append(f"De-stuff Step {len(steps)+1}: Integrity Verification -> Recovered Payload '{destuffed}' vs Original Payload '{orig_str}' -> {'MATCH (Success)' if integrity_match else 'MISMATCH (Failed)'}")
+
         return {
             "success": True,
             "action": "destuff",
             "flag": flag,
             "escape_character": esc,
+            "original_data": orig_str if has_orig else destuffed,
             "received_frame": data,
-            "destuffed_data": res["destuffed_data"],
-            "steps": res["steps"],
+            "destuffed_data": destuffed,
+            "destuff_success": True,
+            "integrity_match": integrity_match,
+            "steps": steps,
             "stats": {
                 "received_length": len(str(data)),
-                "destuffed_length": len(res["destuffed_data"]),
-                "recovery_status": "Success"
+                "destuffed_length": len(destuffed),
+                "original_length": len(orig_str) if has_orig else len(destuffed),
+                "recovery_status": "Success" if integrity_match else "Failed"
             }
         }
 

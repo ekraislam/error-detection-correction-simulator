@@ -13,6 +13,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let cleanEncodedBits = '';   // The clean encoded bitstream after a run
     let corruptedBits    = '';   // Current (possibly flipped) bitstream
     let lastTransmittedText = ''; // Clean transmitted frame text (for non-binary modules like Byte Stuffing)
+    let lastInputDataForFrame = ''; // Input data used to generate the transmitted frame
+    let lastFlagForFrame = '';     // Flag used to generate the transmitted frame
+    let lastEscForFrame = '';      // Esc used to generate the transmitted frame
     let flippedPositions = new Set(); // 0-based indices of flipped bits
 
     function escapeHtml(str) {
@@ -787,9 +790,30 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         if (currentTechnique === 'byte_stuffing') {
-            payload.params.flag   = document.getElementById('param-flag')?.value || 'F';
-            payload.params.esc    = document.getElementById('param-esc')?.value  || 'E';
-            payload.params.action = actionOverride || 'full_cycle';
+            const currentData = primaryInput ? primaryInput.value.trim() : '';
+            const flag = document.getElementById('param-flag')?.value || 'F';
+            const esc  = document.getElementById('param-esc')?.value  || 'E';
+            const action = actionOverride || 'full_cycle';
+
+            payload.params.flag = flag;
+            payload.params.esc = esc;
+            payload.params.action = action;
+            payload.params.original_data = currentData;
+
+            if (action === 'destuff') {
+                // When de-stuffing, the frame to decode MUST be the received / transmitted frame!
+                let frameToDestuff = '';
+                if (errorActive && errorInputField && errorInputField.value.trim()) {
+                    frameToDestuff = errorInputField.value.trim();
+                } else if (lastTransmittedText && lastInputDataForFrame === currentData && lastFlagForFrame === flag && lastEscForFrame === esc) {
+                    frameToDestuff = lastTransmittedText;
+                } else {
+                    frameToDestuff = computeGenericByteStuffing(currentData, flag, esc);
+                }
+                payload.input_data = frameToDestuff;
+            } else {
+                payload.input_data = currentData;
+            }
 
         } else if (currentTechnique === 'bit_stuffing') {
             payload.params.flag_pattern = document.getElementById('param-flag-pattern')?.value || '01111110';
@@ -1108,29 +1132,52 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // ── Byte Stuffing ──
         if (tech === 'byte_stuffing') {
-            lastTransmittedText = res.stuffed_frame || '';
             const flag = payload.params.flag || 'F';
             const esc  = payload.params.esc  || 'E';
 
             if (res.action === 'stuff') {
+                lastTransmittedText = res.stuffed_frame || '';
+                lastInputDataForFrame = res.original_data || '';
+                lastFlagForFrame = flag;
+                lastEscForFrame = esc;
+
                 setPipelineState('success');
-                setStatus('success', `<i class="fa-solid fa-check-circle"></i> FRAME STUFFED (FLAG: '${flag}', ESC: '${esc}')`);
+                setStatus('success', `<i class="fa-solid fa-check-circle"></i> FRAME STUFFED (Ready to De-stuff)`);
                 if (outputEncoded)  outputEncoded.textContent = res.stuffed_frame;
                 if (outputReceived) outputReceived.innerHTML  = renderStuffedTokens(res.stuffed_tokens) || escapeHtml(res.stuffed_frame);
-                if (outputDecoded)  outputDecoded.textContent = `N/A — Stuffing Mode (Original: ${res.original_data})`;
+                if (outputDecoded)  outputDecoded.textContent = `— Frame Ready. Click 'De-stuff Frame' to Decode —`;
                 updateTelemetry({ encoded: res.stuffed_frame, errorPos: '—', status: 'STUFFED', statusClass: 't-success' });
+
+                if (errorInputField && !enableErrorToggle?.checked) {
+                    errorInputField.value = res.stuffed_frame;
+                }
             } else if (res.action === 'destuff') {
-                const ok = res.success && !res.error;
+                const ok = res.destuff_success && res.integrity_match;
+                const destuffOk = res.destuff_success;
                 setPipelineState(ok ? 'success' : 'error');
-                setStatus(ok ? 'success' : 'error-detected',
-                    ok ? `<i class="fa-solid fa-check-circle"></i> FRAME DE-STUFFED`
-                       : `<i class="fa-solid fa-triangle-exclamation"></i> DE-STUFFING FAILED: ${res.error || 'Invalid Frame'}`);
-                if (outputEncoded)  outputEncoded.textContent = `N/A — De-stuffing Mode`;
+
+                let statusText = '';
+                if (ok) {
+                    statusText = '<i class="fa-solid fa-shield-check"></i> DE-STUFFING SUCCESS (Verified)';
+                } else if (!destuffOk) {
+                    statusText = `<i class="fa-solid fa-triangle-exclamation"></i> DE-STUFFING FAILED: ${res.error || 'Invalid Frame'}`;
+                } else {
+                    statusText = '<i class="fa-solid fa-triangle-exclamation"></i> DE-STUFFING MISMATCH (Data Differed)';
+                }
+                setStatus(ok ? 'success' : 'error-detected', statusText);
+
+                const currentOrig = payload.params.original_data || primaryInput?.value.trim() || '';
+                if (outputEncoded)  outputEncoded.textContent = lastTransmittedText || computeGenericByteStuffing(currentOrig, flag, esc) || payload.input_data;
                 if (outputReceived) outputReceived.textContent = payload.input_data;
-                if (outputDecoded)  outputDecoded.textContent  = ok ? res.destuffed_data : `Failed: ${res.error || 'Invalid frame delimiters'}`;
-                updateTelemetry({ encoded: ok ? res.destuffed_data : '—', errorPos: '—', status: ok ? 'RECOVERED' : 'FAILED', statusClass: ok ? 't-success' : 't-danger' });
+                if (outputDecoded)  outputDecoded.textContent  = destuffOk ? res.destuffed_data : `Failed: ${res.error || 'Invalid frame delimiters'}`;
+                updateTelemetry({ encoded: payload.input_data, errorPos: ok ? 'None' : 'Error', status: ok ? 'SUCCESS' : 'FAILED', statusClass: ok ? 't-success' : 't-danger' });
             } else {
                 // Full cycle
+                lastTransmittedText = res.stuffed_frame || '';
+                lastInputDataForFrame = res.original_data || '';
+                lastFlagForFrame = flag;
+                lastEscForFrame = esc;
+
                 const ok = res.integrity_match;
                 const destuffOk = res.destuff_success;
                 const frameCorrupted = res.received_frame !== res.stuffed_frame;
@@ -1174,7 +1221,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const errPosLabel = frameCorrupted ? 'Channel Noise' : 'None';
-                const statusLabel = ok ? 'VERIFIED' : (destuffOk ? 'MISMATCH' : 'FAILED');
+                const statusLabel = ok ? 'SUCCESS' : (destuffOk ? 'MISMATCH' : 'FAILED');
                 updateTelemetry({ encoded: res.stuffed_frame, errorPos: errPosLabel, status: statusLabel, statusClass: ok ? 't-success' : 't-danger' });
             }
         }
