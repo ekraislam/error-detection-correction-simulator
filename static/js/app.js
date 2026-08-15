@@ -58,21 +58,27 @@ document.addEventListener('DOMContentLoaded', () => {
             if (flag[i] !== '0' && flag[i] !== '1') return '';
         }
         let stuffed = '';
-        let ones = 0;
+        let onesCount = 0;
+        const flushOnes = () => {
+            if (onesCount > 0) {
+                if (onesCount === 1) {
+                    stuffed += '0' + '1';
+                } else {
+                    stuffed += '1'.repeat(onesCount - 1) + '0' + '1';
+                }
+                onesCount = 0;
+            }
+        };
         for (let i = 0; i < raw.length; i++) {
             const bit = raw[i];
             if (bit === '1') {
-                ones++;
-                stuffed += '1';
-                if (ones === 5) {
-                    stuffed += '0';
-                    ones = 0;
-                }
+                onesCount++;
             } else {
-                ones = 0;
+                flushOnes();
                 stuffed += '0';
             }
         }
+        flushOnes();
         return flag + stuffed + flag;
     }
 
