@@ -130,5 +130,5 @@ def process_data():
 
 if __name__ == "__main__":
     # Run the Flask development server on host 127.0.0.1, port 5000
-    print("🚀 Starting Data Communication Lab - Error Detection & Correction Simulator...")
+    print("Starting EDC Simulator - Data Communication Lab...")
     app.run(host="127.0.0.1", port=5000, debug=True)

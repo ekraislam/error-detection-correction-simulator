@@ -1,87 +1,86 @@
 /**
- * EDC SIMULATOR - Educational Simulator JavaScript Application
- * Manages matrix particle stream, technique selection, dynamic form controls,
- * split workspace results rendering, telemetry updates, and relative API requests.
+ * EDC SIMULATOR v2.0 — Educational Networking Laboratory
+ * Manages: background canvas, technique selection, dynamic forms,
+ * interactive bit-grid error injector, visualizations, telemetry HUD.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Current Active Technique State
-    let currentTechnique = 'byte_stuffing';
 
-    // DOM Elements
-    const navItems = document.querySelectorAll('.nav-item');
-    const techniqueCards = document.querySelectorAll('.technique-card');
-    const sidebarDrawer = document.getElementById('sidebar-drawer');
-    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-    
-    const activeTechniqueTag = document.getElementById('active-technique-tag');
-    const activeTechniqueTitle = document.getElementById('active-technique-title');
-    const topHeaderTechBadge = document.getElementById('top-header-tech-badge');
-    
-    const primaryInput = document.getElementById('primary-input');
-    const primaryInputLabel = document.getElementById('primary-input-label');
-    const primaryInputHint = document.getElementById('primary-input-hint');
+    // ═══════════════════════════════════════════════════════════
+    // STATE
+    // ═══════════════════════════════════════════════════════════
+    let currentTechnique = 'byte_stuffing';
+    let cleanEncodedBits = '';   // The clean encoded bitstream after a run
+    let corruptedBits    = '';   // Current (possibly flipped) bitstream
+    let flippedPositions = new Set(); // 0-based indices of flipped bits
+
+    // ═══════════════════════════════════════════════════════════
+    // DOM REFERENCES
+    // ═══════════════════════════════════════════════════════════
+    const navItems              = document.querySelectorAll('.nav-item');
+    const techniqueCards        = document.querySelectorAll('.technique-card');
+    const sidebarDrawer         = document.getElementById('sidebar-drawer');
+    const mobileMenuBtn         = document.getElementById('mobile-menu-btn');
+
+    const activeTechniqueTag    = document.getElementById('active-technique-tag');
+    const activeTechniqueTitle  = document.getElementById('active-technique-title');
+    const topHeaderTechBadge    = document.getElementById('top-header-tech-badge');
+
+    const primaryInput          = document.getElementById('primary-input');
+    const primaryInputLabel     = document.getElementById('primary-input-label');
+    const primaryInputHint      = document.getElementById('primary-input-hint');
     const dynamicParamsContainer = document.getElementById('dynamic-params-container');
 
-    const enableErrorToggle = document.getElementById('enable-error-toggle');
-    const errorControlsWrapper = document.getElementById('error-controls-wrapper');
-    const errorInputField = document.getElementById('error-input-field');
-    const flipBitBtn = document.getElementById('flip-bit-btn');
-    const corruptByteBtn = document.getElementById('corrupt-byte-btn');
+    const enableErrorToggle     = document.getElementById('enable-error-toggle');
+    const errorControlsWrapper  = document.getElementById('error-controls-wrapper');
 
-    const processBtn = document.getElementById('process-btn');
-    const resetBtn = document.getElementById('reset-btn');
+    // New error injector elements
+    const btnFlipOne            = document.getElementById('btn-flip-one');
+    const btnRandomErr          = document.getElementById('btn-random-err');
+    const btnBurstErr           = document.getElementById('btn-burst-err');
+    const btnResetErr           = document.getElementById('btn-reset-err');
+    const bitGridContainer      = document.getElementById('bit-grid-container');
+    const interactiveBitGrid    = document.getElementById('interactive-bit-grid');
+    const bitDiffDisplay        = document.getElementById('bit-diff-display');
+    const diffOriginal          = document.getElementById('diff-original');
+    const diffCorrupted         = document.getElementById('diff-corrupted');
+    const textErrorContainer    = document.getElementById('text-error-container');
+    const errorInputField       = document.getElementById('error-input-field');
 
-    const heroLaunchBtn = document.getElementById('hero-launch-btn');
-    const heroExploreBtn = document.getElementById('hero-explore-btn');
+    const processBtn            = document.getElementById('process-btn');
+    const resetBtn              = document.getElementById('reset-btn');
 
     const resultStatusIndicator = document.getElementById('result-status-indicator');
-    const outputEncoded = document.getElementById('output-encoded');
-    const outputReceived = document.getElementById('output-received');
-    const outputDecoded = document.getElementById('output-decoded');
-    const stepByStepDisplay = document.getElementById('step-by-step-display');
+    const outputEncoded         = document.getElementById('output-encoded');
+    const outputReceived        = document.getElementById('output-received');
+    const outputDecoded         = document.getElementById('output-decoded');
+    const stepByStepDisplay     = document.getElementById('step-by-step-display');
 
-    // Telemetry Elements
-    const tModule = document.getElementById('t-module');
-    const tSize = document.getElementById('t-size');
-    const tState = document.getElementById('t-state');
-    const tError = document.getElementById('t-error');
-    const tLatency = document.getElementById('t-latency');
-    const tChannel = document.getElementById('t-channel');
+    // Pipeline steps
+    const pipeNodes = {
+        source:  document.getElementById('pipe-source'),
+        encoder: document.getElementById('pipe-encoder'),
+        channel: document.getElementById('pipe-channel'),
+        noise:   document.getElementById('pipe-noise'),
+        decoder: document.getElementById('pipe-decoder'),
+        verify:  document.getElementById('pipe-verify'),
+    };
 
-    // Canvas Background Stream Generator
+    // Telemetry HUD
+    const tModule      = document.getElementById('t-module');
+    const tSize        = document.getElementById('t-size');
+    const tEncodedOut  = document.getElementById('t-encoded-out');
+    const tErrorPos    = document.getElementById('t-error-pos');
+    const tCorrection  = document.getElementById('t-correction');
+    const tChannel     = document.getElementById('t-channel');
+    const tLatency     = document.getElementById('t-latency');
+    const hudTheoryBody = document.getElementById('hud-theory-body');
+
+    // ═══════════════════════════════════════════════════════════
+    // BACKGROUND CANVAS
+    // ═══════════════════════════════════════════════════════════
     initBackgroundCanvas();
 
-    // Mobile Sidebar Drawer Toggle
-    if (mobileMenuBtn && sidebarDrawer) {
-        mobileMenuBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            sidebarDrawer.classList.toggle('open');
-        });
-
-        document.addEventListener('click', (e) => {
-            if (sidebarDrawer.classList.contains('open') && !sidebarDrawer.contains(e.target) && e.target !== mobileMenuBtn) {
-                sidebarDrawer.classList.remove('open');
-            }
-        });
-    }
-
-    // Hero CTA Buttons
-    if (heroLaunchBtn) {
-        heroLaunchBtn.addEventListener('click', () => {
-            document.getElementById('simulator-panel')?.scrollIntoView({ behavior: 'smooth' });
-        });
-    }
-
-    if (heroExploreBtn) {
-        heroExploreBtn.addEventListener('click', () => {
-            document.getElementById('overview-cards')?.scrollIntoView({ behavior: 'smooth' });
-        });
-    }
-
-    /**
-     * Futuristic Background Matrix Canvas Animation
-     */
     function initBackgroundCanvas() {
         const canvas = document.getElementById('bg-canvas');
         if (!canvas) return;
@@ -96,49 +95,64 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const particles = [];
         const numParticles = Math.floor(width / 30);
-
         for (let i = 0; i < numParticles; i++) {
             particles.push({
                 x: Math.random() * width,
                 y: Math.random() * height,
-                speed: 0.5 + Math.random() * 1.5,
+                speed: 0.4 + Math.random() * 1.2,
                 char: Math.random() > 0.5 ? '1' : '0',
-                size: 10 + Math.random() * 10,
-                opacity: 0.1 + Math.random() * 0.4
+                opacity: 0.08 + Math.random() * 0.3
             });
         }
 
         function draw() {
             ctx.clearRect(0, 0, width, height);
-            ctx.font = '12px "Fira Code", monospace';
-
+            ctx.font = '11px "Fira Code", monospace';
             particles.forEach(p => {
                 ctx.fillStyle = `rgba(34, 211, 238, ${p.opacity})`;
                 ctx.fillText(p.char, p.x, p.y);
                 p.y += p.speed;
-
                 if (p.y > height) {
                     p.y = 0;
                     p.x = Math.random() * width;
                     p.char = Math.random() > 0.5 ? '1' : '0';
                 }
             });
-
             requestAnimationFrame(draw);
         }
-
         draw();
     }
 
-    // Configuration map for each of the 6 techniques
+    // ═══════════════════════════════════════════════════════════
+    // MOBILE SIDEBAR
+    // ═══════════════════════════════════════════════════════════
+    if (mobileMenuBtn && sidebarDrawer) {
+        mobileMenuBtn.addEventListener('click', e => {
+            e.stopPropagation();
+            sidebarDrawer.classList.toggle('open');
+        });
+        document.addEventListener('click', e => {
+            if (sidebarDrawer.classList.contains('open') &&
+                !sidebarDrawer.contains(e.target) &&
+                e.target !== mobileMenuBtn) {
+                sidebarDrawer.classList.remove('open');
+            }
+        });
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // TECHNIQUE CONFIG MAP
+    // ═══════════════════════════════════════════════════════════
     const techniqueConfigs = {
         byte_stuffing: {
-            name: "Byte Stuffing",
-            title: "Byte Stuffing Simulator",
-            inputLabel: "Original Data Payload",
-            placeholder: "e.g. ABCFE",
-            defaultValue: "ABCFE",
-            hint: "Enter data string containing payload bytes (e.g. ABCFE).",
+            name: 'Byte Stuffing',
+            title: 'Byte Stuffing Simulator',
+            inputLabel: 'Original Data Payload',
+            placeholder: 'e.g. ABCFE',
+            defaultValue: 'ABCFE',
+            hint: 'Enter data string containing payload bytes.',
+            binaryModule: false,
+            theory: 'Byte Stuffing inserts an ESC character before any FLAG or ESC byte in the payload, so the receiver can distinguish delimiters from data. The frame is wrapped with FLAG...FLAG.',
             paramsHtml: `
                 <div class="form-group">
                     <label for="param-flag">FLAG Identifier</label>
@@ -150,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="text" id="param-esc" class="form-control code-input" value="E">
                     <small class="form-hint">Escape character (default 'E')</small>
                 </div>
-                <div class="form-group" style="grid-column: span 2; display: flex; gap: 10px; margin-top: 6px;">
+                <div class="form-group" style="grid-column: span 2; display: flex; gap: 10px; margin-top: 4px;">
                     <button type="button" class="btn btn-sm btn-primary" id="btn-stuff-only">
                         <i class="fa-solid fa-file-export"></i> Stuff Data
                     </button>
@@ -161,12 +175,14 @@ document.addEventListener('DOMContentLoaded', () => {
             `
         },
         bit_stuffing: {
-            name: "Bit Stuffing",
-            title: "Bit Stuffing Simulator",
-            inputLabel: "Binary Data Payload",
-            placeholder: "e.g. 111110 or 011111101111110",
-            defaultValue: "111110",
-            hint: "Enter raw binary sequence ('0' and '1's). A '0' is stuffed after 5 consecutive '1's.",
+            name: 'Bit Stuffing',
+            title: 'Bit Stuffing Simulator',
+            inputLabel: 'Binary Data Payload',
+            placeholder: 'e.g. 111110',
+            defaultValue: '111110',
+            hint: "Enter binary ('0' and '1's). A '0' is inserted after 5 consecutive '1's.",
+            binaryModule: true,
+            theory: "After every 5 consecutive '1' bits in the payload, a '0' is stuffed. The receiver de-stuffs by removing each '0' that follows 5 ones. This prevents accidental flag-pattern detection inside data.",
             paramsHtml: `
                 <div class="form-group">
                     <label for="param-flag-pattern">Delimiter Flag Pattern</label>
@@ -174,11 +190,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     <small class="form-hint">8-bit framing flag (default '01111110')</small>
                 </div>
                 <div class="form-group">
-                    <label for="param-error-pos">Bit Flip Error Position (1-indexed)</label>
-                    <input type="number" id="param-error-pos" class="form-control" placeholder="Optional bit index e.g. 10" min="1">
-                    <small class="form-hint">Flip bit at position to test error detection</small>
+                    <label for="param-error-pos">Bit Flip Position (1-indexed)</label>
+                    <input type="number" id="param-error-pos" class="form-control" placeholder="e.g. 10" min="1">
+                    <small class="form-hint">Optional: flip bit at position to test detection</small>
                 </div>
-                <div class="form-group" style="grid-column: span 2; display: flex; gap: 10px; margin-top: 6px;">
+                <div class="form-group" style="grid-column: span 2; display: flex; gap: 10px; margin-top: 4px;">
                     <button type="button" class="btn btn-sm btn-primary" id="btn-bit-stuff-only">
                         <i class="fa-solid fa-file-export"></i> Stuff Data
                     </button>
@@ -186,21 +202,20 @@ document.addEventListener('DOMContentLoaded', () => {
                         <i class="fa-solid fa-file-import"></i> De-stuff Frame
                     </button>
                 </div>
-                <div class="form-group" style="grid-column: span 2; font-size: 0.78rem; color: var(--text-muted); background: var(--bg-surface); padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--color-warning);">
-                    <i class="fa-solid fa-circle-info" style="color: var(--color-warning);"></i> <strong>Note:</strong> Bit stuffing is primarily a <em>framing/transparency mechanism</em>. Error detection normally requires techniques like Parity or CRC.
-                </div>
             `
         },
         parity: {
-            name: "Parity Check",
-            title: "Parity Check Simulator",
-            inputLabel: "Binary Payload Data",
-            placeholder: "e.g. 1011001 or 1011001011001001",
-            defaultValue: "1011001",
-            hint: "Enter binary payload string ('0' and '1's).",
+            name: 'Parity Check',
+            title: 'Parity Check Simulator',
+            inputLabel: 'Binary Payload Data',
+            placeholder: 'e.g. 1011001',
+            defaultValue: '1011001',
+            hint: "Enter binary payload ('0' and '1's).",
+            binaryModule: true,
+            theory: '1D Parity appends one bit to make the total number of 1s even (or odd). 2D Block Parity adds row and column parity bits, allowing single-bit error location at (row, col).',
             paramsHtml: `
                 <div class="form-group">
-                    <label for="param-parity-mode">Parity Dimension Mode</label>
+                    <label for="param-parity-mode">Parity Dimension</label>
                     <select id="param-parity-mode" class="form-control">
                         <option value="1D" selected>1D Simple Parity Bit</option>
                         <option value="2D">2D Block Matrix Parity</option>
@@ -220,30 +235,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="form-group">
                     <label for="param-error-pos">1D Bit Flip Position (1-indexed)</label>
-                    <input type="number" id="param-error-pos" class="form-control" placeholder="e.g. 3 to flip 3rd bit" min="1">
+                    <input type="number" id="param-error-pos" class="form-control" placeholder="e.g. 3" min="1">
                 </div>
                 <div class="form-group" id="param-2d-error-group" style="grid-column: span 2; display: none; gap: 10px;">
-                    <div style="flex: 1;">
-                        <label for="param-error-row">2D Error Row (1-indexed)</label>
-                        <input type="number" id="param-error-row" class="form-control" placeholder="Row e.g. 2" min="1">
+                    <div style="flex:1;">
+                        <label for="param-error-row">2D Error Row</label>
+                        <input type="number" id="param-error-row" class="form-control" placeholder="e.g. 2" min="1">
                     </div>
-                    <div style="flex: 1;">
-                        <label for="param-error-col">2D Error Column (1-indexed)</label>
-                        <input type="number" id="param-error-col" class="form-control" placeholder="Col e.g. 3" min="1">
+                    <div style="flex:1;">
+                        <label for="param-error-col">2D Error Column</label>
+                        <input type="number" id="param-error-col" class="form-control" placeholder="e.g. 3" min="1">
                     </div>
                 </div>
-                <div class="form-group" style="grid-column: span 2; font-size: 0.78rem; color: var(--text-muted); background: var(--bg-surface); padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--accent-cyan);">
-                    <i class="fa-solid fa-circle-info" style="color: var(--accent-cyan);"></i> <strong>Concept:</strong> Simple 1D parity detects odd number of bit errors. 2D parity pinpoints single-bit error locations at Row $r$, Column $c$.
+                <div class="form-group" style="grid-column: span 2; font-size:0.78rem; color:var(--text-muted); background:var(--bg-surface); padding:9px 12px; border-radius:7px; border-left:3px solid var(--accent-cyan);">
+                    <i class="fa-solid fa-circle-info" style="color:var(--accent-cyan);"></i>
+                    1D parity detects odd-count errors. 2D parity pinpoints a single-bit error location.
                 </div>
             `
         },
         crc: {
-            name: "CRC",
-            title: "Cyclic Redundancy Check Simulator",
-            inputLabel: "Binary Data Payload",
-            placeholder: "e.g. 100100",
-            defaultValue: "100100",
-            hint: "Enter binary data payload ('0' and '1's).",
+            name: 'CRC',
+            title: 'Cyclic Redundancy Check Simulator',
+            inputLabel: 'Binary Data Payload',
+            placeholder: 'e.g. 100100',
+            defaultValue: '100100',
+            hint: "Enter binary payload ('0' and '1's).",
+            binaryModule: true,
+            theory: 'CRC appends (degree of polynomial) zeros to the data and divides by the generator polynomial using modulo-2 XOR. The remainder R is transmitted. The receiver divides (data+R) by the polynomial — a zero remainder means no error.',
             paramsHtml: `
                 <div class="form-group">
                     <label for="param-crc-poly">Generator Polynomial (Divisor)</label>
@@ -252,34 +270,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="form-group">
                     <label for="param-error-pos">Codeword Bit Flip Position (1-indexed)</label>
-                    <input type="number" id="param-error-pos" class="form-control" placeholder="e.g. 5 to flip 5th bit" min="1">
+                    <input type="number" id="param-error-pos" class="form-control" placeholder="e.g. 5" min="1">
                 </div>
-                <div class="form-group" style="grid-column: span 2; display: flex; gap: 10px; margin-top: 6px;">
+                <div class="form-group" style="grid-column: span 2; display: flex; gap: 10px; margin-top: 4px;">
                     <button type="button" class="btn btn-sm btn-primary" id="btn-crc-encode-only">
                         <i class="fa-solid fa-calculator"></i> Encode CRC
                     </button>
                     <button type="button" class="btn btn-sm btn-accent" id="btn-crc-check-only">
-                        <i class="fa-solid fa-check-double"></i> Check Receiver Codeword
+                        <i class="fa-solid fa-check-double"></i> Check Codeword
                     </button>
-                </div>
-                <div class="form-group" style="grid-column: span 2; font-size: 0.78rem; color: var(--text-muted); background: var(--bg-surface); padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--accent-violet);">
-                    <i class="fa-solid fa-circle-info" style="color: var(--accent-violet);"></i> <strong>What is CRC?</strong> CRC uses polynomial-based modulo-2 XOR division to calculate a remainder appended to original data. A non-zero remainder indicates an error.
                 </div>
             `
         },
         hamming: {
-            name: "Hamming Code",
-            title: "Hamming Code Simulator",
-            inputLabel: "Data Payload (Any Length)",
-            placeholder: "e.g. 1011, 10110010, 10110010110",
-            defaultValue: "1011",
-            hint: "Enter any binary data payload. Dynamic Hamming(n,k) mode is auto-detected!",
+            name: 'Hamming Code',
+            title: 'Hamming Code Simulator',
+            inputLabel: 'Data Payload (Any Length)',
+            placeholder: 'e.g. 1011',
+            defaultValue: '1011',
+            hint: 'Enter any binary data payload. Dynamic Hamming(n,k) is auto-detected!',
+            binaryModule: true,
+            theory: 'Hamming places parity bits at power-of-two positions (1,2,4,8...). Each parity bit checks a specific subset of positions. The syndrome — binary XOR of failed checks — directly gives the error position for correction.',
             paramsHtml: `
                 <div class="form-group" style="grid-column: span 2;">
-                    <label><i class="fa-solid fa-robot"></i> Dynamic Mode Auto-Detection Indicator</label>
-                    <div id="hamming-auto-badge" class="form-control" style="background: rgba(34, 211, 238, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); font-weight: 600; display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 8px;">
-                        <span><i class="fa-solid fa-wand-magic-sparkles"></i> <strong>⚡ AUTO-DETECTED:</strong> Hamming (7,4)</span>
-                        <span style="font-size: 0.8rem; opacity: 0.9;">Data: 4 bits | Parity: 3 bits | Total: 7 bits</span>
+                    <label>Quick Presets</label>
+                    <div class="hamming-preset-bar">
+                        <button type="button" class="preset-btn active-preset" id="preset-74"  data-val="1011">Hamming (7,4)</button>
+                        <button type="button" class="preset-btn" id="preset-128" data-val="10110010">Hamming (12,8)</button>
+                        <button type="button" class="preset-btn" id="preset-1511" data-val="10110010110">Hamming (15,11)</button>
+                    </div>
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <div class="hamming-auto-badge" id="hamming-auto-badge">
+                        <span><i class="fa-solid fa-wand-magic-sparkles"></i> <strong>AUTO:</strong> Hamming (7,4)</span>
+                        <span style="font-size:0.75rem; opacity:0.9;">Data: 4b | Parity: 3b | Total: 7b</span>
                     </div>
                 </div>
                 <div class="form-group" style="grid-column: span 2;">
@@ -290,33 +314,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     </select>
                 </div>
                 <div class="form-group" style="grid-column: span 2;">
-                    <label for="param-error-pos">Codeword Bit Flip Position (1-indexed Right-to-Left)</label>
-                    <input type="number" id="param-error-pos" class="form-control" placeholder="e.g. 3 to flip 3rd bit from right" min="1" max="64">
-                    <small class="form-hint">Syndrome calculation will pinpoint and auto-correct bit flip!</small>
-                </div>
-                <div class="form-group" style="grid-column: span 2; display: flex; gap: 10px; margin-top: 6px;">
-                    <button type="button" class="btn btn-sm btn-primary" id="btn-hamming-encode-only">
-                        <i class="fa-solid fa-play"></i> Run Dynamic Hamming Transmission Cycle
-                    </button>
-                </div>
-                <div class="form-group" style="grid-column: span 2; font-size: 0.78rem; color: var(--text-muted); background: var(--bg-surface); padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--accent-blue);" id="hamming-educational-note">
-                    <i class="fa-solid fa-circle-info" style="color: var(--accent-blue);"></i> <span id="hamming-note-text">Dynamic Hamming(n,k) mode automatically calculates minimum parity bits r (2^r &ge; k + r + 1) and applies Right-to-Left position numbering (1..n).</span>
+                    <label for="param-error-pos">Codeword Bit Flip Position (1-indexed, Right-to-Left)</label>
+                    <input type="number" id="param-error-pos" class="form-control" placeholder="e.g. 3" min="1" max="64">
+                    <small class="form-hint">Syndrome will pinpoint and auto-correct the bit!</small>
                 </div>
             `
         },
         hamming_distance: {
-            name: "Hamming Distance",
-            title: "Hamming Distance Simulator",
-            inputLabel: "Codeword 1 (Binary)",
-            placeholder: "e.g. 101101",
-            defaultValue: "101101",
-            hint: "Equal-length binary codeword string.",
+            name: 'Hamming Distance',
+            title: 'Hamming Distance Simulator',
+            inputLabel: 'Codeword 1 (Binary)',
+            placeholder: 'e.g. 101101',
+            defaultValue: '101101',
+            hint: 'Equal-length binary codeword string.',
+            binaryModule: false,
+            theory: 'd(c₁,c₂) = number of positions where bits differ (XOR then count 1s). For a code with minimum distance dₘᵢₙ: detectable errors s = dₘᵢₙ−1, correctable errors t = ⌊(dₘᵢₙ−1)/2⌋.',
             paramsHtml: `
                 <div class="form-group">
                     <label for="param-hdist-mode">Calculation Mode</label>
                     <select id="param-hdist-mode" class="form-control">
-                        <option value="pair" selected>MODE A: Compare Two Codewords</option>
-                        <option value="multi">MODE B: Calculate d_min from Multiple Codewords</option>
+                        <option value="pair" selected>Compare Two Codewords</option>
+                        <option value="multi">d_min from Multiple Codewords</option>
                     </select>
                 </div>
                 <div class="form-group" id="param-c2-group">
@@ -325,29 +343,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     <small class="form-hint">Must be equal length to Codeword 1.</small>
                 </div>
                 <div class="form-group" id="param-multi-cw-group" style="grid-column: span 2; display: none;">
-                    <label for="param-codewords-list">Codewords Set (Comma or line separated)</label>
-                    <textarea id="param-codewords-list" class="form-control code-input" rows="3" placeholder="e.g.&#10;101101&#10;100111&#10;111101&#10;001101">101101, 100111, 111101, 001101</textarea>
+                    <label for="param-codewords-list">Codewords Set (comma or line separated)</label>
+                    <textarea id="param-codewords-list" class="form-control code-input" rows="3" placeholder="e.g.&#10;101101&#10;100111&#10;111101">101101, 100111, 111101, 001101</textarea>
                     <small class="form-hint">Enter 2 or more equal-length binary codewords.</small>
-                </div>
-                <div class="form-group" style="grid-column: span 2; font-size: 0.78rem; color: var(--text-muted); background: var(--bg-surface); padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--color-success);">
-                    <i class="fa-solid fa-circle-info" style="color: var(--color-success);"></i> <strong>Theory:</strong> Hamming Distance $d(c_1, c_2)$ measures differing bit positions. Maximum detectable errors $s = d_{min} - 1$, Maximum correctable errors $t = \\lfloor(d_{min}-1)/2\\rfloor$.
                 </div>
             `
         }
     };
 
-    /**
-     * Switch Active Technique UI & Update Input Form Controls
-     */
+    // ═══════════════════════════════════════════════════════════
+    // TECHNIQUE SELECTION
+    // ═══════════════════════════════════════════════════════════
     function selectTechnique(techKey) {
         if (sidebarDrawer) sidebarDrawer.classList.remove('open');
 
         if (techKey === 'overview') {
             document.getElementById('overview-cards')?.scrollIntoView({ behavior: 'smooth' });
-            navItems.forEach(item => {
-                item.classList.toggle('active', item.getAttribute('data-technique') === 'overview');
-            });
-            if (topHeaderTechBadge) topHeaderTechBadge.innerHTML = `<i class="fa-solid fa-layer-group"></i> OVERVIEW WORKSPACE`;
+            navItems.forEach(item => item.classList.toggle('active', item.getAttribute('data-technique') === 'overview'));
+            if (topHeaderTechBadge) topHeaderTechBadge.innerHTML = `<i class="fa-solid fa-layer-group"></i> OVERVIEW`;
             return;
         }
 
@@ -355,38 +368,49 @@ document.addEventListener('DOMContentLoaded', () => {
         currentTechnique = techKey;
         const config = techniqueConfigs[techKey];
 
-        // Update active highlight on navigation items
-        navItems.forEach(item => {
-            item.classList.toggle('active', item.getAttribute('data-technique') === techKey);
-        });
+        // Navigation highlights
+        navItems.forEach(item => item.classList.toggle('active', item.getAttribute('data-technique') === techKey));
+        techniqueCards.forEach(card => card.classList.toggle('active', card.getAttribute('data-technique') === techKey));
 
-        // Update active highlight on cards
-        techniqueCards.forEach(card => {
-            card.classList.toggle('active', card.getAttribute('data-technique') === techKey);
-        });
-
-        // Update Header Titles & Badges
-        if (activeTechniqueTag) activeTechniqueTag.textContent = config.name;
+        // Header
+        if (activeTechniqueTag)   activeTechniqueTag.textContent  = config.name;
         if (activeTechniqueTitle) activeTechniqueTitle.textContent = config.title;
-        if (topHeaderTechBadge) topHeaderTechBadge.innerHTML = `<i class="fa-solid fa-microchip"></i> ${config.name.toUpperCase()}`;
+        if (topHeaderTechBadge)   topHeaderTechBadge.innerHTML = `<i class="fa-solid fa-microchip"></i> ${config.name.toUpperCase()}`;
 
-        // Update Form Inputs
-        if (primaryInputLabel) primaryInputLabel.textContent = config.inputLabel;
+        // Form
+        if (primaryInputLabel) primaryInputLabel.textContent  = config.inputLabel;
         if (primaryInput) {
             primaryInput.placeholder = config.placeholder;
-            primaryInput.value = config.defaultValue;
+            primaryInput.value       = config.defaultValue;
         }
         if (primaryInputHint) primaryInputHint.textContent = config.hint;
-
-        // Render Dynamic Parameters
         if (dynamicParamsContainer) dynamicParamsContainer.innerHTML = config.paramsHtml;
 
-        // Update Telemetry Panel
-        if (tModule) tModule.textContent = config.name;
-        if (tSize) tSize.textContent = `${primaryInput ? primaryInput.value.length : 0} Bits/Chars`;
-        if (tState) tState.textContent = 'READY';
+        // Theory HUD
+        if (hudTheoryBody) hudTheoryBody.textContent = config.theory;
 
-        // Attach action button handlers
+        // Telemetry
+        if (tModule) tModule.textContent = config.name;
+        updateInputSizeTelemetry();
+
+        // Error injector reset
+        resetErrorInjector();
+        if (enableErrorToggle) {
+            enableErrorToggle.checked = false;
+            setErrorInjectorEnabled(false);
+        }
+
+        // Attach technique-specific param handlers
+        attachParamHandlers(techKey);
+
+        // Reset results
+        resetResultsDisplay();
+
+        // Scroll to simulator
+        document.getElementById('simulator-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function attachParamHandlers(techKey) {
         if (techKey === 'byte_stuffing') {
             document.getElementById('btn-stuff-only')?.addEventListener('click', () => processSimulatorData('stuff'));
             document.getElementById('btn-destuff-only')?.addEventListener('click', () => processSimulatorData('destuff'));
@@ -395,182 +419,377 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('btn-bit-destuff-only')?.addEventListener('click', () => processSimulatorData('destuff'));
         } else if (techKey === 'parity') {
             const modeSelect = document.getElementById('param-parity-mode');
-            const colGroup = document.getElementById('param-columns-group');
+            const colGroup   = document.getElementById('param-columns-group');
             const err2dGroup = document.getElementById('param-2d-error-group');
-
-            modeSelect?.addEventListener('change', (e) => {
-                if (e.target.value === '2D') {
-                    if (colGroup) colGroup.style.display = 'block';
-                    if (err2dGroup) err2dGroup.style.display = 'flex';
-                    if (primaryInput) primaryInput.value = "1011001011001001";
-                } else {
-                    if (colGroup) colGroup.style.display = 'none';
-                    if (err2dGroup) err2dGroup.style.display = 'none';
-                    if (primaryInput) primaryInput.value = "1011001";
-                }
+            modeSelect?.addEventListener('change', e => {
+                const is2D = e.target.value === '2D';
+                if (colGroup)   colGroup.style.display   = is2D ? 'block' : 'none';
+                if (err2dGroup) err2dGroup.style.display = is2D ? 'flex'  : 'none';
+                if (primaryInput) primaryInput.value = is2D ? '1011001011001001' : '1011001';
             });
         } else if (techKey === 'crc') {
             document.getElementById('btn-crc-encode-only')?.addEventListener('click', () => processSimulatorData('encode'));
             document.getElementById('btn-crc-check-only')?.addEventListener('click', () => processSimulatorData('check'));
         } else if (techKey === 'hamming') {
-            const updateHammingAutoBadge = () => {
+            const updateBadge = () => {
                 const badge = document.getElementById('hamming-auto-badge');
-                const val = primaryInput ? primaryInput.value.trim() : '';
-                const isBinary = /^[01]+$/.test(val);
-                const k = val.length;
+                if (!badge) return;
+                const val    = primaryInput ? primaryInput.value.trim() : '';
+                const isBin  = /^[01]+$/.test(val);
+                const k      = val.length;
 
-                if (!val || !isBinary || k < 1) {
+                if (!val || !isBin || k < 1) {
                     badge.style.borderColor = 'var(--color-warning)';
-                    badge.style.color = 'var(--color-warning)';
-                    badge.style.background = 'rgba(234, 179, 8, 0.1)';
-                    badge.innerHTML = `<span><i class="fa-solid fa-triangle-exclamation"></i> <strong>Invalid Input</strong></span> <span style="font-size: 0.8rem; opacity: 0.9;">Enter binary data (0s and 1s)</span>`;
+                    badge.style.color       = 'var(--color-warning)';
+                    badge.style.background  = 'rgba(234,179,8,0.1)';
+                    badge.innerHTML = `<span><i class="fa-solid fa-triangle-exclamation"></i> <strong>Invalid</strong> — enter binary data</span>`;
                     return;
                 }
-
-                // Dynamic r calculation: 2^r >= k + r + 1
                 let r = 1;
-                while ((1 << r) < (k + r + 1)) {
-                    r++;
-                }
+                while ((1 << r) < (k + r + 1)) r++;
                 const n = k + r;
-
                 badge.style.borderColor = 'var(--accent-cyan)';
-                badge.style.color = 'var(--accent-cyan)';
-                badge.style.background = 'rgba(34, 211, 238, 0.1)';
-                badge.innerHTML = `<span><i class="fa-solid fa-wand-magic-sparkles"></i> <strong>⚡ AUTO-DETECTED:</strong> Hamming (${n},${k})</span> <span style="font-size: 0.8rem; opacity: 0.9;">Data: ${k} bits | Parity: ${r} bits | Total: ${n} bits</span>`;
+                badge.style.color       = 'var(--accent-cyan)';
+                badge.style.background  = 'rgba(34,211,238,0.08)';
+                badge.innerHTML = `<span><i class="fa-solid fa-wand-magic-sparkles"></i> <strong>AUTO:</strong> Hamming (${n},${k})</span><span style="font-size:0.75rem;opacity:.9;">Data: ${k}b | Parity: ${r}b | Total: ${n}b</span>`;
+
+                // Sync preset button active state
+                document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active-preset'));
+                if (k === 4)  document.getElementById('preset-74')?.classList.add('active-preset');
+                if (k === 8)  document.getElementById('preset-128')?.classList.add('active-preset');
+                if (k === 11) document.getElementById('preset-1511')?.classList.add('active-preset');
             };
 
             if (primaryInput) {
-                updateHammingAutoBadge();
-                primaryInput.addEventListener('input', updateHammingAutoBadge);
+                updateBadge();
+                primaryInput.addEventListener('input', updateBadge);
             }
-            document.getElementById('btn-hamming-encode-only')?.addEventListener('click', () => processSimulatorData('full_cycle'));
-        } else if (techKey === 'hamming_distance') {
-            const hdistModeSelect = document.getElementById('param-hdist-mode');
-            const c2Group = document.getElementById('param-c2-group');
-            const multiGroup = document.getElementById('param-multi-cw-group');
 
-            hdistModeSelect?.addEventListener('change', (e) => {
-                if (e.target.value === 'multi') {
-                    if (c2Group) c2Group.style.display = 'none';
-                    if (multiGroup) multiGroup.style.display = 'block';
-                } else {
-                    if (c2Group) c2Group.style.display = 'block';
-                    if (multiGroup) multiGroup.style.display = 'none';
-                }
+            // Preset buttons
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (primaryInput) {
+                        primaryInput.value = btn.getAttribute('data-val');
+                        updateBadge();
+                    }
+                });
+            });
+
+        } else if (techKey === 'hamming_distance') {
+            const modeSelect = document.getElementById('param-hdist-mode');
+            const c2Group    = document.getElementById('param-c2-group');
+            const multiGroup = document.getElementById('param-multi-cw-group');
+            modeSelect?.addEventListener('change', e => {
+                const isMulti = e.target.value === 'multi';
+                if (c2Group)    c2Group.style.display    = isMulti ? 'none'  : 'block';
+                if (multiGroup) multiGroup.style.display = isMulti ? 'block' : 'none';
             });
         }
-
-        // Reset Error Injection Controls
-        if (enableErrorToggle) {
-            enableErrorToggle.checked = false;
-            toggleErrorInjection(false);
-        }
-
-        // Reset Results Display Area
-        resetResultsDisplay();
     }
 
-    /**
-     * Enable/Disable Error Injection Controls
-     */
-    function toggleErrorInjection(enabled) {
+    function updateInputSizeTelemetry() {
+        if (tSize && primaryInput) {
+            const v = primaryInput.value;
+            const config = techniqueConfigs[currentTechnique];
+            if (config && config.binaryModule) {
+                tSize.textContent = `${v.length} bits`;
+            } else {
+                tSize.textContent = `${v.length} chars`;
+            }
+        }
+    }
+
+    if (primaryInput) {
+        primaryInput.addEventListener('input', updateInputSizeTelemetry);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ERROR INJECTOR
+    // ═══════════════════════════════════════════════════════════
+
+    function setErrorInjectorEnabled(enabled) {
         if (!errorControlsWrapper) return;
+        const config = techniqueConfigs[currentTechnique];
+        const isBinary = config && config.binaryModule;
+
         if (enabled) {
             errorControlsWrapper.classList.remove('disabled');
-            if (errorInputField) {
-                errorInputField.disabled = false;
-                errorInputField.value = primaryInput ? primaryInput.value : '';
+            [btnFlipOne, btnRandomErr, btnBurstErr, btnResetErr].forEach(b => { if (b) b.disabled = false; });
+            if (tChannel) { tChannel.textContent = 'NOISE INJECTED'; tChannel.className = 'hud-val t-danger'; }
+
+            if (isBinary) {
+                if (bitGridContainer)   bitGridContainer.style.display = 'block';
+                if (textErrorContainer) textErrorContainer.style.display = 'none';
+                // If we have a clean encoded stream, build the grid
+                if (cleanEncodedBits) buildBitGrid(cleanEncodedBits);
+            } else {
+                if (bitGridContainer)   bitGridContainer.style.display = 'none';
+                if (textErrorContainer) textErrorContainer.style.display = 'block';
+                if (errorInputField) {
+                    errorInputField.disabled = false;
+                    errorInputField.value    = primaryInput ? primaryInput.value : '';
+                }
             }
-            if (flipBitBtn) flipBitBtn.disabled = false;
-            if (corruptByteBtn) corruptByteBtn.disabled = false;
-            if (tChannel) tChannel.textContent = 'NOISE INJECTED';
         } else {
             errorControlsWrapper.classList.add('disabled');
-            if (errorInputField) {
-                errorInputField.disabled = true;
-                errorInputField.value = '';
-            }
-            if (flipBitBtn) flipBitBtn.disabled = true;
-            if (corruptByteBtn) corruptByteBtn.disabled = true;
-            if (tChannel) tChannel.textContent = 'CLEAN';
+            [btnFlipOne, btnRandomErr, btnBurstErr, btnResetErr].forEach(b => { if (b) b.disabled = true; });
+            if (tChannel) { tChannel.textContent = 'CLEAN'; tChannel.className = 'hud-val t-success'; }
+            if (errorInputField) { errorInputField.disabled = true; errorInputField.value = ''; }
         }
     }
 
-    /**
-     * Reset Results View to Initial State
-     */
+    function resetErrorInjector() {
+        cleanEncodedBits = '';
+        corruptedBits    = '';
+        flippedPositions.clear();
+        if (interactiveBitGrid) interactiveBitGrid.innerHTML = '';
+        if (bitDiffDisplay)     bitDiffDisplay.style.display = 'none';
+        if (bitGridContainer)   bitGridContainer.style.display = 'none';
+        if (textErrorContainer) textErrorContainer.style.display = 'none';
+        if (tChannel) { tChannel.textContent = 'CLEAN'; tChannel.className = 'hud-val t-success'; }
+    }
+
+    /** Populate the interactive bit grid from a binary string */
+    function buildBitGrid(binaryStr, parityPositions = []) {
+        if (!interactiveBitGrid) return;
+        cleanEncodedBits = binaryStr;
+        if (!corruptedBits || corruptedBits.length !== binaryStr.length) {
+            corruptedBits = binaryStr;
+            flippedPositions.clear();
+        }
+
+        interactiveBitGrid.innerHTML = '';
+        const n = binaryStr.length;
+
+        for (let i = 0; i < n; i++) {
+            const chip = document.createElement('div');
+            chip.className = 'bit-chip';
+            chip.textContent = corruptedBits[i];
+            chip.setAttribute('data-index', i);
+            chip.title = `Bit ${i + 1}`;
+
+            // Mark parity bits
+            if (parityPositions.includes(n - i)) {
+                chip.classList.add('parity-bit');
+                chip.title = `Parity bit P${n - i}`;
+            }
+
+            // Mark already flipped bits
+            if (flippedPositions.has(i)) chip.classList.add('flipped');
+
+            // Position label (shown above chip)
+            const pos = document.createElement('span');
+            pos.className = 'bit-chip-pos';
+            pos.textContent = n - i; // right-to-left position label
+            chip.appendChild(pos);
+
+            chip.addEventListener('click', () => toggleBit(i));
+            interactiveBitGrid.appendChild(chip);
+        }
+
+        updateDiffDisplay();
+    }
+
+    function toggleBit(index) {
+        if (!corruptedBits || index >= corruptedBits.length) return;
+        const arr = corruptedBits.split('');
+        arr[index] = arr[index] === '0' ? '1' : '0';
+        corruptedBits = arr.join('');
+
+        if (flippedPositions.has(index)) {
+            flippedPositions.delete(index);
+        } else {
+            flippedPositions.add(index);
+        }
+
+        // Update chip visuals
+        const chips = interactiveBitGrid.querySelectorAll('.bit-chip');
+        if (chips[index]) {
+            chips[index].textContent = arr[index];
+            chips[index].classList.toggle('flipped', flippedPositions.has(index));
+            // Re-append position label since textContent overwrote it
+            const pos = document.createElement('span');
+            pos.className = 'bit-chip-pos';
+            pos.textContent = corruptedBits.length - index;
+            chips[index].appendChild(pos);
+        }
+
+        updateDiffDisplay();
+    }
+
+    function updateDiffDisplay() {
+        if (!bitDiffDisplay || !cleanEncodedBits) return;
+        const hasFlipped = flippedPositions.size > 0;
+        bitDiffDisplay.style.display = hasFlipped ? 'flex' : 'none';
+
+        if (!hasFlipped) return;
+
+        const makeStream = (bits, highlightSet) => {
+            let html = '';
+            for (let i = 0; i < bits.length; i++) {
+                const cls = highlightSet.has(i) ? 'mismatch' : 'match';
+                html += `<span class="diff-bit ${cls}">${bits[i]}</span>`;
+            }
+            return html;
+        };
+
+        if (diffOriginal)  diffOriginal.innerHTML  = makeStream(cleanEncodedBits, flippedPositions);
+        if (diffCorrupted) diffCorrupted.innerHTML = makeStream(corruptedBits,    flippedPositions);
+    }
+
+    // Quick-action error buttons
+    if (btnFlipOne) {
+        btnFlipOne.addEventListener('click', () => {
+            if (!cleanEncodedBits) return;
+            // Flip position 0 (leftmost bit)
+            toggleBit(0);
+        });
+    }
+
+    if (btnRandomErr) {
+        btnRandomErr.addEventListener('click', () => {
+            if (!cleanEncodedBits) return;
+            const idx = Math.floor(Math.random() * cleanEncodedBits.length);
+            toggleBit(idx);
+        });
+    }
+
+    if (btnBurstErr) {
+        btnBurstErr.addEventListener('click', () => {
+            if (!cleanEncodedBits || cleanEncodedBits.length < 2) return;
+            const start = Math.floor(Math.random() * (cleanEncodedBits.length - 1));
+            toggleBit(start);
+            toggleBit(start + 1);
+        });
+    }
+
+    if (btnResetErr) {
+        btnResetErr.addEventListener('click', () => {
+            if (!cleanEncodedBits) return;
+            corruptedBits = cleanEncodedBits;
+            flippedPositions.clear();
+            buildBitGrid(cleanEncodedBits);
+        });
+    }
+
+    if (enableErrorToggle) {
+        enableErrorToggle.addEventListener('change', e => setErrorInjectorEnabled(e.target.checked));
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // PIPELINE STATE HELPER
+    // ═══════════════════════════════════════════════════════════
+    function setPipelineState(stage) {
+        // stage: 'running' | 'success' | 'error' | 'corrected' | 'idle'
+        const stageMap = {
+            running:   { source:'active-pipe', encoder:'active-pipe', channel:'active-pipe', noise:''         , decoder:''         , verify:''           },
+            success:   { source:'pipe-done',   encoder:'pipe-done',   channel:'pipe-done',   noise:'pipe-done', decoder:'pipe-done', verify:'pipe-done'   },
+            error:     { source:'pipe-done',   encoder:'pipe-done',   channel:'pipe-done',   noise:'pipe-error', decoder:'pipe-done', verify:'pipe-error'  },
+            corrected: { source:'pipe-done',   encoder:'pipe-done',   channel:'pipe-done',   noise:'pipe-error', decoder:'pipe-done', verify:'pipe-done'   },
+            idle:      { source:'active-pipe', encoder:''           , channel:''           , noise:''          , decoder:''         , verify:''           }
+        };
+        const map = stageMap[stage] || stageMap.idle;
+        Object.entries(pipeNodes).forEach(([key, el]) => {
+            if (el) {
+                el.className = 'pipe-step-sm';
+                if (map[key]) el.classList.add(map[key]);
+            }
+        });
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // RESET RESULTS DISPLAY
+    // ═══════════════════════════════════════════════════════════
     function resetResultsDisplay() {
         if (resultStatusIndicator) {
             resultStatusIndicator.className = 'status-indicator-badge neutral';
             resultStatusIndicator.innerHTML = '<i class="fa-solid fa-circle-info"></i> READY TO SIMULATE';
         }
-        if (outputEncoded) outputEncoded.textContent = '-- Awaiting Calculation --';
-        if (outputReceived) outputReceived.textContent = '-- Awaiting Calculation --';
-        if (outputDecoded) outputDecoded.textContent = '-- Awaiting Calculation --';
+        if (outputEncoded)  outputEncoded.textContent  = '— Awaiting Simulation —';
+        if (outputReceived) outputReceived.textContent = '— Awaiting Simulation —';
+        if (outputDecoded)  outputDecoded.textContent  = '— Awaiting Simulation —';
         if (stepByStepDisplay) {
             stepByStepDisplay.innerHTML = `
                 <div class="empty-state">
                     <div class="empty-icon"><i class="fa-solid fa-network-wired"></i></div>
                     <p class="empty-title">READY TO SIMULATE</p>
-                    <p class="empty-desc">Enter your data and click <strong>RUN SIMULATION</strong> to execute data transmission.</p>
-                </div>
-            `;
+                    <p class="empty-desc">Enter your data and click <strong>RUN SIMULATION</strong> to begin.</p>
+                </div>`;
         }
+        setPipelineState('idle');
+
+        // Reset telemetry values
+        if (tEncodedOut) tEncodedOut.textContent = '—';
+        if (tErrorPos)   tErrorPos.textContent   = '—';
+        if (tCorrection) { tCorrection.textContent = 'READY'; tCorrection.className = 'hud-val t-neutral'; }
     }
 
-    /**
-     * Gather Request Parameters based on technique
-     */
+    // ═══════════════════════════════════════════════════════════
+    // BUILD REQUEST PAYLOAD
+    // ═══════════════════════════════════════════════════════════
     function buildRequestPayload(actionOverride) {
+        const config      = techniqueConfigs[currentTechnique];
+        const isBinary    = config && config.binaryModule;
+        const errorActive = enableErrorToggle && enableErrorToggle.checked;
+
+        // Get injected error value
+        let injectedError = null;
+        if (errorActive) {
+            if (isBinary && corruptedBits && flippedPositions.size > 0) {
+                injectedError = corruptedBits;
+            } else if (!isBinary && errorInputField && errorInputField.value.trim()) {
+                injectedError = errorInputField.value.trim();
+            }
+        }
+
         const payload = {
             technique: currentTechnique,
             input_data: primaryInput ? primaryInput.value.trim() : '',
-            injected_error: (enableErrorToggle && enableErrorToggle.checked && errorInputField) ? errorInputField.value.trim() : null,
+            injected_error: injectedError,
             params: {}
         };
 
         if (currentTechnique === 'byte_stuffing') {
-            payload.params.flag = document.getElementById('param-flag')?.value || 'F';
-            payload.params.esc = document.getElementById('param-esc')?.value || 'E';
+            payload.params.flag   = document.getElementById('param-flag')?.value || 'F';
+            payload.params.esc    = document.getElementById('param-esc')?.value  || 'E';
             payload.params.action = actionOverride || 'full_cycle';
+
         } else if (currentTechnique === 'bit_stuffing') {
             payload.params.flag_pattern = document.getElementById('param-flag-pattern')?.value || '01111110';
-            payload.params.action = actionOverride || 'full_cycle';
-            const errPosVal = document.getElementById('param-error-pos')?.value;
-            if (errPosVal) payload.params.error_pos = parseInt(errPosVal, 10);
+            payload.params.action       = actionOverride || 'full_cycle';
+            const ep = document.getElementById('param-error-pos')?.value;
+            if (ep) payload.params.error_pos = parseInt(ep, 10);
+
         } else if (currentTechnique === 'parity') {
             payload.params.parity_type = document.getElementById('param-parity-type')?.value || 'even';
-            payload.params.mode = document.getElementById('param-parity-mode')?.value || '1D';
-            payload.params.columns = parseInt(document.getElementById('param-columns')?.value || 4, 10);
-            payload.params.action = actionOverride || 'full_cycle';
+            payload.params.mode        = document.getElementById('param-parity-mode')?.value  || '1D';
+            payload.params.columns     = parseInt(document.getElementById('param-columns')?.value || 4, 10);
+            payload.params.action      = actionOverride || 'full_cycle';
+            const ep  = document.getElementById('param-error-pos')?.value;
+            if (ep) payload.params.error_pos = parseInt(ep, 10);
+            const er  = document.getElementById('param-error-row')?.value;
+            const ec  = document.getElementById('param-error-col')?.value;
+            if (er && ec) { payload.params.error_row = parseInt(er, 10); payload.params.error_col = parseInt(ec, 10); }
 
-            const errPosVal = document.getElementById('param-error-pos')?.value;
-            if (errPosVal) payload.params.error_pos = parseInt(errPosVal, 10);
-
-            const errRowVal = document.getElementById('param-error-row')?.value;
-            const errColVal = document.getElementById('param-error-col')?.value;
-            if (errRowVal && errColVal) {
-                payload.params.error_row = parseInt(errRowVal, 10);
-                payload.params.error_col = parseInt(errColVal, 10);
-            }
         } else if (currentTechnique === 'crc') {
             payload.params.polynomial = document.getElementById('param-crc-poly')?.value || '1101';
-            payload.params.action = actionOverride || 'full_cycle';
-            const errPosVal = document.getElementById('param-error-pos')?.value;
-            if (errPosVal) payload.params.error_pos = parseInt(errPosVal, 10);
+            payload.params.action     = actionOverride || 'full_cycle';
+            const ep = document.getElementById('param-error-pos')?.value;
+            if (ep) payload.params.error_pos = parseInt(ep, 10);
+
         } else if (currentTechnique === 'hamming') {
-            payload.params.mode = 'auto';
+            payload.params.mode        = 'auto';
             payload.params.parity_type = document.getElementById('param-hamming-parity')?.value || 'even';
-            payload.params.action = actionOverride || 'full_cycle';
-            const errPosVal = document.getElementById('param-error-pos')?.value;
-            if (errPosVal) payload.params.error_pos = parseInt(errPosVal, 10);
+            payload.params.action      = actionOverride || 'full_cycle';
+            const ep = document.getElementById('param-error-pos')?.value;
+            if (ep) payload.params.error_pos = parseInt(ep, 10);
+
         } else if (currentTechnique === 'hamming_distance') {
             const hmode = document.getElementById('param-hdist-mode')?.value || 'pair';
             payload.params.mode = hmode;
             if (hmode === 'multi') {
-                const multiRaw = document.getElementById('param-codewords-list')?.value || '';
-                payload.params.codewords = multiRaw.replace(/\n/g, ',').split(',').map(s => s.trim()).filter(s => s.length > 0);
+                const raw = document.getElementById('param-codewords-list')?.value || '';
+                payload.params.codewords = raw.replace(/\n/g, ',').split(',').map(s => s.trim()).filter(s => s.length > 0);
             } else {
                 payload.params.codeword2 = document.getElementById('param-codeword2')?.value || '';
             }
@@ -579,172 +798,211 @@ document.addEventListener('DOMContentLoaded', () => {
         return payload;
     }
 
-    /**
-     * Render Highlighted Visual Tokens Stream for Byte & Bit Stuffing
-     */
+    // ═══════════════════════════════════════════════════════════
+    // RENDERERS
+    // ═══════════════════════════════════════════════════════════
+
+    /** Stuffed token stream (byte/bit stuffing) */
     function renderStuffedTokens(tokens) {
         if (!tokens || !tokens.length) return '';
         let html = '<div class="token-stream-container">';
         tokens.forEach(tok => {
-            let badgeClass = 'token-data';
-            if (tok.type === 'flag') badgeClass = 'token-flag';
-            else if (tok.type === 'esc_inserted') badgeClass = 'token-esc-inserted';
-            else if (tok.type === 'stuffed_data') badgeClass = 'token-stuffed-data';
-            else if (tok.type === 'stuffed_zero') badgeClass = 'token-stuffed-zero';
-
-            html += `<span class="token-badge ${badgeClass}" title="${tok.label || tok.type}">${tok.value}</span>`;
+            let cls = 'token-data';
+            if (tok.type === 'flag')         cls = 'token-flag';
+            if (tok.type === 'esc_inserted') cls = 'token-esc-inserted';
+            if (tok.type === 'stuffed_data') cls = 'token-stuffed-data';
+            if (tok.type === 'stuffed_zero') cls = 'token-stuffed-zero';
+            const tip = tok.type === 'stuffed_zero' ? "Stuffed '0' inserted after 5 consecutive 1s" : (tok.label || tok.type);
+            html += `<span class="token-badge ${cls}" title="${tip}">${tok.value}</span>`;
         });
         html += '</div>';
         return html;
     }
 
-    /**
-     * Render 2D Block Parity Matrix Table
-     */
+    /** 2D Parity Matrix with crosshair highlighting */
     function render2DParityMatrix(res) {
         if (!res || !res.matrix_rows) return '';
-        const cols = res.columns;
-        const rows = res.rows;
+        const cols        = res.columns;
+        const rows        = res.rows;
         const rowParities = res.row_parities;
         const colParities = res.col_parities;
-        const cornerParity = res.corner_parity;
-        const pin = res.pinpointed_location;
+        const corner      = res.corner_parity;
+        const pin         = res.pinpointed_location;
 
-        let html = '<div class="matrix-container"><table class="parity-matrix-table">';
-        
-        // Header row
-        html += '<thead><tr><th>Block Matrix</th>';
-        for (let c = 1; c <= cols; c++) {
-            html += `<th>Col ${c}</th>`;
-        }
-        html += `<th>Row Parity (P_r)</th></tr></thead><tbody>`;
+        const errRow = pin ? pin.row : -1;
+        const errCol = pin ? pin.col : -1;
 
-        // Matrix Data Rows
+        let html = '<div class="matrix-container"><table class="parity-matrix-table"><thead><tr><th>Block</th>';
+        for (let c = 1; c <= cols; c++) html += `<th>Col ${c}</th>`;
+        html += `<th>Row P (Pᵣ)</th></tr></thead><tbody>`;
+
         for (let r = 0; r < rows; r++) {
-            html += `<tr><th>Row ${r + 1}</th>`;
+            const isErrRow = (r + 1) === errRow;
+            html += `<tr${isErrRow ? ' class="crosshair-row"' : ''}>`;
+            html += `<th>Row ${r + 1}</th>`;
             const rowBits = res.matrix_rows[r];
             for (let c = 0; c < cols; c++) {
-                const bitVal = rowBits[c];
-                let isErrCell = (pin && pin.row === (r + 1) && pin.col === (c + 1));
-                let cellClass = isErrCell ? 'parity-cell-error' : 'parity-cell-data';
-                html += `<td class="${cellClass}">${bitVal} ${isErrCell ? '❌ [ERROR]' : ''}</td>`;
+                const isTarget = isErrRow && (c + 1) === errCol;
+                const isErrCol = (c + 1) === errCol;
+                let cls = isTarget ? 'crosshair-target' : (isErrCol ? 'parity-cell-data crosshair-col' : 'parity-cell-data');
+                html += `<td class="${cls}">${rowBits[c]}${isTarget ? ' <span style="font-size:0.8em">⚡</span>' : ''}</td>`;
             }
             html += `<td class="parity-cell-row-p">${rowParities[r]}</td></tr>`;
         }
 
-        // Footer Column Parities Row
-        html += `<tr><th>Col Parity (P_c)</th>`;
+        html += `<tr><th>Col P (Pᶜ)</th>`;
         for (let c = 0; c < cols; c++) {
-            html += `<td class="parity-cell-col-p">${colParities[c]}</td>`;
+            const isErrCol = (c + 1) === errCol;
+            html += `<td class="${isErrCol ? 'parity-cell-col-p crosshair-col' : 'parity-cell-col-p'}">${colParities[c]}</td>`;
         }
-        html += `<td class="parity-cell-corner">${cornerParity} (P_corner)</td></tr>`;
-
+        html += `<td class="parity-cell-corner">${corner}</td></tr>`;
         html += '</tbody></table></div>';
         return html;
     }
 
-    /**
-     * Render Hamming Position Map Table
-     */
+    /** Hamming position table */
     function renderHammingPosTable(posTable) {
         if (!posTable || !posTable.length) return '';
-        let html = '<div class="hamming-table-container"><table class="hamming-pos-table"><thead><tr><th>Position</th>';
-        posTable.forEach(item => {
-            html += `<th>${item.pos}</th>`;
-        });
+        let html = '<div class="hamming-table-container"><table class="hamming-pos-table"><thead>';
+        html += '<tr><th>Position</th>';
+        posTable.forEach(item => { html += `<th>${item.pos}</th>`; });
         html += '</tr><tr><th>Type</th>';
+        posTable.forEach(item => { html += `<th style="font-size:0.72rem;">${item.type}</th>`; });
+        html += '</tr></thead><tbody><tr><th>Bit Value</th>';
         posTable.forEach(item => {
-            html += `<th>${item.type}</th>`;
-        });
-        html += '</tr></thead><tbody><tr><th>Bit</th>';
-        posTable.forEach(item => {
-            let cellClass = item.is_parity ? 'pos-cell-p' : 'pos-cell-d';
-            if (item.is_error) cellClass = 'pos-cell-err';
-            html += `<td class="${cellClass}">${item.value} ${item.is_error ? '❌' : ''}</td>`;
+            let cls = item.is_parity ? 'pos-cell-p' : 'pos-cell-d';
+            if (item.is_error) cls = 'pos-cell-err';
+            html += `<td class="${cls}">${item.value}${item.is_error ? ' ⚡' : ''}</td>`;
         });
         html += '</tr></tbody></table></div>';
         return html;
     }
 
-    /**
-     * Render Hamming Distance Pairwise Bit Comparison Table (Mode A)
-     */
+    /** Hamming Distance pair comparison table */
     function renderHammingDistanceComparisonTable(comp) {
         if (!comp || !comp.length) return '';
         let html = '<div class="hdist-table-container"><table class="hdist-matrix-table"><thead><tr><th>Position</th>';
-        comp.forEach(item => {
-            html += `<th>${item.pos}</th>`;
-        });
-        html += '</tr></thead><tbody><tr><th>Codeword 1</th>';
-        comp.forEach(item => {
-            let cellClass = item.match ? '' : 'bit-diff-cell';
-            html += `<td class="${cellClass}">${item.bit1}</td>`;
-        });
-        html += '</tr><tr><th>Codeword 2</th>';
-        comp.forEach(item => {
-            let cellClass = item.match ? '' : 'bit-diff-cell';
-            html += `<td class="${cellClass}">${item.bit2}</td>`;
-        });
-        html += '</tr><tr><th>Match</th>';
-        comp.forEach(item => {
-            let matchText = item.match ? '✓' : '✗';
-            let cellClass = item.match ? '' : 'bit-diff-cell';
-            html += `<td class="${cellClass}">${matchText}</td>`;
-        });
-        html += '</tr><tr><th>XOR Bit</th>';
-        comp.forEach(item => {
-            let cellClass = item.match ? '' : 'bit-diff-cell';
-            html += `<td class="${cellClass}">${item.xor_bit}</td>`;
-        });
-        html += '</tr></tbody></table></div>';
-        return html;
-    }
-
-    /**
-     * Render Hamming Distance Pairwise Matrix Table (Mode B)
-     */
-    function renderHammingDistanceMatrixTable(res) {
-        if (!res || !res.pairwise_matrix || !res.codewords) return '';
-        const cws = res.codewords;
-        const matrix = res.pairwise_matrix;
-        const dMin = res.d_min;
-
-        let html = '<div class="hdist-table-container"><table class="hdist-matrix-table"><thead><tr><th>Codewords</th>';
-        for (let j = 0; j < cws.length; j++) {
-            html += `<th>C${j+1} (${cws[j]})</th>`;
-        }
+        comp.forEach(item => { html += `<th>${item.pos}</th>`; });
         html += '</tr></thead><tbody>';
 
-        for (let i = 0; i < cws.length; i++) {
-            html += `<tr><th>C${i+1} (${cws[i]})</th>`;
-            for (let j = 0; j < cws.length; j++) {
-                const dist = matrix[i][j];
-                if (i === j) {
-                    html += `<td class="hdist-cell-diag">-</td>`;
-                } else if (dist === dMin) {
-                    html += `<td class="hdist-cell-min">${dist} (d_min)</td>`;
+        const rows = [
+            { label: 'Codeword 1', key: 'bit1' },
+            { label: 'Codeword 2', key: 'bit2' },
+            { label: 'Match',      key: null, special: 'match' },
+            { label: 'XOR',        key: 'xor_bit' }
+        ];
+
+        rows.forEach(row => {
+            html += `<tr><th>${row.label}</th>`;
+            comp.forEach(item => {
+                const isDiff = !item.match;
+                const cls    = isDiff ? 'bit-diff-cell' : '';
+                if (row.special === 'match') {
+                    html += `<td class="${cls}">${item.match ? '✓' : '✗'}</td>`;
                 } else {
-                    html += `<td>${dist}</td>`;
+                    html += `<td class="${cls}">${item[row.key]}</td>`;
                 }
-            }
+            });
             html += '</tr>';
-        }
+        });
 
         html += '</tbody></table></div>';
         return html;
     }
 
-    /**
-     * Send API Request to Flask Server & Render Response
-     */
+    /** Hamming Distance pairwise matrix (mode B) */
+    function renderHammingDistanceMatrixTable(res) {
+        if (!res || !res.pairwise_matrix || !res.codewords) return '';
+        const cws = res.codewords;
+        const mat = res.pairwise_matrix;
+        const dMin = res.d_min;
+
+        let html = '<div class="hdist-table-container"><table class="hdist-matrix-table"><thead><tr><th>d(·,·)</th>';
+        cws.forEach((cw, j) => { html += `<th>C${j+1}</th>`; });
+        html += '</tr></thead><tbody>';
+        cws.forEach((cw, i) => {
+            html += `<tr><th>C${i+1} <span style="font-size:0.72rem;color:var(--text-muted);">${cw}</span></th>`;
+            cws.forEach((_, j) => {
+                const d = mat[i][j];
+                if (i === j) html += `<td class="hdist-cell-diag">—</td>`;
+                else if (d === dMin) html += `<td class="hdist-cell-min">${d}</td>`;
+                else html += `<td>${d}</td>`;
+            });
+            html += '</tr>';
+        });
+        html += '</tbody></table></div>';
+        return html;
+    }
+
+    /** CRC Structured Division Table */
+    function renderCRCDivisionTable(steps) {
+        if (!steps || !steps.length) return '';
+
+        // Parse raw step strings into structured rows
+        const rows = [];
+        steps.forEach((s, idx) => {
+            if (idx === 0) return; // Skip the setup line
+            // Extract: "Step N: [explanation]"
+            const match = s.match(/Step (\d+): (.+)/);
+            if (!match) return;
+            const stepNum = match[1];
+            const desc    = match[2];
+
+            // Extract dividend/XOR/remainder segments from description
+            const xorMatch = desc.match(/'([01]+)' \^ '([01]+)' = '([01]+)'/);
+            const remMatch = desc.match(/Final Remainder = '([01]+)'/);
+            const isFinal  = desc.includes('Final Remainder');
+
+            if (xorMatch) {
+                rows.push({
+                    step: stepNum,
+                    dividend: xorMatch[1],
+                    divisor:  xorMatch[2],
+                    result:   xorMatch[3],
+                    final:    isFinal,
+                    remainder: remMatch ? remMatch[1] : null
+                });
+            }
+        });
+
+        if (!rows.length) return '';
+
+        let html = `<div style="overflow-x:auto;"><table class="crc-division-table">
+            <thead><tr>
+                <th>Step</th>
+                <th>Current Segment</th>
+                <th>Divisor (XOR)</th>
+                <th>Result</th>
+                <th>Remainder</th>
+            </tr></thead><tbody>`;
+
+        rows.forEach(row => {
+            const cls = row.final ? ' class="crc-final-row"' : '';
+            html += `<tr${cls}>
+                <td class="crc-step-num">${row.step}</td>
+                <td><code>${row.dividend}</code></td>
+                <td><code>${row.divisor}</code></td>
+                <td><code>${row.result}</code></td>
+                <td class="${row.remainder !== null ? 'crc-remainder' : ''}">${row.remainder !== null ? row.remainder : '—'}</td>
+            </tr>`;
+        });
+
+        html += '</tbody></table></div>';
+        return html;
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // MAIN API CALL & RENDERING
+    // ═══════════════════════════════════════════════════════════
     async function processSimulatorData(actionOverride) {
         const startTime = performance.now();
-        const payload = buildRequestPayload(actionOverride);
+        const payload   = buildRequestPayload(actionOverride);
 
-        if (tState) tState.textContent = 'RUNNING...';
+        // UI: Running state
+        setPipelineState('running');
         if (processBtn) {
             processBtn.disabled = true;
-            processBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> RUNNING SIMULATION...';
+            processBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> TRANSMITTING...';
         }
         if (resultStatusIndicator) {
             resultStatusIndicator.className = 'status-indicator-badge neutral';
@@ -754,242 +1012,52 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/api/process', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
-            const data = await response.json();
-            const endTime = performance.now();
-            if (tLatency) tLatency.textContent = `${Math.round(endTime - startTime)} ms`;
-            if (tState) tState.textContent = 'COMPLETED';
+            const data    = await response.json();
+            const elapsed = Math.round(performance.now() - startTime);
+
+            if (tLatency) tLatency.textContent = `${elapsed} ms`;
 
             if (data.success && data.result) {
                 const res = data.result;
 
-                // Handle User-Friendly Input Validation Error
+                // Validation error
                 if (res.success === false) {
+                    setPipelineState('error');
                     if (resultStatusIndicator) {
                         resultStatusIndicator.className = 'status-indicator-badge error-detected';
                         resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> VALIDATION ERROR';
                     }
-                    if (tError) { tError.textContent = 'VALIDATION ERROR'; tError.className = 't-val t-danger'; }
-                    if (outputEncoded) outputEncoded.textContent = 'VALIDATION ERROR';
+                    if (tCorrection) { tCorrection.textContent = 'INVALID INPUT'; tCorrection.className = 'hud-val t-danger'; }
+                    if (outputEncoded)  outputEncoded.textContent  = 'VALIDATION ERROR';
                     if (outputReceived) outputReceived.textContent = res.error || 'Invalid input payload';
-                    if (outputDecoded) outputDecoded.textContent = payload.input_data ? `Received Input Payload: ${payload.input_data}` : 'No input payload provided';
+                    if (outputDecoded)  outputDecoded.textContent  = `Input: ${payload.input_data}`;
                     if (stepByStepDisplay) stepByStepDisplay.innerHTML = `<div class="step-row error-step"><i class="fa-solid fa-circle-exclamation"></i> <strong>Validation Error:</strong> ${res.error}</div>`;
                     return;
                 }
 
-                // Render Response for Byte Stuffing or Bit Stuffing
-                if (currentTechnique === 'byte_stuffing' || currentTechnique === 'bit_stuffing') {
-                    if (res.action === 'stuff') {
-                        if (resultStatusIndicator) {
-                            resultStatusIndicator.className = 'status-indicator-badge success';
-                            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-check-circle"></i> FRAME STUFFED';
-                        }
-                        if (tError) { tError.textContent = 'NO ERROR'; tError.className = 't-val t-success'; }
-                        if (outputEncoded) outputEncoded.textContent = res.original_data;
-                        if (outputReceived) outputReceived.innerHTML = renderStuffedTokens(res.stuffed_tokens) || res.stuffed_frame;
-                        if (outputDecoded) outputDecoded.textContent = 'N/A (Stuffing Mode)';
-                    } else if (res.action === 'destuff') {
-                        if (resultStatusIndicator) {
-                            resultStatusIndicator.className = 'status-indicator-badge success';
-                            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-check-circle"></i> FRAME DE-STUFFED';
-                        }
-                        if (tError) { tError.textContent = 'NO ERROR'; tError.className = 't-val t-success'; }
-                        if (outputEncoded) outputEncoded.textContent = 'N/A (De-stuff Mode)';
-                        if (outputReceived) outputReceived.textContent = payload.input_data;
-                        if (outputDecoded) outputDecoded.textContent = res.destuffed_data;
-                    } else {
-                        // Full Cycle Mode
-                        if (resultStatusIndicator) {
-                            if (res.integrity_match) {
-                                resultStatusIndicator.className = 'status-indicator-badge success';
-                                resultStatusIndicator.innerHTML = '<i class="fa-solid fa-shield-check"></i> TRANSMISSION VERIFIED';
-                                if (tError) { tError.textContent = 'FRAME MATCH'; tError.className = 't-val t-success'; }
-                            } else {
-                                resultStatusIndicator.className = 'status-indicator-badge error-detected';
-                                resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> FRAME MISMATCH';
-                                if (tError) { tError.textContent = 'CORRUPTED'; tError.className = 't-val t-danger'; }
-                            }
-                        }
+                renderResult(res, payload, elapsed);
 
-                        if (outputEncoded) outputEncoded.textContent = res.original_data;
-                        if (outputReceived) outputReceived.innerHTML = renderStuffedTokens(res.stuffed_tokens) || res.stuffed_frame;
-                        if (outputDecoded) outputDecoded.textContent = res.destuff_success ? res.destuffed_data : `Failed: ${res.destuff_error}`;
-                    }
-                } else if (currentTechnique === 'parity') {
-                    // Render 1D or 2D Parity Check
-                    if (resultStatusIndicator) {
-                        if (!res.error_detected) {
-                            resultStatusIndicator.className = 'status-indicator-badge success';
-                            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-shield-check"></i> NO ERROR DETECTED';
-                            if (tError) { tError.textContent = 'NO ERROR'; tError.className = 't-val t-success'; }
-                        } else {
-                            resultStatusIndicator.className = 'status-indicator-badge error-detected';
-                            if (tError) { tError.textContent = 'DETECTED'; tError.className = 't-val t-danger'; }
-                            if (res.pinpointed_location) {
-                                resultStatusIndicator.innerHTML = `<i class="fa-solid fa-crosshairs"></i> ERROR PINPOINTED (Row ${res.pinpointed_location.row}, Col ${res.pinpointed_location.col})`;
-                            } else {
-                                resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ERROR DETECTED';
-                            }
-                        }
-                    }
-
-                    if (res.mode === '1D') {
-                        if (outputEncoded) outputEncoded.textContent = `Payload: ${res.original_data} | Parity Bit: ${res.parity_bit}`;
-                        if (outputReceived) outputReceived.textContent = res.received_codeword;
-                        if (outputDecoded) outputDecoded.textContent = res.error_detected ? 'ERROR DETECTED (Corrupted Codeword)' : `Payload Intact: ${res.original_data}`;
-                    } else {
-                        // 2D Mode
-                        if (outputEncoded) outputEncoded.textContent = `2D Grid (${res.rows}x${res.columns}) | Scheme: ${res.parity_type.toUpperCase()}`;
-                        if (outputReceived) outputReceived.innerHTML = render2DParityMatrix(res);
-                        if (outputDecoded) {
-                            if (res.pinpointed_location) {
-                                outputDecoded.textContent = `Error Pinpointed at Row ${res.pinpointed_location.row}, Column ${res.pinpointed_location.col}`;
-                            } else {
-                                outputDecoded.textContent = res.error_detected ? 'Multi-bit Error Detected' : 'Block Parity Intact';
-                            }
-                        }
-                    }
-                } else if (currentTechnique === 'crc') {
-                    // Render CRC Checksum
-                    if (res.action === 'encode') {
-                        if (resultStatusIndicator) {
-                            resultStatusIndicator.className = 'status-indicator-badge success';
-                            resultStatusIndicator.innerHTML = '<i class="fa-solid fa-check-circle"></i> CRC ENCODED';
-                        }
-                        if (tError) { tError.textContent = 'CHECKSUM CREATED'; tError.className = 't-val t-success'; }
-                        if (outputEncoded) outputEncoded.textContent = `Payload: ${res.original_data} | Appended Zeros: ${res.appended_data}`;
-                        if (outputReceived) outputReceived.textContent = `CRC Remainder: ${res.crc_remainder}`;
-                        if (outputDecoded) outputDecoded.textContent = `Transmitted Codeword: ${res.transmitted_codeword}`;
-                    } else if (res.action === 'check') {
-                        if (resultStatusIndicator) {
-                            if (!res.error_detected) {
-                                resultStatusIndicator.className = 'status-indicator-badge success';
-                                resultStatusIndicator.innerHTML = '<i class="fa-solid fa-shield-check"></i> NO ERROR (Remainder = 0)';
-                                if (tError) { tError.textContent = 'NO ERROR'; tError.className = 't-val t-success'; }
-                            } else {
-                                resultStatusIndicator.className = 'status-indicator-badge error-detected';
-                                resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ERROR DETECTED (Non-zero Remainder)';
-                                if (tError) { tError.textContent = 'NON-ZERO REMAINDER'; tError.className = 't-val t-danger'; }
-                            }
-                        }
-                        if (outputEncoded) outputEncoded.textContent = 'N/A (Check Mode)';
-                        if (outputReceived) outputReceived.textContent = `Received Codeword: ${res.received_codeword}`;
-                        if (outputDecoded) outputDecoded.textContent = `Receiver Remainder: ${res.received_remainder}`;
-                    } else {
-                        // Full Cycle Mode
-                        if (resultStatusIndicator) {
-                            if (!res.error_detected) {
-                                resultStatusIndicator.className = 'status-indicator-badge success';
-                                resultStatusIndicator.innerHTML = '<i class="fa-solid fa-shield-check"></i> CRC INTEGRITY VERIFIED (Remainder = 0)';
-                                if (tError) { tError.textContent = 'REMAINDER = 0'; tError.className = 't-val t-success'; }
-                            } else {
-                                resultStatusIndicator.className = 'status-indicator-badge error-detected';
-                                resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ERROR DETECTED (Non-zero Remainder)';
-                                if (tError) { tError.textContent = 'NON-ZERO REMAINDER'; tError.className = 't-val t-danger'; }
-                            }
-                        }
-                        if (outputEncoded) outputEncoded.textContent = `Payload: ${res.original_data} | Remainder: ${res.crc_remainder}`;
-                        if (outputReceived) outputReceived.textContent = `Received Codeword: ${res.received_codeword}`;
-                        if (outputDecoded) outputDecoded.textContent = `Receiver Remainder: ${res.received_remainder} | ${res.error_detected ? 'CORRUPTED' : 'DATA INTACT'}`;
-                    }
-                } else if (currentTechnique === 'hamming') {
-                    // Render Professional Hamming Code Engineering Simulation Output
-                    if (resultStatusIndicator) {
-                        if (!res.error_detected) {
-                            resultStatusIndicator.className = 'status-indicator-badge success';
-                            resultStatusIndicator.innerHTML = `<i class="fa-solid fa-circle-check"></i> HAMMING (${res.mode}) VERIFIED — NO ERROR (Syndrome = ${res.syndrome_string || '000'})`;
-                            if (tError) { tError.textContent = 'NO ERROR'; tError.className = 't-val t-success'; }
-                        } else {
-                            resultStatusIndicator.className = 'status-indicator-badge corrected';
-                            resultStatusIndicator.innerHTML = `<i class="fa-solid fa-wrench"></i> HAMMING (${res.mode}) AUTO-CORRECTED — Error Pos ${res.error_position} (Syndrome S = ${res.syndrome_string})`;
-                            if (tError) { tError.textContent = `CORRECTED (POS ${res.error_position})`; tError.className = 't-val t-success'; }
-                        }
-                    }
-
-                    if (outputEncoded) {
-                        outputEncoded.innerHTML = `
-                            <div style="margin-bottom: 8px;">
-                                <strong>Original Input Data:</strong> <code style="font-size: 1.05rem;">${res.original_data}</code> &nbsp;|&nbsp; 
-                                <strong>Auto-Detected Mode:</strong> <code style="color: var(--accent-cyan);">Hamming (${res.mode})</code> &nbsp;|&nbsp; 
-                                <strong>Encoded Transmitted Codeword:</strong> <code style="color: var(--accent-cyan); font-weight:700; font-size: 1.05rem;">${res.encoded_codeword}</code>
-                            </div>
-                        ` + renderHammingPosTable(res.pos_table);
-                    }
-
-                    if (outputReceived) {
-                        const errColor = res.error_detected ? 'var(--color-danger)' : 'var(--accent-cyan)';
-                        outputReceived.innerHTML = `
-                            <div>
-                                <strong>Received Codeword:</strong> <code style="color: ${errColor}; font-weight: 700; font-size: 1.05rem;">${res.received_codeword}</code> &nbsp;|&nbsp; 
-                                <strong>Syndrome (S):</strong> <code style="color: ${res.error_detected ? 'var(--color-warning)' : 'var(--color-success)'}; font-weight:700;">${res.syndrome_string}</code> &nbsp;|&nbsp; 
-                                <strong>Detected Error Position:</strong> <code>${res.error_position === 0 ? '0 (No Error)' : 'Position ' + res.error_position}</code>
-                            </div>
-                        `;
-                    }
-
-                    if (outputDecoded) {
-                        outputDecoded.innerHTML = `
-                            <div style="display: flex; gap: 14px; flex-wrap: wrap; align-items: center;">
-                                <span><strong>Corrected Codeword:</strong> <code style="color: var(--color-success); font-weight:700;">${res.corrected_codeword}</code></span>
-                                <span><strong>Extracted Payload Data:</strong> <code style="color: var(--color-success); font-size: 1.1rem; font-weight: 800;">${res.extracted_data}</code></span>
-                                <span class="badge ${res.integrity_match ? 'badge-success' : 'badge-danger'}" style="padding: 4px 10px; border-radius: 6px;">${res.integrity_match ? '✓ INTEGRITY MATCH' : '✗ INTEGRITY MISMATCH'}</span>
-                            </div>
-                        `;
-                    }
-                } else if (currentTechnique === 'hamming_distance') {
-                    // Render Hamming Distance & d_min
-                    if (res.mode === 'multi') {
-                        if (resultStatusIndicator) {
-                            resultStatusIndicator.className = 'status-indicator-badge success';
-                            resultStatusIndicator.innerHTML = `<i class="fa-solid fa-ruler"></i> Minimum Distance d_min = ${res.d_min}`;
-                            if (tError) { tError.textContent = `d_min = ${res.d_min}`; tError.className = 't-val t-success'; }
-                        }
-                        if (outputEncoded) outputEncoded.textContent = `Codewords Set: [ ${res.codewords.join(', ')} ] (Count = ${res.num_codewords}, Length = ${res.codeword_length})`;
-                        if (outputReceived) outputReceived.innerHTML = renderHammingDistanceMatrixTable(res);
-                        if (outputDecoded) outputDecoded.innerHTML = `<strong>Capabilities:</strong> Detectable Errors <code>s = ${res.detectable_errors_s}</code> | Correctable Errors <code>t = ${res.correctable_errors_t}</code>`;
-                    } else {
-                        // Pair Comparison Mode
-                        if (resultStatusIndicator) {
-                            resultStatusIndicator.className = 'status-indicator-badge success';
-                            resultStatusIndicator.innerHTML = `<i class="fa-solid fa-ruler-combined"></i> Hamming Distance d = ${res.distance}`;
-                            if (tError) { tError.textContent = `Distance d = ${res.distance}`; tError.className = 't-val t-success'; }
-                        }
-                        if (outputEncoded) outputEncoded.textContent = `Codeword 1: ${res.codeword1} | Codeword 2: ${res.codeword2}`;
-                        if (outputReceived) outputReceived.innerHTML = renderHammingDistanceComparisonTable(res.comparison);
-                        if (outputDecoded) outputDecoded.textContent = `XOR Result: ${res.xor_result} | Differing Positions: ${res.differing_positions.length ? res.differing_positions.join(', ') : 'None (Identical)'}`;
-                    }
-                }
-
-                // Render Step-by-Step Trace
-                let stepsHtml = '';
-                if (res.steps && res.steps.length) {
-                    res.steps.forEach(step => {
-                        let stepClass = 'step-row';
-                        if (step.includes('INSERTED') || step.includes('PINPOINTED') || step.includes('AUTO-CORRECTING') || step.includes('d_min') || step.includes('Distance =') || step.includes('FLAG')) stepClass += ' highlight-step';
-                        if (step.includes('FAILED') || step.includes('ERROR') || step.includes('Invalid') || step.includes('Notice:')) stepClass += ' error-step';
-                        stepsHtml += `<div class="${stepClass}">${step}</div>`;
-                    });
-                }
-                if (stepByStepDisplay) stepByStepDisplay.innerHTML = stepsHtml || 'No step trace generated.';
             } else {
+                setPipelineState('error');
                 if (resultStatusIndicator) {
                     resultStatusIndicator.className = 'status-indicator-badge error-detected';
-                    resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ERROR';
+                    resultStatusIndicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> SERVER ERROR';
                 }
-                if (stepByStepDisplay) stepByStepDisplay.innerHTML = `<div class="step-row error-step"><i class="fa-solid fa-triangle-exclamation"></i> ${data.error || 'Server processing error occurred.'}</div>`;
+                if (stepByStepDisplay) stepByStepDisplay.innerHTML = `<div class="step-row error-step"><i class="fa-solid fa-triangle-exclamation"></i> ${data.error || 'Server processing error.'}</div>`;
             }
+
         } catch (err) {
-            console.error('API Call Error:', err);
+            console.error('API Error:', err);
+            setPipelineState('error');
             if (resultStatusIndicator) {
                 resultStatusIndicator.className = 'status-indicator-badge error-detected';
                 resultStatusIndicator.innerHTML = '<i class="fa-solid fa-plug-circle-xmark"></i> CONNECTION ERROR';
             }
-            if (stepByStepDisplay) stepByStepDisplay.innerHTML = `<div class="step-row error-step"><i class="fa-solid fa-plug-circle-xmark"></i> Failed to connect to backend relative endpoint at /api/process.</div>`;
+            if (stepByStepDisplay) stepByStepDisplay.innerHTML = `<div class="step-row error-step"><i class="fa-solid fa-plug-circle-xmark"></i> Failed to connect to /api/process.</div>`;
         } finally {
             if (processBtn) {
                 processBtn.disabled = false;
@@ -998,55 +1066,249 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Attach Event Listeners
+    function renderResult(res, payload, elapsed) {
+        const tech = currentTechnique;
+
+        // ── Byte/Bit Stuffing ──
+        if (tech === 'byte_stuffing' || tech === 'bit_stuffing') {
+            if (res.action === 'stuff') {
+                setPipelineState('success');
+                setStatus('success', '<i class="fa-solid fa-check-circle"></i> FRAME STUFFED');
+                if (outputEncoded)  outputEncoded.textContent   = res.original_data;
+                if (outputReceived) outputReceived.innerHTML    = renderStuffedTokens(res.stuffed_tokens) || res.stuffed_frame;
+                if (outputDecoded)  outputDecoded.textContent   = 'N/A — Stuffing mode only';
+                updateTelemetry({ encoded: res.stuffed_frame, errorPos: '—', status: 'STUFFED', statusClass: 't-success' });
+            } else if (res.action === 'destuff') {
+                setPipelineState('success');
+                setStatus('success', '<i class="fa-solid fa-check-circle"></i> FRAME DE-STUFFED');
+                if (outputEncoded)  outputEncoded.textContent = 'N/A — De-stuffing mode';
+                if (outputReceived) outputReceived.textContent = payload.input_data;
+                if (outputDecoded)  outputDecoded.textContent  = res.destuffed_data;
+                updateTelemetry({ encoded: res.destuffed_data, errorPos: '—', status: 'RECOVERED', statusClass: 't-success' });
+            } else {
+                // Full cycle
+                const ok = res.integrity_match;
+                setPipelineState(ok ? 'success' : 'error');
+                setStatus(ok ? 'success' : 'error-detected',
+                    ok ? '<i class="fa-solid fa-shield-check"></i> TRANSMISSION VERIFIED'
+                       : '<i class="fa-solid fa-triangle-exclamation"></i> FRAME MISMATCH');
+                if (outputEncoded)  outputEncoded.textContent = res.original_data;
+                if (outputReceived) outputReceived.innerHTML  = renderStuffedTokens(res.stuffed_tokens) || res.stuffed_frame;
+                if (outputDecoded)  outputDecoded.textContent = res.destuff_success ? res.destuffed_data : `Failed: ${res.destuff_error}`;
+
+                // After a full cycle, populate the bit grid with the stuffed payload (binary modules)
+                if (tech === 'bit_stuffing' && res.stuffed_payload && enableErrorToggle?.checked) {
+                    buildBitGrid(res.stuffed_payload);
+                }
+                updateTelemetry({ encoded: res.stuffed_frame, errorPos: '—', status: ok ? 'VERIFIED' : 'MISMATCH', statusClass: ok ? 't-success' : 't-danger' });
+            }
+        }
+
+        // ── Parity ──
+        else if (tech === 'parity') {
+            const hasErr  = res.error_detected;
+            const pin     = res.pinpointed_location;
+            const state   = hasErr ? 'error' : 'success';
+
+            setPipelineState(state);
+            let statusText = hasErr
+                ? (pin ? `<i class="fa-solid fa-crosshairs"></i> ERROR AT (Row ${pin.row}, Col ${pin.col})` : '<i class="fa-solid fa-triangle-exclamation"></i> ERROR DETECTED')
+                : '<i class="fa-solid fa-shield-check"></i> NO ERROR DETECTED';
+            setStatus(hasErr ? 'error-detected' : 'success', statusText);
+
+            if (res.mode === '1D') {
+                if (outputEncoded)  outputEncoded.textContent  = `Payload: ${res.original_data}  |  Parity Bit: ${res.parity_bit}`;
+                if (outputReceived) outputReceived.textContent = res.received_codeword;
+                if (outputDecoded)  outputDecoded.textContent  = hasErr ? 'ERROR DETECTED (Corrupted Codeword)' : `Payload Intact: ${res.original_data}`;
+
+                // Populate bit grid from codeword for interactive error injection
+                if (res.received_codeword) setCleanBitsForInjector(res.received_codeword);
+
+            } else {
+                if (outputEncoded)  outputEncoded.textContent  = `2D Grid (${res.rows}×${res.columns}) | ${res.parity_type.toUpperCase()} Parity`;
+                if (outputReceived) outputReceived.innerHTML   = render2DParityMatrix(res);
+                if (outputDecoded)  outputDecoded.textContent  = pin ? `Error at Row ${pin.row}, Column ${pin.col}` : (hasErr ? 'Multi-bit error' : 'Block Parity Intact');
+            }
+
+            const errPosLabel = hasErr ? (pin ? `Row ${pin.row} Col ${pin.col}` : 'Detected') : 'None';
+            updateTelemetry({ encoded: res.received_codeword || '—', errorPos: errPosLabel, status: hasErr ? 'DETECTED' : 'CLEAN', statusClass: hasErr ? 't-danger' : 't-success' });
+        }
+
+        // ── CRC ──
+        else if (tech === 'crc') {
+            if (res.action === 'encode') {
+                setPipelineState('success');
+                setStatus('success', '<i class="fa-solid fa-check-circle"></i> CRC ENCODED');
+                if (outputEncoded)  outputEncoded.textContent  = `Data: ${res.original_data}  |  Appended: ${res.appended_data}`;
+                if (outputReceived) outputReceived.innerHTML   = renderCRCDivisionTable(res.steps) || `Remainder: ${res.crc_remainder}`;
+                if (outputDecoded)  outputDecoded.textContent  = `Transmitted Codeword: ${res.transmitted_codeword}`;
+                if (res.transmitted_codeword) setCleanBitsForInjector(res.transmitted_codeword);
+                updateTelemetry({ encoded: res.transmitted_codeword, errorPos: '—', status: `R = ${res.crc_remainder}`, statusClass: 't-success' });
+
+            } else if (res.action === 'check') {
+                const hasErr = res.error_detected;
+                setPipelineState(hasErr ? 'error' : 'success');
+                setStatus(hasErr ? 'error-detected' : 'success',
+                    hasErr ? '<i class="fa-solid fa-triangle-exclamation"></i> ERROR (Non-zero Remainder)'
+                           : '<i class="fa-solid fa-shield-check"></i> NO ERROR (Remainder = 0)');
+                if (outputEncoded)  outputEncoded.textContent  = 'N/A — Check mode';
+                if (outputReceived) outputReceived.textContent = `Received: ${res.received_codeword}`;
+                if (outputDecoded)  outputDecoded.textContent  = `Receiver Remainder: ${res.received_remainder}`;
+                updateTelemetry({ encoded: res.received_codeword, errorPos: hasErr ? 'Non-zero R' : 'None', status: hasErr ? 'ERROR' : 'CLEAN', statusClass: hasErr ? 't-danger' : 't-success' });
+
+            } else {
+                // Full cycle
+                const hasErr = res.error_detected;
+                setPipelineState(hasErr ? 'error' : 'success');
+                setStatus(hasErr ? 'error-detected' : 'success',
+                    hasErr ? '<i class="fa-solid fa-triangle-exclamation"></i> CRC ERROR (Non-zero Remainder)'
+                           : '<i class="fa-solid fa-shield-check"></i> CRC VERIFIED (Remainder = 0)');
+                if (outputEncoded)  outputEncoded.textContent  = `Payload: ${res.original_data}  |  CRC Remainder: ${res.crc_remainder}`;
+                if (outputReceived) outputReceived.innerHTML   = renderCRCDivisionTable(res.steps) || `Received: ${res.received_codeword}`;
+                if (outputDecoded)  outputDecoded.textContent  = `Receiver Remainder: ${res.received_remainder}  |  ${hasErr ? 'CORRUPTED' : 'DATA INTACT'}`;
+                if (res.transmitted_codeword) setCleanBitsForInjector(res.transmitted_codeword);
+                updateTelemetry({ encoded: res.transmitted_codeword, errorPos: hasErr ? 'Non-zero R' : 'None', status: hasErr ? 'ERROR' : 'VERIFIED', statusClass: hasErr ? 't-danger' : 't-success' });
+            }
+        }
+
+        // ── Hamming Code ──
+        else if (tech === 'hamming') {
+            const hasErr   = res.error_detected;
+            const state    = hasErr ? 'corrected' : 'success';
+            const errPos   = res.error_position;
+            const syndrome = res.syndrome_string;
+
+            setPipelineState(state);
+            setStatus(hasErr ? 'corrected' : 'success',
+                hasErr ? `<i class="fa-solid fa-wrench"></i> AUTO-CORRECTED — Pos ${errPos} (Syndrome ${syndrome})`
+                       : `<i class="fa-solid fa-circle-check"></i> HAMMING (${res.mode}) VERIFIED — Syndrome ${syndrome || '000'}`);
+
+            if (outputEncoded) {
+                outputEncoded.innerHTML = `
+                    <div style="margin-bottom:8px;">
+                        <strong>Input:</strong> <code>${res.original_data}</code> &nbsp;|&nbsp;
+                        <strong>Mode:</strong> <code style="color:var(--accent-cyan);">Hamming (${res.mode})</code> &nbsp;|&nbsp;
+                        <strong>Encoded:</strong> <code style="color:var(--accent-cyan);font-weight:700;">${res.encoded_codeword}</code>
+                    </div>
+                ` + renderHammingPosTable(res.pos_table);
+            }
+
+            const errColor = hasErr ? 'var(--color-error)' : 'var(--accent-cyan)';
+            if (outputReceived) {
+                outputReceived.innerHTML = `
+                    <div>
+                        <strong>Received:</strong> <code style="color:${errColor};font-weight:700;">${res.received_codeword}</code> &nbsp;|&nbsp;
+                        <strong>Syndrome:</strong> <code style="color:${hasErr ? 'var(--color-warning)' : 'var(--color-success)'};font-weight:700;">${syndrome}</code> &nbsp;|&nbsp;
+                        <strong>Error Pos:</strong> <code>${errPos === 0 ? 'None (Syndrome=0)' : 'Position ' + errPos}</code>
+                    </div>`;
+            }
+
+            if (outputDecoded) {
+                outputDecoded.innerHTML = `
+                    <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;">
+                        <span><strong>Corrected:</strong> <code style="color:var(--color-success);font-weight:700;">${res.corrected_codeword}</code></span>
+                        <span><strong>Extracted Data:</strong> <code style="color:var(--color-success);font-size:1.05rem;font-weight:800;">${res.extracted_data}</code></span>
+                        <span class="badge ${res.integrity_match ? 'badge-success' : 'badge-danger'}" style="padding:3px 10px;border-radius:6px;background:${res.integrity_match ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)'};color:${res.integrity_match ? 'var(--color-success)' : 'var(--color-error)'};">
+                            ${res.integrity_match ? '✓ INTEGRITY MATCH' : '✗ INTEGRITY MISMATCH'}
+                        </span>
+                    </div>`;
+            }
+
+            // Populate interactive bit grid with the encoded codeword
+            if (res.encoded_codeword) {
+                const parityPos = res.pos_table ? res.pos_table.filter(p => p.is_parity).map(p => p.pos) : [];
+                setCleanBitsForInjector(res.encoded_codeword, parityPos);
+            }
+
+            updateTelemetry({
+                encoded:     res.encoded_codeword,
+                errorPos:    hasErr ? `Pos ${errPos} (Syndrome ${syndrome})` : 'None',
+                status:      hasErr ? `CORRECTED (Pos ${errPos})` : 'NO ERROR',
+                statusClass: hasErr ? 't-success' : 't-success'
+            });
+        }
+
+        // ── Hamming Distance ──
+        else if (tech === 'hamming_distance') {
+            if (res.mode === 'multi') {
+                setPipelineState('success');
+                setStatus('success', `<i class="fa-solid fa-ruler"></i> d_min = ${res.d_min}  |  Detectable: ${res.detectable_errors_s}  |  Correctable: ${res.correctable_errors_t}`);
+                if (outputEncoded)  outputEncoded.textContent = `Codewords: [${res.codewords.join(', ')}]  |  Count: ${res.num_codewords}  |  Length: ${res.codeword_length}`;
+                if (outputReceived) outputReceived.innerHTML  = renderHammingDistanceMatrixTable(res);
+                if (outputDecoded)  outputDecoded.innerHTML   = `<strong>Error Capability:</strong> Detectable s = ${res.detectable_errors_s}  |  Correctable t = ${res.correctable_errors_t}`;
+                updateTelemetry({ encoded: `d_min = ${res.d_min}`, errorPos: '—', status: `s=${res.detectable_errors_s}, t=${res.correctable_errors_t}`, statusClass: 't-success' });
+            } else {
+                setPipelineState('success');
+                setStatus('success', `<i class="fa-solid fa-ruler-combined"></i> Hamming Distance d(c₁,c₂) = ${res.distance}`);
+                if (outputEncoded)  outputEncoded.textContent = `C₁: ${res.codeword1}  |  C₂: ${res.codeword2}`;
+                if (outputReceived) outputReceived.innerHTML  = renderHammingDistanceComparisonTable(res.comparison);
+                if (outputDecoded)  outputDecoded.textContent = `XOR: ${res.xor_result}  |  Differing bits at: ${res.differing_positions.length ? res.differing_positions.join(', ') : 'None (Identical)'}`;
+                updateTelemetry({ encoded: `d = ${res.distance}`, errorPos: '—', status: `Distance: ${res.distance}`, statusClass: 't-success' });
+            }
+        }
+
+        // ── Step-by-step trace ──
+        let stepsHtml = '';
+        if (res.steps && res.steps.length) {
+            res.steps.forEach(step => {
+                let cls = 'step-row';
+                if (/INSERTED|PINPOINTED|AUTO-CORRECTING|d_min|Distance =|FLAG|SYNDROME|CORRECTED/i.test(step)) cls += ' highlight-step';
+                if (/FAILED|ERROR|Invalid|Notice:/i.test(step)) cls += ' error-step';
+                stepsHtml += `<div class="${cls}">${step}</div>`;
+            });
+        }
+        if (stepByStepDisplay) stepByStepDisplay.innerHTML = stepsHtml || '<div class="step-row">No trace generated.</div>';
+    }
+
+    // ── Helpers for rendering ──
+    function setStatus(cls, html) {
+        if (resultStatusIndicator) {
+            resultStatusIndicator.className = `status-indicator-badge ${cls}`;
+            resultStatusIndicator.innerHTML = html;
+        }
+    }
+
+    function updateTelemetry({ encoded, errorPos, status, statusClass }) {
+        if (tEncodedOut) tEncodedOut.textContent = encoded ? (encoded.length > 20 ? encoded.slice(0, 20) + '…' : encoded) : '—';
+        if (tErrorPos)   tErrorPos.textContent   = errorPos   || '—';
+        if (tCorrection) {
+            tCorrection.textContent = status || '—';
+            tCorrection.className   = `hud-val ${statusClass || 't-neutral'}`;
+        }
+    }
+
+    /** Store clean bits in the injector after a successful encoding */
+    function setCleanBitsForInjector(binaryStr, parityPositions = []) {
+        cleanEncodedBits = binaryStr;
+        if (!flippedPositions.size) {
+            corruptedBits = binaryStr;
+        }
+        if (enableErrorToggle?.checked && bitGridContainer) {
+            bitGridContainer.style.display = 'block';
+            buildBitGrid(binaryStr, parityPositions);
+        }
+        // Enable the error injector quick-buttons even when not yet toggled
+        // so the user sees them as available after running
+        [btnFlipOne, btnRandomErr, btnBurstErr, btnResetErr].forEach(b => {
+            if (b && enableErrorToggle?.checked) b.disabled = false;
+        });
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // EVENT LISTENERS
+    // ═══════════════════════════════════════════════════════════
     navItems.forEach(item => {
-        item.addEventListener('click', (e) => {
+        item.addEventListener('click', e => {
             e.preventDefault();
-            const techKey = item.getAttribute('data-technique');
-            selectTechnique(techKey);
+            selectTechnique(item.getAttribute('data-technique'));
         });
     });
 
     techniqueCards.forEach(card => {
         card.addEventListener('click', () => {
-            const techKey = card.getAttribute('data-technique');
-            selectTechnique(techKey);
-            document.getElementById('simulator-panel')?.scrollIntoView({ behavior: 'smooth' });
+            selectTechnique(card.getAttribute('data-technique'));
         });
     });
-
-    if (enableErrorToggle) {
-        enableErrorToggle.addEventListener('change', (e) => {
-            toggleErrorInjection(e.target.checked);
-        });
-    }
-
-    if (flipBitBtn) {
-        flipBitBtn.addEventListener('click', () => {
-            if (!errorInputField) return;
-            let val = errorInputField.value;
-            if (!val) return;
-            let arr = val.split('');
-            for (let i = 0; i < arr.length; i++) {
-                if (arr[i] === '0') { arr[i] = '1'; break; }
-                else if (arr[i] === '1') { arr[i] = '0'; break; }
-            }
-            errorInputField.value = arr.join('');
-        });
-    }
-
-    if (corruptByteBtn) {
-        corruptByteBtn.addEventListener('click', () => {
-            if (!errorInputField) return;
-            let val = errorInputField.value;
-            if (!val) return;
-            if (currentTechnique === 'bit_stuffing') {
-                errorInputField.value = val.slice(0, 10) + '111111' + val.slice(16);
-            } else {
-                errorInputField.value = val + " CORRUPT_FLAG";
-            }
-        });
-    }
 
     if (processBtn) processBtn.addEventListener('click', () => processSimulatorData('full_cycle'));
 
@@ -1056,6 +1318,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Initialize default view
+    // ═══════════════════════════════════════════════════════════
+    // INITIALISE
+    // ═══════════════════════════════════════════════════════════
     selectTechnique('byte_stuffing');
 });
