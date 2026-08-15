@@ -213,16 +213,17 @@ document.addEventListener('DOMContentLoaded', () => {
             defaultValue: 'ABCFE',
             hint: 'Enter data string containing payload bytes.',
             binaryModule: false,
+            hasErrorInjector: false,
             theory: 'Byte Stuffing inserts an ESC character before any FLAG or ESC byte in the payload, so the receiver can distinguish delimiters from data. The frame is wrapped with FLAG...FLAG.',
             paramsHtml: `
                 <div class="form-group">
                     <label for="param-flag">FLAG Identifier</label>
-                    <input type="text" id="param-flag" class="form-control code-input" value="F">
+                    <input type="text" id="param-flag" class="form-control code-input" value="F" placeholder="e.g. F, #, A">
                     <small class="form-hint">Frame delimiter (default 'F')</small>
                 </div>
                 <div class="form-group">
                     <label for="param-esc">Escape (ESC) Byte</label>
-                    <input type="text" id="param-esc" class="form-control code-input" value="E">
+                    <input type="text" id="param-esc" class="form-control code-input" value="E" placeholder="e.g. E, \\, X">
                     <small class="form-hint">Escape character (default 'E')</small>
                 </div>
                 <div class="form-group" style="grid-column: span 2; display: flex; gap: 10px; margin-top: 4px;">
@@ -243,17 +244,13 @@ document.addEventListener('DOMContentLoaded', () => {
             defaultValue: '111110',
             hint: "Enter binary ('0' and '1's). A '0' is inserted after 5 consecutive '1's.",
             binaryModule: true,
+            hasErrorInjector: false,
             theory: "After every 5 consecutive '1' bits in the payload, a '0' is stuffed. The receiver de-stuffs by removing each '0' that follows 5 ones. This prevents accidental flag-pattern detection inside data.",
             paramsHtml: `
-                <div class="form-group">
+                <div class="form-group" style="grid-column: span 2;">
                     <label for="param-flag-pattern">Delimiter Flag Pattern</label>
-                    <input type="text" id="param-flag-pattern" class="form-control code-input" value="01111110">
-                    <small class="form-hint">8-bit framing flag (default '01111110')</small>
-                </div>
-                <div class="form-group">
-                    <label for="param-error-pos">Bit Flip Position (1-indexed)</label>
-                    <input type="number" id="param-error-pos" class="form-control" placeholder="e.g. 10" min="1">
-                    <small class="form-hint">Optional: flip bit at position to test detection</small>
+                    <input type="text" id="param-flag-pattern" class="form-control code-input" value="01111110" placeholder="e.g. 01111110">
+                    <small class="form-hint">8-bit framing flag delimiter (default '01111110')</small>
                 </div>
                 <div class="form-group" style="grid-column: span 2; display: flex; gap: 10px; margin-top: 4px;">
                     <button type="button" class="btn btn-sm btn-primary" id="btn-bit-stuff-only">
@@ -273,6 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
             defaultValue: '1011001',
             hint: "Enter binary payload ('0' and '1's).",
             binaryModule: true,
+            hasErrorInjector: true,
             theory: '1D Parity appends one bit to make the total number of 1s even (or odd). 2D Block Parity adds row and column parity bits, allowing single-bit error location at (row, col).',
             paramsHtml: `
                 <div class="form-group">
@@ -322,6 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
             defaultValue: '100100',
             hint: "Enter binary payload ('0' and '1's).",
             binaryModule: true,
+            hasErrorInjector: true,
             theory: 'CRC appends (degree of polynomial) zeros to the data and divides by the generator polynomial using modulo-2 XOR. The remainder R is transmitted. The receiver divides (data+R) by the polynomial — a zero remainder means no error.',
             paramsHtml: `
                 <div class="form-group">
@@ -351,6 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
             defaultValue: '1011',
             hint: 'Enter any binary data payload. Dynamic Hamming(n,k) is auto-detected!',
             binaryModule: true,
+            hasErrorInjector: true,
             theory: 'Hamming places parity bits at power-of-two positions (1,2,4,8...). Each parity bit checks a specific subset of positions. The syndrome — binary XOR of failed checks — directly gives the error position for correction.',
             paramsHtml: `
                 <div class="form-group" style="grid-column: span 2;">
@@ -389,6 +389,7 @@ document.addEventListener('DOMContentLoaded', () => {
             defaultValue: '101101',
             hint: 'Equal-length binary codeword string.',
             binaryModule: false,
+            hasErrorInjector: false,
             theory: 'd(c₁,c₂) = number of positions where bits differ (XOR then count 1s). For a code with minimum distance dₘᵢₙ: detectable errors s = dₘᵢₙ−1, correctable errors t = ⌊(dₘᵢₙ−1)/2⌋.',
             paramsHtml: `
                 <div class="form-group">
@@ -454,7 +455,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (tModule) tModule.textContent = config.name;
         updateInputSizeTelemetry();
 
-        // Error injector reset
+        // Error injector card visibility & reset
+        const errorInjectionCard = document.getElementById('error-injection-card');
+        if (errorInjectionCard) {
+            errorInjectionCard.style.display = config.hasErrorInjector ? 'block' : 'none';
+        }
+
         resetErrorInjector();
         if (enableErrorToggle) {
             enableErrorToggle.checked = false;
