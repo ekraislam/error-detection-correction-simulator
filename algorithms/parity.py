@@ -257,6 +257,7 @@ def process_parity(data_stream: str, parity_type: str = "even", mode: str = "1D"
         received_cw = transmitted_cw
         error_applied = False
         error_details = None
+        pos = None
 
         if error_pos is not None and str(error_pos).isdigit():
             pos = int(error_pos)
@@ -295,6 +296,7 @@ def process_parity(data_stream: str, parity_type: str = "even", mode: str = "1D"
             "encoded_codeword": transmitted_cw,
             "received_codeword": received_cw,
             "error_injected": error_applied,
+            "error_pos": pos if error_applied else None,
             "error_details": error_details,
             "error_detected": check_res.get("error_detected", False),
             "integrity_match": not check_res.get("error_detected", False),

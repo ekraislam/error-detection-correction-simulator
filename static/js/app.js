@@ -295,6 +295,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="number" id="param-columns" class="form-control" value="4" min="1" max="16">
                     <small class="form-hint">Number of columns for 2D block</small>
                 </div>
+                <div class="form-group" id="param-1d-error-group" style="grid-column: span 2;">
+                    <label for="param-error-pos">1D Bit Flip Position (1-indexed)</label>
+                    <input type="number" id="param-error-pos" class="form-control code-input" placeholder="e.g. 3 (leave empty for clean codeword)" min="1" step="1">
+                    <small class="form-hint" id="param-error-pos-hint">Optional: Enter 1-based index (1 to N) to flip a bit in transmitted codeword</small>
+                </div>
                 <div class="form-group" style="grid-column: span 2; font-size:0.78rem; color:var(--text-muted); background:var(--bg-surface); padding:9px 12px; border-radius:7px; border-left:3px solid var(--accent-cyan);">
                     <i class="fa-solid fa-circle-info" style="color:var(--accent-cyan);"></i>
                     1D parity computes a single parity bit. 2D parity constructs a matrix with row, column, and corner parities.
@@ -474,12 +479,57 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('btn-bit-stuff-only')?.addEventListener('click', () => processSimulatorData('stuff'));
             document.getElementById('btn-bit-destuff-only')?.addEventListener('click', () => processSimulatorData('destuff'));
         } else if (techKey === 'parity') {
-            const modeSelect = document.getElementById('param-parity-mode');
-            const colGroup   = document.getElementById('param-columns-group');
+            const modeSelect  = document.getElementById('param-parity-mode');
+            const colGroup    = document.getElementById('param-columns-group');
+            const err1dGroup  = document.getElementById('param-1d-error-group');
+            const errPosInput = document.getElementById('param-error-pos');
+
+            const updateParityHint = () => {
+                const hint = document.getElementById('param-error-pos-hint');
+                if (!hint) return;
+                const val = primaryInput ? primaryInput.value.replace(/\s+/g, '') : '';
+                const isBin = /^[01]+$/.test(val);
+                if (val && isBin) {
+                    const totalBits = val.length + 1; // data + parity bit
+                    hint.textContent = `Optional: Enter 1-based index (1 to ${totalBits}) to flip a bit in codeword`;
+                    if (errPosInput) errPosInput.max = totalBits;
+                } else {
+                    hint.textContent = 'Optional: Enter 1-based index (1 to N) to flip a bit in codeword';
+                }
+            };
+
+            updateParityHint();
+            primaryInput?.addEventListener('input', updateParityHint);
+
+            errPosInput?.addEventListener('keydown', e => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    processSimulatorData();
+                }
+            });
+
+            errPosInput?.addEventListener('input', e => {
+                const val = e.target.value;
+                if (val === '') {
+                    e.target.style.borderColor = '';
+                    return;
+                }
+                const num = Number(val);
+                const rawData = primaryInput ? primaryInput.value.replace(/\s+/g, '') : '';
+                const maxLen = rawData ? (rawData.length + 1) : 64;
+                if (num < 1 || !Number.isInteger(num) || num > maxLen) {
+                    e.target.style.borderColor = 'var(--color-danger)';
+                } else {
+                    e.target.style.borderColor = 'var(--accent-cyan)';
+                }
+            });
+
             modeSelect?.addEventListener('change', e => {
                 const is2D = e.target.value === '2D';
-                if (colGroup) colGroup.style.display = is2D ? 'block' : 'none';
+                if (colGroup)   colGroup.style.display   = is2D ? 'block' : 'none';
+                if (err1dGroup) err1dGroup.style.display = is2D ? 'none'  : 'block';
                 if (primaryInput) primaryInput.value = is2D ? '1011001011001001' : '1011001';
+                updateParityHint();
             });
         } else if (techKey === 'crc') {
             document.getElementById('btn-crc-encode-only')?.addEventListener('click', () => processSimulatorData('encode'));
@@ -881,6 +931,28 @@ document.addEventListener('DOMContentLoaded', () => {
             payload.params.mode        = document.getElementById('param-parity-mode')?.value  || '1D';
             payload.params.columns     = parseInt(document.getElementById('param-columns')?.value || 4, 10);
             payload.params.action      = actionOverride || 'full_cycle';
+
+            if (payload.params.mode === '1D') {
+                const epRaw = document.getElementById('param-error-pos')?.value;
+                if (epRaw !== undefined && epRaw !== null && String(epRaw).trim() !== '') {
+                    const epTrim = String(epRaw).trim();
+                    const epNum = Number(epTrim);
+                    const cleanData = payload.input_data ? payload.input_data.replace(/\s+/g, '') : '';
+                    const maxLen = cleanData.length + 1; // data + parity bit
+
+                    if (isNaN(epNum) || !Number.isInteger(epNum) || epNum < 1) {
+                        showToast('Invalid bit flip position. Please enter a positive whole number (≥ 1).', 'error');
+                        setStatus('error-detected', '<i class="fa-solid fa-triangle-exclamation"></i> INVALID POSITION (Must be integer ≥ 1)');
+                        return;
+                    }
+                    if (cleanData && epNum > maxLen) {
+                        showToast(`Bit flip position ${epNum} exceeds codeword length (${maxLen} bits: ${cleanData.length} data + 1 parity bit).`, 'error');
+                        setStatus('error-detected', `<i class="fa-solid fa-triangle-exclamation"></i> POSITION OUT OF BOUNDS (1..${maxLen})`);
+                        return;
+                    }
+                    payload.params.error_pos = epNum;
+                }
+            }
 
         } else if (currentTechnique === 'crc') {
             payload.params.polynomial = document.getElementById('param-crc-poly')?.value || '1101';
@@ -1370,21 +1442,66 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // ── Parity ──
         else if (tech === 'parity') {
-            setPipelineState('success');
-            setStatus('success', '<i class="fa-solid fa-shield-check"></i> PARITY GENERATED (Verified)');
+            const hasErr   = res.error_detected;
+            const injected = res.error_injected;
+            const ep       = res.error_pos || (injected && res.error_details ? res.error_details.match(/position (\d+)/)?.[1] : null);
+            const state    = hasErr ? 'error' : 'success';
+
+            setPipelineState(state);
+            let statusText = '';
+            if (hasErr) {
+                statusText = `<i class="fa-solid fa-triangle-exclamation"></i> PARITY ERROR DETECTED${ep ? ` (Bit #${ep} Flipped)` : ''}`;
+            } else if (injected && !hasErr) {
+                statusText = '<i class="fa-solid fa-circle-info"></i> ERROR UNDETECTED (Even Count Error Limitation)';
+            } else {
+                statusText = '<i class="fa-solid fa-shield-check"></i> NO ERROR (Parity Verified)';
+            }
+            setStatus(hasErr ? 'error-detected' : 'success', statusText);
 
             if (res.mode === '1D') {
-                if (outputEncoded)  outputEncoded.textContent  = `Payload: ${res.original_data}  |  Parity Bit: ${res.parity_bit}`;
-                if (outputReceived) outputReceived.textContent = `Encoded Codeword: ${res.encoded_codeword}`;
-                if (outputDecoded)  outputDecoded.textContent  = `Payload: ${res.original_data}  |  Parity: ${res.parity_bit} (${res.parity_type.toUpperCase()})`;
+                if (outputEncoded)  outputEncoded.textContent  = `Payload: ${res.original_data}  |  Parity Bit: ${res.parity_bit} (${res.parity_type.toUpperCase()})`;
+
+                if (outputReceived) {
+                    if (injected && res.received_codeword) {
+                        const origCw = res.encoded_codeword || '';
+                        const recvCw = res.received_codeword;
+                        let bitHtml = '<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">';
+                        for (let i = 0; i < recvCw.length; i++) {
+                            const isFlipped = origCw[i] !== undefined && origCw[i] !== recvCw[i];
+                            const isParityBit = (i === recvCw.length - 1);
+                            if (isFlipped) {
+                                bitHtml += `<span class="badge" style="padding:4px 9px; font-size:0.92rem; font-family:var(--font-code); font-weight:700; background:rgba(239,68,68,0.22); border:1px solid #ef4444; color:#fca5a5; border-radius:6px;" title="Bit #${i+1} flipped (${origCw[i]} → ${recvCw[i]})">${recvCw[i]} <small style="font-size:0.65rem; opacity:0.85;">[FLIPPED #${i+1}]</small></span>`;
+                            } else if (isParityBit) {
+                                bitHtml += `<span class="badge" style="padding:4px 9px; font-size:0.92rem; font-family:var(--font-code); font-weight:700; background:rgba(168,85,247,0.2); border:1px solid #a855f7; color:#d8b4fe; border-radius:6px;" title="Parity Bit (${res.parity_type})">${recvCw[i]} <small style="font-size:0.65rem; opacity:0.85;">[PARITY]</small></span>`;
+                            } else {
+                                bitHtml += `<span class="badge" style="padding:4px 8px; font-size:0.92rem; font-family:var(--font-code); font-weight:600; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:6px;" title="Data bit #${i+1}">${recvCw[i]}</span>`;
+                            }
+                        }
+                        bitHtml += '</div>';
+                        outputReceived.innerHTML = bitHtml;
+                    } else {
+                        outputReceived.textContent = `Encoded Codeword: ${res.encoded_codeword}`;
+                    }
+                }
+
+                if (outputDecoded) {
+                    if (injected) {
+                        outputDecoded.innerHTML = `<span style="color:var(--color-danger); font-weight:600;"><i class="fa-solid fa-triangle-exclamation"></i> Error Detected (Bit #${ep || '?'} Flipped)</span> — Parity check failed on received codeword '${res.received_codeword}'`;
+                    } else {
+                        outputDecoded.textContent = `Payload Intact: ${res.original_data}  |  Parity: ${res.parity_bit} (${res.parity_type.toUpperCase()})`;
+                    }
+                }
+
+                const errPosLabel = injected ? `Bit #${ep || '?'}` : 'None';
+                updateTelemetry({ encoded: res.received_codeword || res.encoded_codeword || '—', errorPos: errPosLabel, status: hasErr ? 'ERROR DETECTED' : (injected ? 'UNDETECTED' : 'VALID'), statusClass: hasErr ? 't-danger' : 't-success' });
 
             } else {
+                // 2D Mode
                 if (outputEncoded)  outputEncoded.textContent  = `2D Grid (${res.rows}×${res.columns}) | ${res.parity_type.toUpperCase()} Parity`;
                 if (outputReceived) outputReceived.innerHTML   = render2DParityMatrix(res);
                 if (outputDecoded)  outputDecoded.textContent  = `2D Block Matrix Parity Computed (${res.rows} rows × ${res.columns} cols)`;
+                updateTelemetry({ encoded: (res.matrix_rows ? res.matrix_rows.join(' ') : '—'), errorPos: '—', status: 'VALID', statusClass: 't-success' });
             }
-
-            updateTelemetry({ encoded: res.encoded_codeword || (res.matrix_rows ? res.matrix_rows.join(' ') : '—'), errorPos: '—', status: 'VALID', statusClass: 't-success' });
         }
 
         // ── CRC ──
