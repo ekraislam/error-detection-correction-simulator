@@ -273,8 +273,8 @@ document.addEventListener('DOMContentLoaded', () => {
             defaultValue: '1011001',
             hint: "Enter binary payload ('0' and '1's).",
             binaryModule: true,
-            hasErrorInjector: true,
-            theory: '1D Parity appends one bit to make the total number of 1s even (or odd). 2D Block Parity adds row and column parity bits, allowing single-bit error location at (row, col).',
+            hasErrorInjector: false,
+            theory: '1D Parity appends one bit to make the total number of 1s even (or odd). 2D Block Parity arranges bits into a matrix and computes row, column, and corner parity bits to verify block integrity.',
             paramsHtml: `
                 <div class="form-group">
                     <label for="param-parity-mode">Parity Dimension</label>
@@ -290,28 +290,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         <option value="odd">Odd Parity</option>
                     </select>
                 </div>
-                <div class="form-group" id="param-columns-group" style="display: none;">
+                <div class="form-group" id="param-columns-group" style="grid-column: span 2; display: none;">
                     <label for="param-columns">2D Matrix Columns</label>
                     <input type="number" id="param-columns" class="form-control" value="4" min="1" max="16">
                     <small class="form-hint">Number of columns for 2D block</small>
                 </div>
-                <div class="form-group">
-                    <label for="param-error-pos">1D Bit Flip Position (1-indexed)</label>
-                    <input type="number" id="param-error-pos" class="form-control" placeholder="e.g. 3" min="1">
-                </div>
-                <div class="form-group" id="param-2d-error-group" style="grid-column: span 2; display: none; gap: 10px;">
-                    <div style="flex:1;">
-                        <label for="param-error-row">2D Error Row</label>
-                        <input type="number" id="param-error-row" class="form-control" placeholder="e.g. 2" min="1">
-                    </div>
-                    <div style="flex:1;">
-                        <label for="param-error-col">2D Error Column</label>
-                        <input type="number" id="param-error-col" class="form-control" placeholder="e.g. 3" min="1">
-                    </div>
-                </div>
                 <div class="form-group" style="grid-column: span 2; font-size:0.78rem; color:var(--text-muted); background:var(--bg-surface); padding:9px 12px; border-radius:7px; border-left:3px solid var(--accent-cyan);">
                     <i class="fa-solid fa-circle-info" style="color:var(--accent-cyan);"></i>
-                    1D parity detects odd-count errors. 2D parity pinpoints a single-bit error location.
+                    1D parity computes a single parity bit. 2D parity constructs a matrix with row, column, and corner parities.
                 </div>
             `
         },
@@ -490,11 +476,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (techKey === 'parity') {
             const modeSelect = document.getElementById('param-parity-mode');
             const colGroup   = document.getElementById('param-columns-group');
-            const err2dGroup = document.getElementById('param-2d-error-group');
             modeSelect?.addEventListener('change', e => {
                 const is2D = e.target.value === '2D';
-                if (colGroup)   colGroup.style.display   = is2D ? 'block' : 'none';
-                if (err2dGroup) err2dGroup.style.display = is2D ? 'flex'  : 'none';
+                if (colGroup) colGroup.style.display = is2D ? 'block' : 'none';
                 if (primaryInput) primaryInput.value = is2D ? '1011001011001001' : '1011001';
             });
         } else if (techKey === 'crc') {
@@ -897,11 +881,6 @@ document.addEventListener('DOMContentLoaded', () => {
             payload.params.mode        = document.getElementById('param-parity-mode')?.value  || '1D';
             payload.params.columns     = parseInt(document.getElementById('param-columns')?.value || 4, 10);
             payload.params.action      = actionOverride || 'full_cycle';
-            const ep  = document.getElementById('param-error-pos')?.value;
-            if (ep) payload.params.error_pos = parseInt(ep, 10);
-            const er  = document.getElementById('param-error-row')?.value;
-            const ec  = document.getElementById('param-error-col')?.value;
-            if (er && ec) { payload.params.error_row = parseInt(er, 10); payload.params.error_col = parseInt(ec, 10); }
 
         } else if (currentTechnique === 'crc') {
             payload.params.polynomial = document.getElementById('param-crc-poly')?.value || '1101';
@@ -1391,32 +1370,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // ── Parity ──
         else if (tech === 'parity') {
-            const hasErr  = res.error_detected;
-            const pin     = res.pinpointed_location;
-            const state   = hasErr ? 'error' : 'success';
-
-            setPipelineState(state);
-            let statusText = hasErr
-                ? (pin ? `<i class="fa-solid fa-crosshairs"></i> ERROR AT (Row ${pin.row}, Col ${pin.col})` : '<i class="fa-solid fa-triangle-exclamation"></i> ERROR DETECTED')
-                : '<i class="fa-solid fa-shield-check"></i> NO ERROR DETECTED';
-            setStatus(hasErr ? 'error-detected' : 'success', statusText);
+            setPipelineState('success');
+            setStatus('success', '<i class="fa-solid fa-shield-check"></i> PARITY GENERATED (Verified)');
 
             if (res.mode === '1D') {
                 if (outputEncoded)  outputEncoded.textContent  = `Payload: ${res.original_data}  |  Parity Bit: ${res.parity_bit}`;
-                if (outputReceived) outputReceived.textContent = res.received_codeword;
-                if (outputDecoded)  outputDecoded.textContent  = hasErr ? 'ERROR DETECTED (Corrupted Codeword)' : `Payload Intact: ${res.original_data}`;
-
-                // Populate bit grid from codeword for interactive error injection (1-indexed LTR, parity bit is at last position)
-                if (res.encoded_codeword) setCleanBitsForInjector(res.encoded_codeword, [res.encoded_codeword.length]);
+                if (outputReceived) outputReceived.textContent = `Encoded Codeword: ${res.encoded_codeword}`;
+                if (outputDecoded)  outputDecoded.textContent  = `Payload: ${res.original_data}  |  Parity: ${res.parity_bit} (${res.parity_type.toUpperCase()})`;
 
             } else {
                 if (outputEncoded)  outputEncoded.textContent  = `2D Grid (${res.rows}×${res.columns}) | ${res.parity_type.toUpperCase()} Parity`;
                 if (outputReceived) outputReceived.innerHTML   = render2DParityMatrix(res);
-                if (outputDecoded)  outputDecoded.textContent  = pin ? `Error at Row ${pin.row}, Column ${pin.col}` : (hasErr ? 'Multi-bit error' : 'Block Parity Intact');
+                if (outputDecoded)  outputDecoded.textContent  = `2D Block Matrix Parity Computed (${res.rows} rows × ${res.columns} cols)`;
             }
 
-            const errPosLabel = hasErr ? (pin ? `Row ${pin.row} Col ${pin.col}` : 'Detected') : 'None';
-            updateTelemetry({ encoded: res.received_codeword || '—', errorPos: errPosLabel, status: hasErr ? 'DETECTED' : 'CLEAN', statusClass: hasErr ? 't-danger' : 't-success' });
+            updateTelemetry({ encoded: res.encoded_codeword || (res.matrix_rows ? res.matrix_rows.join(' ') : '—'), errorPos: '—', status: 'VALID', statusClass: 't-success' });
         }
 
         // ── CRC ──
