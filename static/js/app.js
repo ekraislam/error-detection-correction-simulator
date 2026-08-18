@@ -1156,22 +1156,97 @@ document.addEventListener('DOMContentLoaded', () => {
         return html;
     }
 
-    /** Hamming position table */
+    /** Render dedicated Hamming Encoded section with separated Summary Panel and Expanded Table */
+    function renderHammingEncodedSection(res) {
+        if (!res) return '';
+        const posTable = res.pos_table || [];
+
+        let posHeadersHtml = '';
+        let typeHeadersHtml = '';
+        let valCellsHtml = '';
+
+        posTable.forEach(item => {
+            const isParity = item.is_parity;
+            const isErr = item.is_error;
+
+            posHeadersHtml += `<th class="hamming-col-head" title="Bit Position ${item.pos}">${item.pos}</th>`;
+
+            const typeCls = isParity ? 'type-parity' : 'type-data';
+            const typeTip = isParity ? `Parity Bit ${item.type}` : `Data Bit ${item.type}`;
+            typeHeadersHtml += `<th class="hamming-col-type ${typeCls}" title="${typeTip}">${item.type}</th>`;
+
+            let valCls = isParity ? 'val-parity' : 'val-data';
+            if (isErr) valCls = 'val-error';
+            valCellsHtml += `<td class="hamming-col-val ${valCls}" title="Position ${item.pos} (${item.type}) = ${item.value}">${item.value}${isErr ? ' <span style="font-size:0.75em">⚡</span>' : ''}</td>`;
+        });
+
+        return `
+            <div class="hamming-encoded-workspace">
+                <!-- 1. Summary Information Card -->
+                <div class="hamming-summary-card">
+                    <div class="hamming-summary-item">
+                        <span class="hamming-summary-label">INPUT</span>
+                        <div class="hamming-summary-val-wrap">
+                            <span class="hamming-summary-val code-font">${escapeHtml(res.original_data || '—')}</span>
+                        </div>
+                    </div>
+                    <div class="hamming-summary-divider"></div>
+                    <div class="hamming-summary-item">
+                        <span class="hamming-summary-label">MODE</span>
+                        <div class="hamming-summary-val-wrap">
+                            <span class="hamming-mode-badge">Hamming (${escapeHtml(res.mode || '7,4')})</span>
+                        </div>
+                    </div>
+                    <div class="hamming-summary-divider"></div>
+                    <div class="hamming-summary-item">
+                        <span class="hamming-summary-label">ENCODED</span>
+                        <div class="hamming-summary-val-wrap">
+                            <span class="hamming-encoded-badge code-font">${escapeHtml(res.encoded_codeword || '—')}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Hamming Calculation Table Card -->
+                <div class="hamming-table-card">
+                    <div class="hamming-table-header">
+                        <div class="hamming-table-title-group">
+                            <i class="fa-solid fa-table-cells" style="color:var(--accent-cyan);"></i>
+                            <span class="hamming-table-title">HAMMING CALCULATION TABLE</span>
+                        </div>
+                        <div class="hamming-table-legend">
+                            <span class="legend-chip legend-data"><span class="legend-dot dot-data"></span> Data (D)</span>
+                            <span class="legend-chip legend-parity"><span class="legend-dot dot-parity"></span> Parity (R/P)</span>
+                        </div>
+                    </div>
+                    <div class="hamming-table-scroll-wrapper">
+                        <table class="hamming-pos-table">
+                            <thead>
+                                <tr class="hamming-row-pos">
+                                    <th class="hamming-lead-col">Position</th>
+                                    ${posHeadersHtml}
+                                </tr>
+                                <tr class="hamming-row-type">
+                                    <th class="hamming-lead-col">Type</th>
+                                    ${typeHeadersHtml}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="hamming-row-val">
+                                    <th class="hamming-lead-col">Bit Value</th>
+                                    ${valCellsHtml}
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /** Hamming position table fallback */
     function renderHammingPosTable(posTable) {
         if (!posTable || !posTable.length) return '';
-        let html = '<div class="hamming-table-container"><table class="hamming-pos-table"><thead>';
-        html += '<tr><th>Position</th>';
-        posTable.forEach(item => { html += `<th>${item.pos}</th>`; });
-        html += '</tr><tr><th>Type</th>';
-        posTable.forEach(item => { html += `<th style="font-size:0.72rem;">${item.type}</th>`; });
-        html += '</tr></thead><tbody><tr><th>Bit Value</th>';
-        posTable.forEach(item => {
-            let cls = item.is_parity ? 'pos-cell-p' : 'pos-cell-d';
-            if (item.is_error) cls = 'pos-cell-err';
-            html += `<td class="${cls}">${item.value}${item.is_error ? ' ⚡' : ''}</td>`;
-        });
-        html += '</tr></tbody></table></div>';
-        return html;
+        return renderHammingEncodedSection({ pos_table: posTable });
     }
 
     /** Hamming Distance pair comparison table */
@@ -1692,13 +1767,7 @@ document.addEventListener('DOMContentLoaded', () => {
                        : `<i class="fa-solid fa-circle-check"></i> HAMMING (${res.mode}) VERIFIED — Syndrome ${syndrome || '000'}`);
 
             if (outputEncoded) {
-                outputEncoded.innerHTML = `
-                    <div style="margin-bottom:8px;">
-                        <strong>Input:</strong> <code>${res.original_data}</code> &nbsp;|&nbsp;
-                        <strong>Mode:</strong> <code style="color:var(--accent-cyan);">Hamming (${res.mode})</code> &nbsp;|&nbsp;
-                        <strong>Encoded:</strong> <code style="color:var(--accent-cyan);font-weight:700;">${res.encoded_codeword}</code>
-                    </div>
-                ` + renderHammingPosTable(res.pos_table);
+                outputEncoded.innerHTML = renderHammingEncodedSection(res);
             }
 
             const errColor = hasErr ? 'var(--color-error)' : 'var(--accent-cyan)';

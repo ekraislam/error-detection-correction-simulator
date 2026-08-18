@@ -816,6 +816,20 @@ input:checked + .slider:before { transform: translateX(21px); background-color: 
     display: flex; align-items: center;
 }
 
+.result-value.code-display:has(.hamming-encoded-workspace),
+.result-value.code-display:has(.matrix-container),
+.result-value.code-display:has(.hdist-table-container) {
+    display: block;
+    padding: 0;
+    background: transparent;
+    border: none;
+}
+
+.result-value.code-display > .hamming-encoded-workspace {
+    width: 100%;
+    flex: 1 1 100%;
+}
+
 /* Calculation Steps Accordion */
 .steps-details-accordion {
     overflow: hidden;
@@ -1247,4 +1261,272 @@ details[open] .accordion-arrow { transform: rotate(180deg); }
 @media (max-width: 480px) {
     .footer-meta { display: none; }
 }
+
+/* ════════════════════════════════════════════════
+   HAMMING CODE SIMULATOR — ENCODED SECTION REDESIGN
+════════════════════════════════════════════════ */
+
+.hamming-encoded-workspace {
+    display: grid;
+    grid-template-columns: 230px minmax(0, 1fr);
+    gap: 16px;
+    width: 100%;
+    align-items: stretch;
+}
+
+@media (max-width: 960px) {
+    .hamming-encoded-workspace {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 1. Summary Information Card */
+.hamming-summary-card {
+    background: rgba(10, 15, 30, 0.85);
+    border: 1px solid rgba(34, 211, 238, 0.22);
+    border-radius: var(--radius-md);
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 12px;
+    box-shadow: inset 0 0 25px rgba(34, 211, 238, 0.04), 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.hamming-summary-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.hamming-summary-label {
+    font-size: 0.68rem;
+    font-weight: 800;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.hamming-summary-val-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.hamming-summary-val {
+    font-size: 1.12rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: 0.06em;
+}
+
+.hamming-summary-sub {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.hamming-mode-badge {
+    font-size: 0.86rem;
+    font-weight: 800;
+    color: var(--accent-cyan);
+    background: rgba(34, 211, 238, 0.12);
+    border: 1px solid rgba(34, 211, 238, 0.35);
+    padding: 3px 10px;
+    border-radius: 6px;
+    letter-spacing: 0.03em;
+}
+
+.hamming-encoded-badge {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    padding: 4px 12px;
+    border-radius: 6px;
+    letter-spacing: 0.08em;
+    text-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+}
+
+.hamming-summary-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.06);
+    margin: 2px 0;
+}
+
+/* 2. Calculation Table Card */
+.hamming-table-card {
+    background: rgba(6, 9, 18, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.hamming-table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.hamming-table-title-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.hamming-table-title {
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--text-secondary);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.hamming-table-legend {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.legend-chip {
+    font-size: 0.68rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 7px;
+    border-radius: 4px;
+}
+
+.legend-data {
+    color: #93c5fd;
+    background: rgba(59, 130, 246, 0.12);
+    border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.legend-parity {
+    color: #d8b4fe;
+    background: rgba(168, 85, 247, 0.12);
+    border: 1px solid rgba(168, 85, 247, 0.25);
+}
+
+.legend-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+
+.dot-data { background: #60a5fa; }
+.dot-parity { background: #c084fc; }
+
+/* Table Elements */
+.hamming-table-scroll-wrapper {
+    overflow-x: auto;
+    width: 100%;
+    padding-bottom: 4px;
+}
+
+.hamming-table-scroll-wrapper::-webkit-scrollbar {
+    height: 6px;
+}
+.hamming-table-scroll-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+}
+
+.hamming-pos-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 6px 5px;
+    font-family: var(--font-code);
+    text-align: center;
+    table-layout: auto;
+}
+
+.hamming-lead-col {
+    text-align: left !important;
+    font-size: 0.72rem !important;
+    font-weight: 800 !important;
+    color: var(--text-muted) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    white-space: nowrap !important;
+    padding: 8px 12px !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border-radius: 6px !important;
+    min-width: 90px !important;
+}
+
+.hamming-col-head {
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    font-weight: 800;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    min-width: 44px;
+}
+
+.hamming-col-type {
+    font-size: 0.8rem;
+    font-weight: 800;
+    padding: 7px 10px;
+    border-radius: 6px;
+    min-width: 44px;
+}
+
+.hamming-col-type.type-data {
+    background: rgba(59, 130, 246, 0.15);
+    color: #93c5fd;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.hamming-col-type.type-parity {
+    background: rgba(168, 85, 247, 0.18);
+    color: #d8b4fe;
+    border: 1px solid rgba(168, 85, 247, 0.38);
+}
+
+.hamming-col-val {
+    font-size: 1.08rem;
+    font-weight: 800;
+    padding: 8px 10px;
+    border-radius: 6px;
+    min-width: 44px;
+    transition: all var(--transition-fast);
+}
+
+.hamming-col-val.val-data {
+    background: rgba(255, 255, 255, 0.05);
+    color: #f1f5f9;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.hamming-col-val.val-parity {
+    background: rgba(147, 51, 234, 0.22);
+    color: #e9d5ff;
+    border: 1px solid rgba(168, 85, 247, 0.45);
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.15);
+}
+
+.hamming-col-val.val-error {
+    background: rgba(239, 68, 68, 0.28);
+    color: #fca5a5;
+    border: 1px solid #ef4444;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.35);
+}
+
 
