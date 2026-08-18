@@ -1,39 +1,38 @@
 """
 =============================================================================
-Bit Stuffing and De-stuffing Module (Custom Framing Rule)
+Bit Stuffing and De-stuffing Module (Dynamic FLAG Threshold Framing)
 =============================================================================
 Course: Data Communication Lab
 Layer: Data Link Layer (Framing Technique)
 
-Core Rules:
-1. Operates generically on any binary payload stream ('0' and '1's).
-2. Default delimiter flag pattern is "01111110", or any user-configured binary pattern.
-3. For the PAYLOAD:
-   - Process bits from left to right.
-   - For every consecutive sequence of '1's (count = k >= 1), insert exactly one '0'
-     immediately before the LAST '1' of that consecutive sequence.
+Core Dynamic Rules:
+1. Let N = total count of '1' bits in the user-entered Delimiter FLAG (N = flag.count('1')).
+2. Dynamic Stuffing Threshold = max(N - 1, 1).
+3. For the DATA PAYLOAD ONLY:
+   - Scan original bits from left to right.
+   - Maintain a running counter of consecutive '1's.
+   - Whenever 'threshold' consecutive '1's are reached, immediately insert exactly ONE '0' AFTER those consecutive '1's.
+   - Reset the consecutive '1's counter to 0 upon stuffing or encountering an original '0'.
    - Examples:
-     * '1'     -> '01'
-     * '11'    -> '101'
-     * '111'   -> '1101'
-     * '1111'  -> '11101'
-     * '11111' -> '111101'
-     * '111110' -> '1111010'
-   - All original '0' bits remain unchanged.
-4. Delimiter FLAG itself wraps the frame (FLAG + StuffedPayload + FLAG) and is NEVER bit-stuffed.
-5. De-stuffing reverses the process:
-   - Validates that frame length >= 2 * len(FLAG).
-   - Validates that frame begins and ends with the current dynamic FLAG delimiter.
-   - Removes starting and ending FLAG delimiters.
-   - Reverses the stuffing rule by removing the stuffed '0' before the last '1' of each run.
+     * FLAG = "01110" (N = 3) -> Threshold = 2 -> DATA "110" -> Stuffed "1100"
+     * FLAG = "011110" (N = 4) -> Threshold = 3 -> DATA "1110" -> Stuffed "11100"
+     * FLAG = "011110" (N = 4) -> Threshold = 3 -> DATA "111110" -> Stuffed "1110110"
+     * FLAG = "01110" (N = 3) -> Threshold = 2 -> DATA "11111" -> Stuffed "1101101"
+     * FLAG = "01111110" (N = 6) -> Threshold = 5 -> DATA "111110" -> Stuffed "1111100"
+4. The Delimiter FLAG itself wraps the frame (FLAG + StuffedPayload + FLAG) and is NEVER bit-stuffed.
+5. De-stuffing reverses the process using the exact same dynamic threshold (N - 1):
+   - Validates that frame begins and ends with the FLAG delimiter.
+   - Strips the starting and ending FLAG delimiters.
+   - Scans the inner payload and removes the stuffed '0' after every 'threshold' consecutive '1's.
    - Recovers the exact original payload and verifies integrity.
 =============================================================================
 """
 
 def bit_stuff(data_stream: str, flag_pattern: str = "01111110") -> dict:
     """
-    Performs custom bit stuffing on input binary data payload.
-    Rule: For every consecutive sequence of '1's, insert exactly one '0' immediately before its last '1'.
+    Performs dynamic bit stuffing on input binary data payload.
+    Rule: Dynamic threshold = count of '1's in FLAG - 1.
+    Insert '0' after every 'threshold' consecutive '1's in the data.
 
     :param data_stream: Binary payload data string (e.g. '111110').
     :param flag_pattern: Delimiter flag pattern (e.g. '01111110').
@@ -71,50 +70,43 @@ def bit_stuff(data_stream: str, flag_pattern: str = "01111110") -> dict:
     steps = []
     tokens = []
 
+    # Calculate dynamic threshold from FLAG
+    flag_ones_count = flag.count('1')
+    threshold = max(flag_ones_count - 1, 1)
+
     steps.append(f"Step 1: Original input binary payload = '{raw_data}' (Length: {len(raw_data)} bits)")
-    steps.append(f"Step 2: Configured Delimiter Flag Pattern = '{flag}' (Length: {len(flag)} bits)")
-    steps.append(f"Step 3: Add starting delimiter FLAG ('{flag}') to frame (FLAG is never stuffed)")
+    steps.append(f"Step 2: Configured Delimiter Flag Pattern = '{flag}' (Length: {len(flag)} bits, contains N = {flag_ones_count} '1's)")
+    steps.append(f"Step 3: Calculated Dynamic Stuffing Threshold = N - 1 = {flag_ones_count} - 1 = {threshold} (Insert '0' after every {threshold} consecutive '1's)")
+    steps.append(f"Step 4: Add starting delimiter FLAG ('{flag}') to frame (FLAG is never stuffed)")
 
     tokens.append({"value": flag, "type": "flag", "label": "START_FLAG"})
 
     stuffed_payload_chars = []
     inserted_bits_count = 0
-    step_num = 4
-    i = 0
-    n = len(raw_data)
+    consecutive_ones = 0
+    step_num = 5
 
-    while i < n:
-        if raw_data[i] == '0':
-            stuffed_payload_chars.append('0')
-            tokens.append({"value": "0", "type": "data", "label": "DATA_BIT"})
-            steps.append(f"Step {step_num}: Position {i + 1}: Copy original '0'")
-            step_num += 1
-            i += 1
-        else:
-            # Consecutive sequence of 1s
-            start = i
-            while i < n and raw_data[i] == '1':
-                i += 1
-            ones_count = i - start
-
-            # Copy all 1s except the last one (if ones_count > 1)
-            for p in range(start, i - 1):
-                stuffed_payload_chars.append('1')
-                tokens.append({"value": "1", "type": "data", "label": "DATA_BIT"})
-                steps.append(f"Step {step_num}: Position {p + 1}: Copy '1' (part of {ones_count} consecutive 1s)")
-                step_num += 1
-
-            # Insert '0' immediately before the LAST '1'
-            stuffed_payload_chars.append('0')
-            tokens.append({"value": "0", "type": "stuffed_zero", "label": "STUFFED_ZERO"})
-            inserted_bits_count += 1
-            steps.append(f"Step {step_num}: Sequence of {ones_count} consecutive '1's → Insert stuffed '0' before last '1'")
-            step_num += 1
-
-            # Copy the last '1'
+    for i, bit in enumerate(raw_data):
+        if bit == '1':
             stuffed_payload_chars.append('1')
             tokens.append({"value": "1", "type": "data", "label": "DATA_BIT"})
-            steps.append(f"Step {step_num}: Position {i}: Copy last '1' of consecutive sequence")
+            consecutive_ones += 1
+            steps.append(f"Step {step_num}: Position {i + 1}: Copy '1' (consecutive 1s count = {consecutive_ones}/{threshold})")
+            step_num += 1
+
+            if consecutive_ones == threshold:
+                # Insert stuffed zero and reset count
+                stuffed_payload_chars.append('0')
+                tokens.append({"value": "0", "type": "stuffed_zero", "label": "STUFFED_ZERO"})
+                inserted_bits_count += 1
+                steps.append(f"Step {step_num}: Threshold of {threshold} consecutive '1's reached → Insert stuffed '0' after {threshold} ones, reset count to 0")
+                step_num += 1
+                consecutive_ones = 0
+        else:
+            stuffed_payload_chars.append('0')
+            tokens.append({"value": "0", "type": "data", "label": "DATA_BIT"})
+            consecutive_ones = 0
+            steps.append(f"Step {step_num}: Position {i + 1}: Copy original '0' (reset consecutive 1s count to 0)")
             step_num += 1
 
     stuffed_payload = "".join(stuffed_payload_chars)
@@ -138,6 +130,8 @@ def bit_stuff(data_stream: str, flag_pattern: str = "01111110") -> dict:
         "frame_length": frame_len,
         "added_bits": added_bits,
         "inserted_bits": inserted_bits_count,
+        "threshold": threshold,
+        "flag_ones": flag_ones_count,
         "recovery_status": "Stuffed"
     }
 
@@ -145,6 +139,7 @@ def bit_stuff(data_stream: str, flag_pattern: str = "01111110") -> dict:
         "success": True,
         "original_data": raw_data,
         "flag": flag,
+        "threshold": threshold,
         "stuffed_payload": stuffed_payload,
         "stuffed_frame": stuffed_frame,
         "tokens": tokens,
@@ -156,7 +151,8 @@ def bit_stuff(data_stream: str, flag_pattern: str = "01111110") -> dict:
 
 def bit_destuff(frame: str, flag_pattern: str = "01111110") -> dict:
     """
-    Performs bit de-stuffing on a received binary frame according to the custom rule.
+    Performs dynamic bit de-stuffing on a received binary frame.
+    Removes the stuffed '0' after every 'threshold' (N - 1) consecutive '1's.
 
     :param frame: Transmitted/Received binary frame string (expected: FLAG + stuffed_payload + FLAG).
     :param flag_pattern: Delimiter flag pattern.
@@ -185,8 +181,12 @@ def bit_destuff(frame: str, flag_pattern: str = "01111110") -> dict:
             }
 
     steps = []
+    flag_ones_count = flag.count('1')
+    threshold = max(flag_ones_count - 1, 1)
+
     steps.append(f"De-stuff Step 1: Received binary frame = '{raw_frame}' (Length: {len(raw_frame)} bits)")
-    steps.append(f"De-stuff Step 2: Configured Delimiter FLAG = '{flag}' (Length: {len(flag)} bits)")
+    steps.append(f"De-stuff Step 2: Configured Delimiter FLAG = '{flag}' (Length: {len(flag)} bits, contains N = {flag_ones_count} '1's)")
+    steps.append(f"De-stuff Step 3: Dynamic Threshold = N - 1 = {flag_ones_count} - 1 = {threshold} (Remove '0' after every {threshold} consecutive '1's)")
 
     min_frame_len = 2 * len(flag)
     if len(raw_frame) < min_frame_len:
@@ -209,79 +209,41 @@ def bit_destuff(frame: str, flag_pattern: str = "01111110") -> dict:
             "error": f"Invalid frame: missing ending FLAG ('{flag}'). Frame ends with '{raw_frame[-len(flag):]}'."
         }
 
-    steps.append(f"De-stuff Step 3: Verified starting FLAG ('{flag}') and ending FLAG ('{flag}'). Stripping delimiters.")
+    steps.append(f"De-stuff Step 4: Verified starting FLAG ('{flag}') and ending FLAG ('{flag}'). Stripping delimiters.")
 
     # 3. Extract stuffed payload between delimiters
     stuffed_payload = raw_frame[len(flag) : len(raw_frame) - len(flag)]
-    steps.append(f"De-stuff Step 4: Extracted inner stuffed payload = '{stuffed_payload}' (Length: {len(stuffed_payload)} bits)")
-    steps.append("De-stuff Step 4b: Custom rule -> Remove the stuffed '0' inserted before the last '1' of each consecutive sequence.")
-
-    # Parse and de-stuff payload using exact memoized parser
-    n = len(stuffed_payload)
-    memo = {}
-
-    def solve(idx, last_token):
-        if idx == n:
-            return []
-        key = (idx, last_token)
-        if key in memo:
-            return memo[key]
-
-        # Option 1: original '0'
-        if stuffed_payload[idx] == '0':
-            res = solve(idx + 1, '0')
-            if res is not None:
-                ans = [('0', 'orig_zero', 1, idx)] + res
-                memo[key] = ans
-                return ans
-
-        # Option 2: original run of k >= 1 ones (stuffed to 1*(k-1) + '01')
-        if last_token != '1':
-            u = 0
-            while idx + u < n and stuffed_payload[idx + u] == '1':
-                u += 1
-            if idx + u + 1 < n and stuffed_payload[idx + u] == '0' and stuffed_payload[idx + u + 1] == '1':
-                k = u + 1
-                res = solve(idx + u + 2, '1')
-                if res is not None:
-                    ans = [('1' * k, 'stuffed_ones', u + 2, idx, idx + u)] + res
-                    memo[key] = ans
-                    return ans
-
-        memo[key] = None
-        return None
-
-    parsed_tokens = solve(0, None)
-
-    if parsed_tokens is None:
-        steps.append("❌ Corrupted stuffed payload: bit sequence does not match valid custom bit-stuffed format.")
-        return {
-            "success": False,
-            "error": "Corrupted stuffed payload: bit sequence does not match valid custom bit-stuffed format.",
-            "steps": steps
-        }
+    steps.append(f"De-stuff Step 5: Extracted inner stuffed payload = '{stuffed_payload}' (Length: {len(stuffed_payload)} bits)")
 
     destuffed_chars = []
+    consecutive_ones = 0
     removed_bits_count = 0
-    step_num = 5
+    step_num = 6
+    i = 0
+    payload_len = len(stuffed_payload)
 
-    for tok in parsed_tokens:
-        tok_type = tok[1]
-        if tok_type == 'orig_zero':
+    while i < payload_len:
+        bit = stuffed_payload[i]
+        if bit == '1':
+            consecutive_ones += 1
+            destuffed_chars.append('1')
+            steps.append(f"De-stuff Step {step_num}: Position {i + 1}: Copy '1' (consecutive 1s count = {consecutive_ones}/{threshold})")
+            step_num += 1
+
+            if consecutive_ones == threshold:
+                # Next bit should be a stuffed '0' — remove/skip it
+                if i + 1 < payload_len and stuffed_payload[i + 1] == '0':
+                    steps.append(f"De-stuff Step {step_num}: {threshold} consecutive '1's reached → Removing stuffed '0' at payload position {i + 2}")
+                    step_num += 1
+                    removed_bits_count += 1
+                    i += 1  # skip the stuffed zero
+                consecutive_ones = 0
+        else:
+            consecutive_ones = 0
             destuffed_chars.append('0')
-            idx = tok[3]
-            steps.append(f"De-stuff Step {step_num}: Position {idx + 1}: Copy original '0'")
+            steps.append(f"De-stuff Step {step_num}: Position {i + 1}: Copy '0' (reset consecutive 1s count to 0)")
             step_num += 1
-        elif tok_type == 'stuffed_ones':
-            k_ones_str = tok[0]
-            total_len = tok[2]
-            idx = tok[3]
-            zero_pos = tok[4]
-            destuffed_chars.append(k_ones_str)
-            removed_bits_count += 1
-            stuffed_substr = stuffed_payload[idx : idx + total_len]
-            steps.append(f"De-stuff Step {step_num}: Positions {idx + 1}–{idx + total_len}: Detected stuffed run '{stuffed_substr}' → Removed stuffed '0' at payload position {zero_pos + 1} → Recovered '{k_ones_str}'")
-            step_num += 1
+        i += 1
 
     destuffed_data = "".join(destuffed_chars)
     steps.append(f"De-stuff Step {step_num}: De-stuffing complete. Recovered original payload = '{destuffed_data}' (Removed {removed_bits_count} stuffed '0's)")
@@ -290,6 +252,7 @@ def bit_destuff(frame: str, flag_pattern: str = "01111110") -> dict:
         "success": True,
         "destuffed_data": destuffed_data,
         "stuffed_payload": destuffed_data,
+        "threshold": threshold,
         "removed_bits": removed_bits_count,
         "steps": steps
     }
@@ -338,6 +301,7 @@ def process_bit_stuffing(data_stream: str, flag_pattern: str = "01111110", actio
             "success": True,
             "action": "destuff",
             "flag": flag,
+            "threshold": res.get("threshold", max(flag.count('1') - 1, 1)),
             "original_data": orig_str if has_orig else destuffed,
             "received_frame": data_stream,
             "destuffed_data": destuffed,
@@ -362,6 +326,7 @@ def process_bit_stuffing(data_stream: str, flag_pattern: str = "01111110", actio
             "action": "stuff",
             "original_data": res["original_data"],
             "flag": flag,
+            "threshold": res["threshold"],
             "stuffed_payload": res["stuffed_payload"],
             "stuffed_frame": res["stuffed_frame"],
             "stuffed_tokens": res["tokens"],
@@ -434,6 +399,7 @@ def process_bit_stuffing(data_stream: str, flag_pattern: str = "01111110", actio
         "action": "full_cycle",
         "original_data": stuff_result["original_data"],
         "flag": flag,
+        "threshold": stuff_result["threshold"],
         "stuffed_payload": stuff_result["stuffed_payload"],
         "stuffed_frame": transmitted_frame,
         "stuffed_tokens": stuff_result["tokens"],

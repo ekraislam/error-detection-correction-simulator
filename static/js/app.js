@@ -57,28 +57,24 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < flag.length; i++) {
             if (flag[i] !== '0' && flag[i] !== '1') return '';
         }
+        const flagOnes = (flag.match(/1/g) || []).length;
+        const threshold = Math.max(flagOnes - 1, 1);
         let stuffed = '';
-        let onesCount = 0;
-        const flushOnes = () => {
-            if (onesCount > 0) {
-                if (onesCount === 1) {
-                    stuffed += '0' + '1';
-                } else {
-                    stuffed += '1'.repeat(onesCount - 1) + '0' + '1';
-                }
-                onesCount = 0;
-            }
-        };
+        let consecutiveOnes = 0;
         for (let i = 0; i < raw.length; i++) {
             const bit = raw[i];
             if (bit === '1') {
-                onesCount++;
+                stuffed += '1';
+                consecutiveOnes++;
+                if (consecutiveOnes === threshold) {
+                    stuffed += '0';
+                    consecutiveOnes = 0;
+                }
             } else {
-                flushOnes();
                 stuffed += '0';
+                consecutiveOnes = 0;
             }
         }
-        flushOnes();
         return flag + stuffed + flag;
     }
 
@@ -249,10 +245,10 @@ document.addEventListener('DOMContentLoaded', () => {
             inputLabel: 'Binary Data Payload',
             placeholder: 'e.g. 111110',
             defaultValue: '111110',
-            hint: "Enter binary ('0' and '1's). A '0' is inserted immediately before the last '1' of every consecutive sequence of 1s.",
+            hint: "Enter binary ('0' and '1's). A '0' is dynamically stuffed after every (N-1) consecutive '1's (where N = number of 1s in FLAG).",
             binaryModule: true,
             hasErrorInjector: false,
-            theory: "For every consecutive sequence of '1's, a '0' is inserted immediately before the LAST '1' (e.g. 1 → 01, 11 → 101, 111 → 1101, 11111 → 111101). De-stuffing reverses this by removing the stuffed '0' before the last '1'.",
+            theory: "Stuffing threshold is calculated dynamically as (N - 1), where N is the total number of '1's in the Delimiter FLAG. Whenever the data contains (N - 1) consecutive '1's, a '0' is inserted immediately AFTER them. De-stuffing removes the stuffed '0' after every (N - 1) consecutive '1's.",
             paramsHtml: `
                 <div class="form-group" style="grid-column: span 2;">
                     <label for="param-flag-pattern">Delimiter Flag Pattern</label>
@@ -948,7 +944,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (tok.type === 'esc_inserted') cls = 'token-esc-inserted';
             if (tok.type === 'stuffed_data') cls = 'token-stuffed-data';
             if (tok.type === 'stuffed_zero') cls = 'token-stuffed-zero';
-            const tip = tok.type === 'stuffed_zero' ? "Stuffed '0' inserted before last '1'" : (tok.label || tok.type);
+            const tip = tok.type === 'stuffed_zero' ? "Stuffed '0' inserted after dynamic threshold consecutive 1s" : (tok.label || tok.type);
             html += `<span class="token-badge ${cls}" title="${tip}">${tok.value}</span>`;
         });
         html += '</div>';
