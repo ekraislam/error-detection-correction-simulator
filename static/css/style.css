@@ -344,12 +344,12 @@ body {
 
 .cards-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(285px, 1fr));
+    gap: 18px;
 }
 
 .technique-card {
-    padding: 20px; cursor: pointer;
+    padding: 22px 20px; cursor: pointer;
     position: relative; display: flex; flex-direction: column;
     transition: all var(--transition-normal), border-color var(--transition-fast);
 }
@@ -367,6 +367,7 @@ body {
 }
 
 .card-badge.cyan    { background: rgba(34, 211, 238, 0.12);  color: var(--accent-cyan);    border: 1px solid var(--border-highlight); }
+.card-badge.teal    { background: rgba(20, 184, 166, 0.14);  color: #2dd4bf;               border: 1px solid rgba(20, 184, 166, 0.35); }
 .card-badge.purple  { background: rgba(139, 92, 246, 0.12);  color: var(--accent-violet);  border: 1px solid rgba(139, 92, 246, 0.3); }
 .card-badge.emerald { background: rgba(34, 197, 94, 0.12);   color: var(--color-success);  border: 1px solid rgba(34, 197, 94, 0.3); }
 .card-badge.amber   { background: rgba(245, 158, 11, 0.12);  color: var(--color-warning);  border: 1px solid rgba(245, 158, 11, 0.3); }
@@ -381,6 +382,7 @@ body {
 }
 
 .card-icon.cyan    { color: var(--accent-cyan); }
+.card-icon.teal    { color: #2dd4bf; }
 .card-icon.purple  { color: var(--accent-violet); }
 .card-icon.emerald { color: var(--color-success); }
 .card-icon.amber   { color: var(--color-warning); }
@@ -856,8 +858,125 @@ input:checked + .slider:before { transform: translateX(21px); background-color: 
 }
 .steps-summary-toggle::-webkit-details-marker { display: none; }
 
+.steps-toggle-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.steps-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-step-action {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--text-secondary);
+    padding: 3px 9px;
+    border-radius: 5px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all var(--transition-fast);
+}
+
+.btn-step-action:hover {
+    background: rgba(34, 211, 238, 0.14);
+    border-color: rgba(34, 211, 238, 0.4);
+    color: var(--accent-cyan);
+    transform: translateY(-1px);
+}
+
+.btn-step-action:active {
+    transform: translateY(0);
+}
+
 .accordion-arrow { font-size: 0.78rem; transition: transform 0.3s ease; }
 details[open] .accordion-arrow { transform: rotate(180deg); }
+
+/* Digital Signal Waveform Box */
+.digital-waveform-box {
+    grid-column: 1 / -1;
+    background: rgba(8, 13, 26, 0.85);
+}
+
+.digital-waveform-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+}
+
+.waveform-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.waveform-title {
+    color: var(--accent-cyan);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.waveform-meta {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+}
+
+.waveform-scroll-area {
+    overflow-x: auto;
+    width: 100%;
+    padding: 8px 4px 6px 4px;
+}
+
+.waveform-svg-wrap {
+    position: relative;
+    height: 52px;
+}
+
+.waveform-svg {
+    display: block;
+    overflow: visible;
+}
+
+.wave-bits-overlay {
+    position: absolute;
+    top: 34px;
+    left: 0;
+    width: 100%;
+    height: 16px;
+    pointer-events: none;
+}
+
+.wave-bit-label {
+    position: absolute;
+    transform: translateX(-50%);
+    font-family: var(--font-code);
+    font-size: 0.76rem;
+    font-weight: 800;
+    color: #94a3b8;
+}
+
+.wave-bit-label.wave-bit-err {
+    color: #ef4444 !important;
+    text-shadow: 0 0 8px rgba(239, 68, 68, 0.8);
+    font-weight: 900;
+}
 
 .steps-content {
     padding: 18px;

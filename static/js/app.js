@@ -467,13 +467,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (techKey === 'overview') {
             document.getElementById('overview-cards')?.scrollIntoView({ behavior: 'smooth' });
             navItems.forEach(item => item.classList.toggle('active', item.getAttribute('data-technique') === 'overview'));
+            techniqueCards.forEach(card => card.classList.remove('active'));
             if (topHeaderTechBadge) topHeaderTechBadge.innerHTML = `<i class="fa-solid fa-layer-group"></i> OVERVIEW`;
+            window.location.hash = 'overview';
             return;
         }
 
         if (!techniqueConfigs[techKey]) return;
         currentTechnique = techKey;
         const config = techniqueConfigs[techKey];
+        window.location.hash = techKey;
 
         // Navigation highlights
         navItems.forEach(item => item.classList.toggle('active', item.getAttribute('data-technique') === techKey));
@@ -1479,6 +1482,48 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
+    /** Render Digital Signal Waveform (TTL / Logic Analyzer Pulse Train) */
+    function renderDigitalWaveform(bitString, errorIndices = new Set()) {
+        if (!bitString || !/^[01]+$/.test(bitString)) return '';
+        const cleanBits = bitString.slice(0, 32);
+        const bitWidth = 26;
+        const svgWidth = Math.max(320, cleanBits.length * bitWidth + 24);
+        const svgHeight = 44;
+        const highY = 8;
+        const lowY = 28;
+        let d = `M 10 ${(cleanBits[0] === '1') ? highY : lowY} `;
+        let labelsHtml = '';
+        let x = 10;
+
+        for (let i = 0; i < cleanBits.length; i++) {
+            const bit = cleanBits[i];
+            const isErr = errorIndices.has(i);
+            const y = (bit === '1') ? highY : lowY;
+            d += `V ${y} H ${x + bitWidth} `;
+            labelsHtml += `<span class="wave-bit-label ${isErr ? 'wave-bit-err' : ''}" style="left:${x + bitWidth / 2}px">${bit}${isErr ? '⚡' : ''}</span>`;
+            x += bitWidth;
+        }
+
+        return `
+            <div class="digital-waveform-card">
+                <div class="waveform-header">
+                    <span class="waveform-title"><i class="fa-solid fa-wave-square"></i> DIGITAL TTL SIGNAL WAVEFORM (LOGIC ANALYZER)</span>
+                    <span class="waveform-meta">${cleanBits.length} Bits Stream • NRZ-L Signaling</span>
+                </div>
+                <div class="waveform-scroll-area">
+                    <div class="waveform-svg-wrap" style="width:${svgWidth}px;">
+                        <svg class="waveform-svg" width="${svgWidth}" height="${svgHeight}">
+                            <line x1="0" y1="${highY}" x2="${svgWidth}" y2="${highY}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3 3" />
+                            <line x1="0" y1="${lowY}" x2="${svgWidth}" y2="${lowY}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3 3" />
+                            <path d="${d}" fill="none" stroke="var(--accent-cyan)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <div class="wave-bits-overlay">${labelsHtml}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     /** Hamming Distance pair comparison table */
     function renderHammingDistanceComparisonTable(comp) {
         if (!comp || !comp.length) return '';
@@ -2168,6 +2213,23 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         if (stepByStepDisplay) stepByStepDisplay.innerHTML = stepsHtml || '<div class="step-row">No trace generated.</div>';
+
+        // ── Digital Signal Waveform Visualizer ──
+        const waveformBox = document.getElementById('waveform-box');
+        const outputWaveform = document.getElementById('output-waveform');
+        if (waveformBox && outputWaveform) {
+            const config = techniqueConfigs[tech];
+            const bitStream = res.received_frame || res.received_codeword || res.transmitted_frame || res.transmitted_codeword || res.stuffed_frame || (config?.binaryModule && /^[01]+$/.test(res.original_data) ? res.original_data : null);
+
+            if (bitStream && /^[01]+$/.test(bitStream)) {
+                waveformBox.style.display = 'block';
+                const errSet = new Set(flippedPositions);
+                if (res.error_pos) errSet.add(res.error_pos - 1);
+                outputWaveform.innerHTML = renderDigitalWaveform(bitStream, errSet);
+            } else {
+                waveformBox.style.display = 'none';
+            }
+        }
     }
 
     // ── Helpers for rendering ──
@@ -2229,8 +2291,51 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ── Step Trace Copy & Print Buttons ──
+    const btnCopyTrace = document.getElementById('btn-copy-trace');
+    const btnPrintReport = document.getElementById('btn-print-report');
+
+    if (btnCopyTrace) {
+        btnCopyTrace.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const config = techniqueConfigs[currentTechnique];
+            const techName = config ? config.title : 'EDC Simulation';
+            const rows = document.querySelectorAll('#step-by-step-display .step-row');
+            if (!rows || rows.length === 0 || rows[0].textContent.includes('READY TO SIMULATE')) {
+                showToast('Run a simulation first to generate calculation steps.', 'warning');
+                return;
+            }
+            let report = `# ${techName} — Step-by-Step Mathematical Proof\n\n`;
+            rows.forEach(r => {
+                report += `${r.textContent.trim()}\n`;
+            });
+            report += `\nGenerated by EDC Simulator v2.0 (Academic Lab Edition)\n`;
+            navigator.clipboard.writeText(report).then(() => {
+                showToast('Step-by-step calculation report copied to clipboard! 📋', 'success');
+            }).catch(() => {
+                showToast('Failed to copy to clipboard.', 'error');
+            });
+        });
+    }
+
+    if (btnPrintReport) {
+        btnPrintReport.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            window.print();
+        });
+    }
+
     // ═══════════════════════════════════════════════════════════
     // INITIALISE
     // ═══════════════════════════════════════════════════════════
-    selectTechnique('byte_stuffing');
+    const initialHash = window.location.hash.replace(/^#/, '');
+    if (initialHash === 'overview') {
+        selectTechnique('overview');
+    } else if (initialHash && techniqueConfigs[initialHash]) {
+        selectTechnique(initialHash);
+    } else {
+        selectTechnique('byte_stuffing');
+    }
 });

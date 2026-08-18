@@ -377,13 +377,28 @@
                                         <div class="result-label"><i class="fa-solid fa-check-double"></i> Decoded / Verified Result</div>
                                         <div class="result-value code-display" id="output-decoded">— Awaiting Simulation —</div>
                                     </div>
+                                    <div class="result-box glass-card digital-waveform-box" id="waveform-box" style="display:none;">
+                                        <div class="result-label"><i class="fa-solid fa-wave-square"></i> Channel Digital Signal (Logic Waveform)</div>
+                                        <div class="result-value code-display" id="output-waveform"></div>
+                                    </div>
                                 </div>
 
                                 <!-- Step-by-Step Calculation Trace -->
                                 <details class="steps-details-accordion glass-card" id="calculation-steps-accordion" open>
                                     <summary class="steps-summary-toggle">
-                                        <span><i class="fa-solid fa-calculator"></i> CALCULATION TRACE &amp; STEP-BY-STEP PROOF</span>
-                                        <i class="fa-solid fa-chevron-down accordion-arrow"></i>
+                                        <div class="steps-toggle-left">
+                                            <i class="fa-solid fa-calculator"></i>
+                                            <span>CALCULATION TRACE &amp; STEP-BY-STEP PROOF</span>
+                                        </div>
+                                        <div class="steps-header-actions" onclick="event.stopPropagation();">
+                                            <button type="button" class="btn-step-action" id="btn-copy-trace" title="Copy Step-by-Step Proof to Clipboard">
+                                                <i class="fa-solid fa-copy"></i> Copy Steps
+                                            </button>
+                                            <button type="button" class="btn-step-action" id="btn-print-report" title="Print or Save Lab Report">
+                                                <i class="fa-solid fa-print"></i> Print Report
+                                            </button>
+                                            <i class="fa-solid fa-chevron-down accordion-arrow"></i>
+                                        </div>
                                     </summary>
                                     <div class="steps-content" id="step-by-step-display">
                                         <div class="empty-state">
