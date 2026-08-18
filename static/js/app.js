@@ -249,10 +249,10 @@ document.addEventListener('DOMContentLoaded', () => {
             inputLabel: 'Binary Data Payload',
             placeholder: 'e.g. 111110',
             defaultValue: '111110',
-            hint: "Enter binary ('0' and '1's). A '0' is inserted after 5 consecutive '1's.",
+            hint: "Enter binary ('0' and '1's). A '0' is inserted immediately before the last '1' of every consecutive sequence of 1s.",
             binaryModule: true,
             hasErrorInjector: false,
-            theory: "After every 5 consecutive '1' bits in the payload, a '0' is stuffed. The receiver de-stuffs by removing each '0' that follows 5 ones. This prevents accidental flag-pattern detection inside data.",
+            theory: "For every consecutive sequence of '1's, a '0' is inserted immediately before the LAST '1' (e.g. 1 → 01, 11 → 101, 111 → 1101, 11111 → 111101). De-stuffing reverses this by removing the stuffed '0' before the last '1'.",
             paramsHtml: `
                 <div class="form-group" style="grid-column: span 2;">
                     <label for="param-flag-pattern">Delimiter Flag Pattern</label>
@@ -948,7 +948,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (tok.type === 'esc_inserted') cls = 'token-esc-inserted';
             if (tok.type === 'stuffed_data') cls = 'token-stuffed-data';
             if (tok.type === 'stuffed_zero') cls = 'token-stuffed-zero';
-            const tip = tok.type === 'stuffed_zero' ? "Stuffed '0' inserted after 5 consecutive 1s" : (tok.label || tok.type);
+            const tip = tok.type === 'stuffed_zero' ? "Stuffed '0' inserted before last '1'" : (tok.label || tok.type);
             html += `<span class="token-badge ${cls}" title="${tip}">${tok.value}</span>`;
         });
         html += '</div>';

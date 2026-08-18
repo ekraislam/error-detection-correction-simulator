@@ -77,10 +77,10 @@ def run_qa_audit():
         "params": {"flag_pattern": "01111110", "action": "full_cycle"}
     }).get_json()
     assert res2_1["success"] == True
-    assert res2_1["result"]["stuffed_payload"] == "1111100"
-    assert res2_1["result"]["stuffed_frame"] == "01111110111110001111110"
+    assert res2_1["result"]["stuffed_payload"] == "1111010"
+    assert res2_1["result"]["stuffed_frame"] == "01111110111101001111110"
     assert res2_1["result"]["destuffed_data"] == "111110"
-    print("[PASS] Bit stuffing 111110 -> 1111100 -> Frame -> Destuffed 111110")
+    print("[PASS] Bit stuffing 111110 -> 1111010 -> Frame -> Destuffed 111110")
 
     res2_err1 = client.post("/api/process", json={
         "technique": "bit_stuffing",
