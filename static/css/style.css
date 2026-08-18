@@ -1998,6 +1998,152 @@ details[open] .accordion-arrow { transform: rotate(180deg); }
     color: var(--text-secondary);
 }
 
+/* ════════════════════════════════════════════════
+   TOAST NOTIFICATION SYSTEM
+════════════════════════════════════════════════ */
+#toast-container {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
 
+.toast-notification {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    font-family: var(--font-primary);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    pointer-events: auto;
+    opacity: 0;
+    transform: translateY(16px);
+    animation: toast-in 0.35s ease forwards;
+    max-width: 380px;
+    letter-spacing: 0.01em;
+}
 
+.toast-notification.toast-hide {
+    animation: toast-out 0.3s ease forwards;
+}
 
+.toast-notification.toast-success {
+    background: rgba(16, 185, 129, 0.18);
+    border-color: rgba(16, 185, 129, 0.45);
+    color: #6ee7b7;
+}
+
+.toast-notification.toast-warning {
+    background: rgba(245, 158, 11, 0.18);
+    border-color: rgba(245, 158, 11, 0.45);
+    color: #fcd34d;
+}
+
+.toast-notification.toast-error {
+    background: rgba(239, 68, 68, 0.18);
+    border-color: rgba(239, 68, 68, 0.45);
+    color: #fca5a5;
+}
+
+.toast-notification.toast-info {
+    background: rgba(34, 211, 238, 0.12);
+    border-color: rgba(34, 211, 238, 0.35);
+    color: var(--accent-cyan);
+}
+
+.toast-icon { font-size: 1rem; flex-shrink: 0; }
+.toast-msg  { flex: 1; line-height: 1.4; }
+
+@keyframes toast-in {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes toast-out {
+    from { opacity: 1; transform: translateY(0); }
+    to   { opacity: 0; transform: translateY(16px); }
+}
+
+/* ════════════════════════════════════════════════
+   PRINT MEDIA — CLEAN LAB REPORT
+════════════════════════════════════════════════ */
+@media print {
+    /* Reset background for paper */
+    * { color: #111 !important; background: transparent !important;
+        box-shadow: none !important; text-shadow: none !important;
+        -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    /* Hide all navigational and UI chrome */
+    .sidebar,
+    .top-header,
+    .studio-left-col,
+    .studio-right-col,
+    .pipeline-status-bar,
+    #error-injection-card,
+    .steps-header-actions,
+    .hero-compact,
+    .section-title-wrap,
+    .cards-grid,
+    #toast-container,
+    .mobile-toggle-btn { display: none !important; }
+
+    /* Full-width layout for print */
+    body { background: #fff !important; }
+    .workspace-layout { display: block !important; }
+    .main-content { margin: 0 !important; padding: 0 !important; }
+    .dashboard-scroll { padding: 0 !important; }
+    .simulator-studio { border: none !important; padding: 0 !important; }
+    .studio-grid { display: block !important; }
+    .studio-center-col { width: 100% !important; max-width: 100% !important; }
+
+    /* Print header */
+    .studio-header::before {
+        content: "EDC SIMULATOR v2.0 — Academic Lab Report";
+        display: block;
+        font-size: 1.1rem;
+        font-weight: 900;
+        color: #111 !important;
+        border-bottom: 2px solid #111;
+        padding-bottom: 8px;
+        margin-bottom: 16px;
+        letter-spacing: 0.04em;
+    }
+
+    /* Result boxes: clean monospaced */
+    .result-box { border: 1px solid #999 !important; border-radius: 4px !important; padding: 10px !important; margin-bottom: 10px !important; }
+    .result-label { font-size: 0.8rem; font-weight: 800; color: #333 !important; margin-bottom: 6px !important; }
+    .result-value { font-family: 'Courier New', monospace !important; font-size: 0.88rem !important; color: #000 !important; white-space: pre-wrap !important; word-break: break-all; }
+
+    /* Steps accordion */
+    .steps-details-accordion { border: 1px solid #aaa !important; border-radius: 4px !important; }
+    .steps-summary-toggle { background: #f0f0f0 !important; padding: 8px 12px !important; border-bottom: 1px solid #ccc !important; }
+    .steps-content { max-height: none !important; padding: 12px !important; }
+    .step-row { border-left: 3px solid #555 !important; padding: 5px 8px !important; margin-bottom: 4px !important; font-family: 'Courier New', monospace !important; font-size: 0.82rem !important; }
+    .step-row.highlight-step { border-left-color: #0066cc !important; background: #f0f8ff !important; }
+    .step-row.error-step { border-left-color: #cc0000 !important; background: #fff5f5 !important; }
+
+    /* Waveform: hide complex SVG in print */
+    #waveform-box { display: none !important; }
+
+    /* Footer watermark */
+    .studio-center-col::after {
+        content: "Generated by EDC Simulator v2.0  •  Data Link Layer Lab Platform  •  " attr(data-module);
+        display: block;
+        margin-top: 20px;
+        font-size: 0.72rem;
+        color: #777 !important;
+        text-align: center;
+        border-top: 1px solid #ccc;
+        padding-top: 8px;
+    }
+}

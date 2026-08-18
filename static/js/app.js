@@ -31,6 +31,32 @@ document.addEventListener('DOMContentLoaded', () => {
             .replace(/"/g, '&quot;');
     }
 
+    // ═══════════════════════════════════════════════════════════
+    // TOAST NOTIFICATION SYSTEM
+    // ═══════════════════════════════════════════════════════════
+    const TOAST_ICONS = {
+        success: '<i class="fa-solid fa-circle-check toast-icon"></i>',
+        warning: '<i class="fa-solid fa-triangle-exclamation toast-icon"></i>',
+        error:   '<i class="fa-solid fa-circle-xmark toast-icon"></i>',
+        info:    '<i class="fa-solid fa-circle-info toast-icon"></i>'
+    };
+
+    function showToast(message, type = 'info', duration = 3500) {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = `toast-notification toast-${type}`;
+        toast.innerHTML = `${TOAST_ICONS[type] || TOAST_ICONS.info}<span class="toast-msg">${message}</span>`;
+        container.appendChild(toast);
+
+        // Auto-dismiss
+        setTimeout(() => {
+            toast.classList.add('toast-hide');
+            toast.addEventListener('animationend', () => toast.remove(), { once: true });
+        }, duration);
+    }
+
     function computeGenericByteStuffing(data, flag, esc) {
         if (!data || !flag || !esc || flag === esc) return '';
         let stuffed = '';
