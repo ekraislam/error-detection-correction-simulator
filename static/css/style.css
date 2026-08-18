@@ -817,6 +817,7 @@ input:checked + .slider:before { transform: translateX(21px); background-color: 
 }
 
 .result-value.code-display:has(.hamming-encoded-workspace),
+.result-value.code-display:has(.checksum-studio-container),
 .result-value.code-display:has(.matrix-container),
 .result-value.code-display:has(.hdist-table-container) {
     display: block;
@@ -825,7 +826,8 @@ input:checked + .slider:before { transform: translateX(21px); background-color: 
     border: none;
 }
 
-.result-value.code-display > .hamming-encoded-workspace {
+.result-value.code-display > .hamming-encoded-workspace,
+.result-value.code-display > .checksum-studio-container {
     width: 100%;
     flex: 1 1 100%;
 }
@@ -1528,5 +1530,355 @@ details[open] .accordion-arrow { transform: rotate(180deg); }
     border: 1px solid #ef4444;
     box-shadow: 0 0 12px rgba(239, 68, 68, 0.35);
 }
+
+/* ════════════════════════════════════════════════
+   INTERNET CHECKSUM SIMULATOR — MATHEMATICAL STUDIO
+════════════════════════════════════════════════ */
+
+.checksum-studio-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+}
+
+/* 1. Top HUD Ribbon */
+.chk-hud-ribbon {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    width: 100%;
+}
+
+.chk-hud-card {
+    background: rgba(10, 15, 30, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+    transition: all var(--transition-fast);
+}
+
+.chk-hud-card:hover {
+    border-color: rgba(34, 211, 238, 0.3);
+    transform: translateY(-2px);
+}
+
+.chk-hud-featured {
+    border-color: rgba(20, 184, 166, 0.4);
+    background: linear-gradient(135deg, rgba(13, 148, 136, 0.15), rgba(6, 78, 59, 0.25));
+    box-shadow: 0 0 20px rgba(20, 184, 166, 0.15);
+}
+
+.chk-hud-label {
+    font-size: 0.68rem;
+    font-weight: 800;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.chk-hud-val {
+    font-size: 1.12rem;
+    font-weight: 800;
+    color: #f1f5f9;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chk-hud-meta {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.chk-color-cyan {
+    color: #38bdf8 !important;
+    text-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+}
+
+.chk-color-teal {
+    color: #2dd4bf !important;
+    text-shadow: 0 0 12px rgba(45, 212, 191, 0.4);
+}
+
+/* 2. Mathematical Steps Grid & Cards */
+.chk-math-steps-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
+}
+
+.chk-math-card {
+    background: rgba(6, 10, 22, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3), 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+
+.chk-math-final-card {
+    border-color: rgba(20, 184, 166, 0.35);
+    background: linear-gradient(135deg, rgba(6, 10, 22, 0.95), rgba(13, 148, 136, 0.08));
+}
+
+.chk-math-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.chk-math-title {
+    font-size: 0.76rem;
+    font-weight: 800;
+    color: var(--text-secondary);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.chk-tag-carry {
+    background: rgba(245, 158, 11, 0.16);
+    border: 1px solid rgba(245, 158, 11, 0.45);
+    color: #fcd34d;
+    padding: 2px 9px;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.2);
+}
+
+.chk-tag-nocarry {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    color: var(--text-muted);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.chk-tag-transmitted {
+    background: rgba(20, 184, 166, 0.18);
+    border: 1px solid #14b8a6;
+    color: #2dd4bf;
+    padding: 2px 9px;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    box-shadow: 0 0 10px rgba(20, 184, 166, 0.25);
+}
+
+/* 3. Mathematical Blackboard Alignment */
+.chk-blackboard {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-family: var(--font-code);
+    padding: 4px 6px;
+}
+
+.chk-math-line {
+    display: grid;
+    grid-template-columns: 160px auto 1fr;
+    align-items: baseline;
+    gap: 14px;
+    font-size: 0.95rem;
+    white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+    .chk-math-line {
+        grid-template-columns: 110px auto 1fr;
+        font-size: 0.85rem;
+        gap: 8px;
+    }
+}
+
+.chk-math-lbl {
+    font-weight: 700;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    letter-spacing: 0.02em;
+}
+
+.chk-math-bits {
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: #f8fafc;
+}
+
+.chk-math-dec {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-family: var(--font-main);
+    font-weight: 500;
+}
+
+.chk-math-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.12);
+    margin: 3px 0;
+    width: 100%;
+}
+
+.chk-math-sum {
+    font-weight: 800;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 4px 0;
+    border-radius: 4px;
+}
+
+.chk-carry-digit {
+    color: #fbbf24;
+    font-weight: 900;
+    background: rgba(245, 158, 11, 0.2);
+    padding: 1px 4px;
+    border-radius: 3px;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.chk-unwrapped-digits {
+    color: #94a3b8;
+}
+
+/* 4. Received Stream & Word Badges */
+.chk-recv-stream-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    width: 100%;
+}
+
+.chk-word-badge {
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 6px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    transition: all var(--transition-fast);
+}
+
+.chk-word-badge:hover {
+    border-color: rgba(255, 255, 255, 0.25);
+    background: rgba(15, 23, 42, 0.95);
+}
+
+.chk-word-tag {
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+}
+
+.chk-word-val {
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    letter-spacing: 0.08em;
+}
+
+.chk-chk-badge {
+    border-color: rgba(20, 184, 166, 0.45);
+    background: rgba(13, 148, 136, 0.15);
+}
+
+.chk-chk-badge .chk-word-val {
+    color: #2dd4bf;
+    font-weight: 800;
+}
+
+.chk-word-corrupted,
+.chk-chk-corrupted {
+    border-color: #ef4444 !important;
+    background: rgba(239, 68, 68, 0.16) !important;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.25);
+}
+
+.chk-word-corrupted .chk-word-val,
+.chk-chk-corrupted .chk-word-val {
+    color: #fca5a5 !important;
+}
+
+/* 5. Decoded / Verification Result Box */
+.chk-verify-box {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+}
+
+.chk-verify-success {
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.chk-verify-error {
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.chk-verify-badge-ok {
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: #34d399;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: 0.04em;
+}
+
+.chk-verify-badge-err {
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: #f87171;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: 0.04em;
+}
+
+.chk-verify-details {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+
 
 

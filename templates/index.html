@@ -62,8 +62,15 @@
                         <span class="nav-sub">1D / 2D Matrix</span>
                     </div>
                 </a>
-                <a href="#crc" class="nav-item" data-technique="crc">
+                <a href="#checksum" class="nav-item" data-technique="checksum">
                     <i class="fa-solid fa-calculator"></i>
+                    <div class="nav-item-content">
+                        <span class="nav-title">Internet Checksum</span>
+                        <span class="nav-sub">1's Complement</span>
+                    </div>
+                </a>
+                <a href="#crc" class="nav-item" data-technique="crc">
+                    <i class="fa-solid fa-binary"></i>
                     <div class="nav-item-content">
                         <span class="nav-title">CRC</span>
                         <span class="nav-sub">Polynomial Check</span>
@@ -124,15 +131,15 @@
                             <div class="hero-compact-left">
                                 <span class="hero-tag"><i class="fa-solid fa-bolt"></i> DATA LINK LAYER SIMULATION PLATFORM</span>
                                 <h2>Error Detection &amp; Correction Simulator</h2>
-                                <p>Interactive laboratory for 6 networking techniques. Select a module below to begin.</p>
+                                <p>Interactive laboratory for 7 networking techniques. Select a module below to begin.</p>
                             </div>
                             <div class="hero-compact-stats">
                                 <div class="hero-stat">
-                                    <span class="hero-stat-val">06</span>
+                                    <span class="hero-stat-val">07</span>
                                     <span class="hero-stat-label">Modules</span>
                                 </div>
                                 <div class="hero-stat">
-                                    <span class="hero-stat-val">81</span>
+                                    <span class="hero-stat-val">95</span>
                                     <span class="hero-stat-label">Tests</span>
                                 </div>
                                 <div class="hero-stat">
@@ -181,6 +188,16 @@
                                 <span class="card-subtitle">1D / 2D Checksum</span>
                                 <p>Uses parity relationships to detect transmission errors across 1D and 2D blocks.</p>
                                 <div class="card-mini-viz"><code>Row × Col Matrix Error Loc</code></div>
+                            </div>
+
+                            <!-- Internet Checksum -->
+                            <div class="technique-card glass-card" data-technique="checksum" id="card-checksum">
+                                <div class="card-badge teal">DETECTION</div>
+                                <div class="card-icon teal"><i class="fa-solid fa-calculator"></i></div>
+                                <h3>Internet Checksum</h3>
+                                <span class="card-subtitle">1's Complement RFC 1071</span>
+                                <p>Performs 8-bit or 16-bit 1's complement word addition with end-around carry and bitwise inversion.</p>
+                                <div class="card-mini-viz"><code>Σ Wᵢ (End-Around Carry) → ~Sum</code></div>
                             </div>
 
                             <!-- CRC -->
@@ -445,7 +462,7 @@
                 <span class="footer-author">Designed &amp; Developed by <span class="footer-name">Ohi</span></span>
                 <span class="footer-divider">|</span>
                 <span class="footer-meta">
-                    6 Techniques &nbsp;•&nbsp; 81 Automated Tests &nbsp;•&nbsp; 100% Test Pass Rate &nbsp;•&nbsp; 2026
+                    7 Techniques &nbsp;•&nbsp; 95 Automated Tests &nbsp;•&nbsp; 100% Test Pass Rate &nbsp;•&nbsp; 2026
                 </span>
             </div>
         </footer>

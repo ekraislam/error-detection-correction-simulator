@@ -13,6 +13,7 @@ from .byte_stuffing import process_byte_stuffing
 from .bit_stuffing import process_bit_stuffing
 from .parity import process_parity
 from .crc import process_crc
+from .checksum import process_checksum
 from .hamming import process_hamming
 from .hamming_distance import process_hamming_distance
 
@@ -21,6 +22,7 @@ __all__ = [
     "process_bit_stuffing",
     "process_parity",
     "process_crc",
+    "process_checksum",
     "process_hamming",
     "process_hamming_distance",
 ]

@@ -159,6 +159,29 @@ def run_qa_audit():
     assert res6_b["result"]["correctable_errors_t"] == 0
     print("[PASS] Hamming Distance Mode B: 4 codewords -> d_min = 1, s = 0, t = 0")
 
+    # 9. Test Module 7: Internet Checksum API
+    print("\n--- Phase 9: Module 7 — Internet Checksum Audit ---")
+    res7_clean = client.post("/api/process", json={
+        "technique": "checksum",
+        "input_data": "1010100100110101",
+        "params": {"word_size": 8, "action": "full_cycle"}
+    }).get_json()
+    assert res7_clean["result"]["final_sum"] == "11011110"
+    assert res7_clean["result"]["checksum"] == "00100001"
+    assert res7_clean["result"]["error_detected"] == False
+    assert res7_clean["result"]["integrity_match"] == True
+    print("[PASS] Internet Checksum 8-bit Clean -> Final Sum 11011110, Checksum 00100001, Integrity Match: True")
+
+    res7_err = client.post("/api/process", json={
+        "technique": "checksum",
+        "input_data": "1010100100110101",
+        "params": {"word_size": 8, "action": "full_cycle", "error_pos": 3}
+    }).get_json()
+    assert res7_err["result"]["error_injected"] == True
+    assert res7_err["result"]["error_detected"] == True
+    assert res7_err["result"]["integrity_match"] == False
+    print("[PASS] Internet Checksum Error Injection -> Pos 3 Error Detected: True")
+
     print("\n" + "=" * 80)
     print("ALL API ENDPOINT QA AUDIT CHECKS PASSED SUCCESSFULLY!")
     print("=" * 80)

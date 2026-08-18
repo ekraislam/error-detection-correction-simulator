@@ -320,6 +320,43 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `
         },
+        checksum: {
+            name: 'Internet Checksum',
+            title: 'Internet Checksum Simulator',
+            inputLabel: 'Binary Data Payload',
+            placeholder: 'e.g. 1010100100110101',
+            defaultValue: '1010100100110101',
+            hint: "Enter binary string ('0' and '1's). Divided into 8-bit or 16-bit words for 1's complement addition.",
+            binaryModule: true,
+            hasErrorInjector: true,
+            theory: "Internet Checksum (RFC 1071) divides payload into k-bit words (8-bit or 16-bit) and performs 1's complement addition. Whenever a carry out of MSB occurs, it wraps around (End-Around Carry) and is added to LSB. The final sum is inverted (1's complement) to produce the Checksum. The receiver sums all received words PLUS the checksum — an all-1s sum (inverted = 0) confirms error-free transmission.",
+            paramsHtml: `
+                <div class="form-group" style="grid-column: span 2;">
+                    <label>Quick Presets</label>
+                    <div class="hamming-preset-bar">
+                        <button type="button" class="preset-btn active-preset" id="preset-chk-8b2w" data-val="1010100100110101" data-w="8">8-bit (2 Words)</button>
+                        <button type="button" class="preset-btn" id="preset-chk-8b3w" data-val="101010010011010111001100" data-w="8">8-bit (3 Words)</button>
+                        <button type="button" class="preset-btn" id="preset-chk-16b2w" data-val="10000000100000000000000100000001" data-w="16">16-bit (2 Words)</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="param-word-size">Word Size</label>
+                    <select id="param-word-size" class="form-control">
+                        <option value="8" selected>8-bit Words (Octets)</option>
+                        <option value="16">16-bit Words (Standard Internet)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="param-error-pos">Codeword Bit Flip Position (1-indexed)</label>
+                    <input type="number" id="param-error-pos" class="form-control code-input" placeholder="e.g. 5" min="1" step="1">
+                    <small class="form-hint" id="param-error-pos-hint">Optional: Enter 1-based index (1 to N) to flip a bit in transmitted codeword</small>
+                </div>
+                <div class="form-group" style="grid-column: span 2; font-size:0.78rem; color:var(--text-muted); background:var(--bg-surface); padding:9px 12px; border-radius:7px; border-left:3px solid var(--accent-teal);">
+                    <i class="fa-solid fa-calculator" style="color:var(--accent-teal);"></i>
+                    Computes 1's complement sum across words with end-around carry and bitwise inversion (~Sum).
+                </div>
+            `
+        },
         crc: {
             name: 'CRC',
             title: 'Cyclic Redundancy Check Simulator',
@@ -602,6 +639,49 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (err2dGroup) err2dGroup.style.display = is2D ? 'block' : 'none';
                 if (primaryInput) primaryInput.value = is2D ? '1011001011001001' : '1011001';
                 updateParityHint();
+            });
+        } else if (techKey === 'checksum') {
+            const wordSelect  = document.getElementById('param-word-size');
+            const errPosInput = document.getElementById('param-error-pos');
+            const hintPos     = document.getElementById('param-error-pos-hint');
+
+            const updateChecksumHint = () => {
+                const wSize = parseInt(wordSelect?.value || 8, 10);
+                const rawData = primaryInput ? primaryInput.value.replace(/\s+/g, '') : '';
+                const isBin = /^[01]+$/.test(rawData);
+                if (rawData && isBin) {
+                    const totalWords = Math.ceil(rawData.length / wSize) || 1;
+                    const totalBits = (totalWords + 1) * wSize; // Payload words + 1 Checksum word
+                    if (hintPos) {
+                        hintPos.textContent = `Optional: Enter 1-based index (1 to ${totalBits}) to flip a bit (${totalWords} words + 1 checksum)`;
+                    }
+                    if (errPosInput) errPosInput.max = totalBits;
+                } else if (hintPos) {
+                    hintPos.textContent = 'Optional: Enter 1-based index (1 to N) to flip a bit in transmitted codeword';
+                }
+            };
+
+            updateChecksumHint();
+            primaryInput?.addEventListener('input', updateChecksumHint);
+            wordSelect?.addEventListener('change', updateChecksumHint);
+
+            // Preset buttons
+            document.querySelectorAll('.preset-btn[id^="preset-chk-"]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.preset-btn[id^="preset-chk-"]').forEach(b => b.classList.remove('active-preset'));
+                    btn.classList.add('active-preset');
+                    if (primaryInput) primaryInput.value = btn.dataset.val;
+                    if (wordSelect && btn.dataset.w) wordSelect.value = btn.dataset.w;
+                    updateChecksumHint();
+                    processSimulatorData();
+                });
+            });
+
+            errPosInput?.addEventListener('keydown', e => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    processSimulatorData();
+                }
             });
         } else if (techKey === 'crc') {
             document.getElementById('btn-crc-encode-only')?.addEventListener('click', () => processSimulatorData('encode'));
@@ -1067,6 +1147,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
+        } else if (currentTechnique === 'checksum') {
+            payload.params.word_size = parseInt(document.getElementById('param-word-size')?.value || 8, 10);
+            payload.params.action    = actionOverride || 'full_cycle';
+            const epRaw = document.getElementById('param-error-pos')?.value;
+            if (epRaw !== undefined && epRaw !== null && String(epRaw).trim() !== '') {
+                const epNum = Number(String(epRaw).trim());
+                if (!isNaN(epNum) && Number.isInteger(epNum) && epNum >= 1) {
+                    payload.params.error_pos = epNum;
+                }
+            }
+
         } else if (currentTechnique === 'crc') {
             payload.params.polynomial = document.getElementById('param-crc-poly')?.value || '1101';
             payload.params.action     = actionOverride || 'full_cycle';
@@ -1247,6 +1338,145 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderHammingPosTable(posTable) {
         if (!posTable || !posTable.length) return '';
         return renderHammingEncodedSection({ pos_table: posTable });
+    }
+
+    /** Render Internet Checksum Encoded Section with Top HUD Banner & Mathematical Addition Blackboard Cards */
+    function renderChecksumEncodedSection(res) {
+        if (!res) return '';
+        const words = res.words || [];
+        const trace = res.addition_trace || [];
+        const wSize = res.word_size || 8;
+        const hexSum = '0x' + parseInt(res.final_sum || '0', 2).toString(16).toUpperCase().padStart(wSize / 4, '0');
+        const hexChk = '0x' + parseInt(res.checksum || '0', 2).toString(16).toUpperCase().padStart(wSize / 4, '0');
+
+        // 1. Top HUD Ribbon (3 KPI Summary Cards)
+        const hudHtml = `
+            <div class="chk-hud-ribbon">
+                <div class="chk-hud-card">
+                    <span class="chk-hud-label"><i class="fa-solid fa-layer-group"></i> PAYLOAD WORDS</span>
+                    <div class="chk-hud-val code-font">${escapeHtml(res.words ? res.words.join('  ') : res.original_data)}</div>
+                    <span class="chk-hud-meta">${res.num_words} words × ${wSize}-bit (${res.padding_bits > 0 ? `+${res.padding_bits} pad` : 'Aligned'})</span>
+                </div>
+                <div class="chk-hud-card">
+                    <span class="chk-hud-label"><i class="fa-solid fa-calculator"></i> 1's COMPLEMENT SUM (Σ)</span>
+                    <div class="chk-hud-val code-font chk-color-cyan">${escapeHtml(res.final_sum || '—')}</div>
+                    <span class="chk-hud-meta">Dec ${parseInt(res.final_sum || '0', 2)} • Hex ${hexSum}</span>
+                </div>
+                <div class="chk-hud-card chk-hud-featured">
+                    <span class="chk-hud-label"><i class="fa-solid fa-shield-halved"></i> CHECKSUM (~SUM)</span>
+                    <div class="chk-hud-val code-font chk-color-teal">${escapeHtml(res.checksum || '—')}</div>
+                    <span class="chk-hud-meta">Dec ${parseInt(res.checksum || '0', 2)} • Hex ${hexChk} • Transmitted</span>
+                </div>
+            </div>
+        `;
+
+        // 2. Mathematical Addition Steps Blackboard Cards
+        let mathStepsHtml = '';
+        if (words.length <= 1) {
+            mathStepsHtml = `
+                <div class="chk-math-card">
+                    <div class="chk-math-header">
+                        <span class="chk-math-title"><i class="fa-solid fa-arrow-right-arrow-left"></i> Single Word Payload</span>
+                        <span class="chk-tag-nocarry">Direct Inversion</span>
+                    </div>
+                    <div class="chk-blackboard">
+                        <div class="chk-math-line"><span class="chk-math-lbl">Word 1 (W1):</span><span class="chk-math-bits">${words[0] || res.original_data}</span><span class="chk-math-dec">(Dec ${parseInt(words[0] || '0', 2)})</span></div>
+                        <div class="chk-math-divider"></div>
+                        <div class="chk-math-line chk-math-sum"><span class="chk-math-lbl">Final Sum (Σ):</span><span class="chk-math-bits chk-color-cyan">${res.final_sum}</span><span class="chk-math-dec">(Dec ${parseInt(res.final_sum || '0', 2)})</span></div>
+                    </div>
+                </div>
+            `;
+        } else {
+            trace.forEach((step, idx) => {
+                const isCarry = step.carry_occurred;
+                const carryBadge = isCarry
+                    ? `<span class="chk-tag-carry"><i class="fa-solid fa-arrow-rotate-right"></i> End-Around Carry (+${step.carry_val || 1})</span>`
+                    : `<span class="chk-tag-nocarry"><i class="fa-solid fa-check"></i> No Carry</span>`;
+
+                let carryLinesHtml = '';
+                if (isCarry) {
+                    carryLinesHtml = `
+                        <div class="chk-math-line chk-math-raw">
+                            <span class="chk-math-lbl">Raw Sum (${wSize+1}b):</span>
+                            <span class="chk-math-bits"><span class="chk-carry-digit">${step.carry_val || '1'}</span> <span class="chk-unwrapped-digits">${step.unwrapped_part || ''}</span></span>
+                            <span class="chk-math-dec">(Dec ${step.raw_sum_dec})</span>
+                        </div>
+                        <div class="chk-math-line chk-math-wrap">
+                            <span class="chk-math-lbl">Wrap Carry:</span>
+                            <span class="chk-math-bits">+ <span class="chk-carry-digit">${step.carry_val || '1'}</span></span>
+                            <span class="chk-math-dec" style="color:var(--color-warning);">(Add carry to LSB)</span>
+                        </div>
+                        <div class="chk-math-divider"></div>
+                    `;
+                }
+
+                mathStepsHtml += `
+                    <div class="chk-math-card">
+                        <div class="chk-math-header">
+                            <span class="chk-math-title"><i class="fa-solid fa-plus"></i> Addition ${idx + 1}: Accumulator + ${step.operand_b_label}</span>
+                            ${carryBadge}
+                        </div>
+                        <div class="chk-blackboard">
+                            <div class="chk-math-line">
+                                <span class="chk-math-lbl">${idx === 0 ? 'Word 1 (W1):' : 'Accumulator:'}</span>
+                                <span class="chk-math-bits">${step.operand_a}</span>
+                                <span class="chk-math-dec">(Dec ${step.operand_a_dec ?? parseInt(step.operand_a, 2)})</span>
+                            </div>
+                            <div class="chk-math-line">
+                                <span class="chk-math-lbl">+ ${step.operand_b_label}:</span>
+                                <span class="chk-math-bits">${step.operand_b}</span>
+                                <span class="chk-math-dec">(Dec ${step.operand_b_dec ?? parseInt(step.operand_b, 2)})</span>
+                            </div>
+                            <div class="chk-math-divider"></div>
+                            ${carryLinesHtml}
+                            <div class="chk-math-line chk-math-sum">
+                                <span class="chk-math-lbl">Accumulator:</span>
+                                <span class="chk-math-bits chk-color-cyan">${step.result_sum}</span>
+                                <span class="chk-math-dec">(Dec ${step.result_sum_dec ?? parseInt(step.result_sum, 2)})</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // 3. Final Checksum Inversion Card
+        const finalInversionCardHtml = `
+            <div class="chk-math-card chk-math-final-card">
+                <div class="chk-math-header">
+                    <span class="chk-math-title"><i class="fa-solid fa-shield-halved" style="color:var(--accent-teal);"></i> Final Checksum Generation (Bitwise Inversion / 1's Complement)</span>
+                    <span class="chk-tag-transmitted">TRANSMITTED CHECKSUM</span>
+                </div>
+                <div class="chk-blackboard">
+                    <div class="chk-math-line">
+                        <span class="chk-math-lbl">Final Sum (Σ):</span>
+                        <span class="chk-math-bits chk-color-cyan">${res.final_sum}</span>
+                        <span class="chk-math-dec">(Dec ${parseInt(res.final_sum || '0', 2)})</span>
+                    </div>
+                    <div class="chk-math-line">
+                        <span class="chk-math-lbl">Invert Bits (~Σ):</span>
+                        <span class="chk-math-bits" style="color:var(--text-muted);">~ ( ${res.final_sum} )</span>
+                        <span class="chk-math-dec">(Flip 0 ↔ 1)</span>
+                    </div>
+                    <div class="chk-math-divider"></div>
+                    <div class="chk-math-line chk-math-sum">
+                        <span class="chk-math-lbl" style="color:var(--accent-teal); font-weight:800;">CHECKSUM:</span>
+                        <span class="chk-math-bits chk-color-teal" style="font-weight:800; font-size:1.15rem;">${res.checksum}</span>
+                        <span class="chk-math-dec" style="color:var(--accent-teal); font-weight:700;">Hex ${hexChk}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        return `
+            <div class="checksum-studio-container">
+                ${hudHtml}
+                <div class="chk-math-steps-grid">
+                    ${mathStepsHtml}
+                    ${finalInversionCardHtml}
+                </div>
+            </div>
+        `;
     }
 
     /** Hamming Distance pair comparison table */
@@ -1715,6 +1945,109 @@ document.addEventListener('DOMContentLoaded', () => {
                     statusClass: hasErr ? 't-danger' : 't-success'
                 });
             }
+        }
+
+        // ── Internet Checksum ──
+        else if (tech === 'checksum') {
+            const hasErr   = res.error_detected;
+            const injected = res.error_injected;
+            const state    = hasErr ? 'error' : 'success';
+            const ep       = res.error_pos;
+            const wSize    = res.word_size || 8;
+
+            setPipelineState(state);
+            let statusText = '';
+            if (hasErr) {
+                statusText = `<i class="fa-solid fa-triangle-exclamation"></i> CHECKSUM ERROR DETECTED${ep ? ` (Bit #${ep} Flipped)` : ''}`;
+            } else if (injected && !hasErr) {
+                statusText = '<i class="fa-solid fa-circle-info"></i> ERROR UNDETECTED (Compensating Error)';
+            } else {
+                statusText = `<i class="fa-solid fa-shield-check"></i> CHECKSUM VERIFIED (${wSize}-Bit 1's Complement Sum = All 1s)`;
+            }
+            setStatus(hasErr ? 'error-detected' : 'success', statusText);
+
+            // Box 1: Encoded / Transmitted
+            if (outputEncoded) {
+                outputEncoded.innerHTML = renderChecksumEncodedSection(res);
+            }
+
+            // Box 2: Received Frame
+            if (outputReceived) {
+                const recvWords = res.received_words || [];
+                const recvChk = res.received_checksum || '';
+                const origFrame = res.transmitted_frame || '';
+                const recvFrame = res.received_frame || '';
+                const wSize = res.word_size || 8;
+
+                let wordsHtml = '<div class="chk-recv-stream-wrap">';
+                recvWords.forEach((w, idx) => {
+                    const wordStart = idx * wSize;
+                    const origWord = origFrame.substr(wordStart, wSize);
+                    const isWordErr = (origWord && origWord !== w);
+                    const cls = isWordErr ? 'chk-word-badge chk-word-corrupted' : 'chk-word-badge';
+                    const icon = isWordErr ? '<i class="fa-solid fa-triangle-exclamation" style="color:#ef4444; margin-right:4px;"></i>' : '';
+                    wordsHtml += `
+                        <div class="${cls}">
+                            <span class="chk-word-tag">${icon}Word ${idx+1}</span>
+                            <span class="chk-word-val code-font">${w}</span>
+                        </div>
+                    `;
+                });
+
+                if (recvChk) {
+                    const chkStart = recvWords.length * wSize;
+                    const origChk = origFrame.substr(chkStart, wSize);
+                    const isChkErr = (origChk && origChk !== recvChk);
+                    const cls = isChkErr ? 'chk-word-badge chk-chk-corrupted' : 'chk-word-badge chk-chk-badge';
+                    const icon = isChkErr ? '<i class="fa-solid fa-triangle-exclamation" style="color:#ef4444; margin-right:4px;"></i>' : '<i class="fa-solid fa-shield-halved" style="margin-right:4px;"></i>';
+                    wordsHtml += `
+                        <div class="${cls}">
+                            <span class="chk-word-tag">${icon}Checksum</span>
+                            <span class="chk-word-val code-font">${recvChk}</span>
+                        </div>
+                    `;
+                }
+                wordsHtml += '</div>';
+                outputReceived.innerHTML = wordsHtml;
+            }
+
+            // Box 3: Decoded / Verified Result
+            if (outputDecoded) {
+                if (hasErr) {
+                    outputDecoded.innerHTML = `
+                        <div class="chk-verify-box chk-verify-error">
+                            <div class="chk-verify-badge-err"><i class="fa-solid fa-triangle-exclamation"></i> CHECKSUM MISMATCH (TRANSMISSION ERROR)</div>
+                            <div class="chk-verify-details">
+                                <span>Receiver 1's Sum: <code class="code-font font-bold">${res.receiver_sum}</code></span>
+                                <span>Inverted (~Sum): <code class="code-font font-bold" style="color:#ef4444;">${res.receiver_inverted_sum}</code> <small style="color:#f87171;">(Non-zero ✗)</small></span>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    outputDecoded.innerHTML = `
+                        <div class="chk-verify-box chk-verify-success">
+                            <div class="chk-verify-badge-ok"><i class="fa-solid fa-shield-check"></i> CHECKSUM VERIFIED (DATA INTEGRITY INTACT)</div>
+                            <div class="chk-verify-details">
+                                <span>Receiver 1's Sum: <code class="code-font font-bold" style="color:#34d399;">${res.receiver_sum}</code> <small style="color:#34d399;">(All 1s)</small></span>
+                                <span>Inverted (~Sum): <code class="code-font font-bold" style="color:#34d399;">${res.receiver_inverted_sum}</code> <small style="color:#34d399;">(All 0s ✓)</small></span>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            // Populate clean bits for error injector
+            if (res.transmitted_frame) {
+                setCleanBitsForInjector(res.transmitted_frame);
+            }
+
+            const errPosLabel = injected ? (res.error_details || `Bit #${ep || '?'}`) : 'None';
+            updateTelemetry({
+                encoded:     res.checksum ? `Sum: ${res.final_sum} | Chk: ${res.checksum}` : (res.transmitted_frame || '—'),
+                errorPos:    errPosLabel,
+                status:      hasErr ? 'CHECKSUM ERROR' : 'VERIFIED',
+                statusClass: hasErr ? 't-danger' : 't-success'
+            });
         }
 
         // ── CRC ──

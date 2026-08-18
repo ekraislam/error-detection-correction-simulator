@@ -21,6 +21,7 @@ from algorithms import (
     process_bit_stuffing,
     process_parity,
     process_crc,
+    process_checksum,
     process_hamming,
     process_hamming_distance
 )
@@ -92,6 +93,18 @@ def process_data():
         result = process_crc(
             input_data,
             polynomial=polynomial,
+            action=action,
+            injected_error=injected_error,
+            error_pos=error_pos
+        )
+        
+    elif technique == "checksum":
+        word_size = int(params.get("word_size", 8)) if str(params.get("word_size", "")).isdigit() else 8
+        action = params.get("action", "full_cycle")
+        error_pos = params.get("error_pos")
+        result = process_checksum(
+            input_data,
+            word_size=word_size,
             action=action,
             injected_error=injected_error,
             error_pos=error_pos
