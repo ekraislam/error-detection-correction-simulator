@@ -406,6 +406,7 @@ def process_parity(data_stream: str, parity_type: str = "even", mode: str = "1D"
             "recv_row_parities": recv_row_parities,
             "recv_col_parities": recv_col_parities,
             "error_injected": error_applied,
+            "corrupted_cell": {"row": corrupted_row_idx + 1, "col": corrupted_col_idx + 1} if (corrupted_row_idx is not None and corrupted_col_idx is not None) else None,
             "error_details": error_details,
             "error_detected": error_detected,
             "mismatched_rows": mismatched_rows,

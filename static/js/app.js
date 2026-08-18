@@ -300,6 +300,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="number" id="param-error-pos" class="form-control code-input" placeholder="e.g. 3 (leave empty for clean codeword)" min="1" step="1">
                     <small class="form-hint" id="param-error-pos-hint">Optional: Enter 1-based index (1 to N) to flip a bit in transmitted codeword</small>
                 </div>
+                <div class="form-group" id="param-2d-error-group" style="grid-column: span 2; display: none;">
+                    <label style="font-weight: 700; margin-bottom: 6px; display: block;">2D Bit Flip Position (1-indexed)</label>
+                    <div style="display: flex; gap: 12px;">
+                        <div style="flex: 1;">
+                            <label for="param-error-row" style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 4px;">Row (1-indexed)</label>
+                            <input type="number" id="param-error-row" class="form-control code-input" placeholder="e.g. 2" min="1" step="1">
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="param-error-col" style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 4px;">Column (1-indexed)</label>
+                            <input type="number" id="param-error-col" class="form-control code-input" placeholder="e.g. 3" min="1" step="1">
+                        </div>
+                    </div>
+                    <small class="form-hint" id="param-2d-error-hint">Optional: Specify 1-based Row and Column to flip a bit in the matrix</small>
+                </div>
                 <div class="form-group" style="grid-column: span 2; font-size:0.78rem; color:var(--text-muted); background:var(--bg-surface); padding:9px 12px; border-radius:7px; border-left:3px solid var(--accent-cyan);">
                     <i class="fa-solid fa-circle-info" style="color:var(--accent-cyan);"></i>
                     1D parity computes a single parity bit. 2D parity constructs a matrix with row, column, and corner parities.
@@ -481,26 +495,47 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (techKey === 'parity') {
             const modeSelect  = document.getElementById('param-parity-mode');
             const colGroup    = document.getElementById('param-columns-group');
+            const colInput    = document.getElementById('param-columns');
             const err1dGroup  = document.getElementById('param-1d-error-group');
             const errPosInput = document.getElementById('param-error-pos');
+            const err2dGroup  = document.getElementById('param-2d-error-group');
+            const errRowInput = document.getElementById('param-error-row');
+            const errColInput = document.getElementById('param-error-col');
 
             const updateParityHint = () => {
-                const hint = document.getElementById('param-error-pos-hint');
-                if (!hint) return;
+                const is2D = modeSelect?.value === '2D';
                 const val = primaryInput ? primaryInput.value.replace(/\s+/g, '') : '';
                 const isBin = /^[01]+$/.test(val);
-                if (val && isBin) {
-                    const totalBits = val.length + 1; // data + parity bit
-                    hint.textContent = `Optional: Enter 1-based index (1 to ${totalBits}) to flip a bit in codeword`;
-                    if (errPosInput) errPosInput.max = totalBits;
+
+                if (!is2D) {
+                    const hint1d = document.getElementById('param-error-pos-hint');
+                    if (hint1d) {
+                        if (val && isBin) {
+                            const totalBits = val.length + 1; // data + parity bit
+                            hint1d.textContent = `Optional: Enter 1-based index (1 to ${totalBits}) to flip a bit in codeword`;
+                            if (errPosInput) errPosInput.max = totalBits;
+                        } else {
+                            hint1d.textContent = 'Optional: Enter 1-based index (1 to N) to flip a bit in codeword';
+                        }
+                    }
                 } else {
-                    hint.textContent = 'Optional: Enter 1-based index (1 to N) to flip a bit in codeword';
+                    const hint2d = document.getElementById('param-2d-error-hint');
+                    if (hint2d) {
+                        const cols = parseInt(colInput?.value || 4, 10) || 4;
+                        const len = val && isBin ? val.length : 16;
+                        const rows = Math.ceil(len / cols) || 1;
+                        hint2d.textContent = `Optional: Specify 1-based Row (1 to ${rows}) and Column (1 to ${cols}) to flip a bit`;
+                        if (errRowInput) errRowInput.max = rows;
+                        if (errColInput) errColInput.max = cols;
+                    }
                 }
             };
 
             updateParityHint();
             primaryInput?.addEventListener('input', updateParityHint);
+            colInput?.addEventListener('input', updateParityHint);
 
+            // 1D Position input listeners
             errPosInput?.addEventListener('keydown', e => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
@@ -524,10 +559,47 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
+            // 2D Row & Column input listeners
+            [errRowInput, errColInput].forEach(inp => {
+                inp?.addEventListener('keydown', e => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        processSimulatorData();
+                    }
+                });
+            });
+
+            errRowInput?.addEventListener('input', e => {
+                const val = e.target.value;
+                if (val === '') { e.target.style.borderColor = ''; return; }
+                const num = Number(val);
+                const cols = parseInt(colInput?.value || 4, 10) || 4;
+                const rawData = primaryInput ? primaryInput.value.replace(/\s+/g, '') : '';
+                const maxRows = Math.ceil((rawData.length || 1) / cols);
+                if (num < 1 || !Number.isInteger(num) || num > maxRows) {
+                    e.target.style.borderColor = 'var(--color-danger)';
+                } else {
+                    e.target.style.borderColor = 'var(--accent-cyan)';
+                }
+            });
+
+            errColInput?.addEventListener('input', e => {
+                const val = e.target.value;
+                if (val === '') { e.target.style.borderColor = ''; return; }
+                const num = Number(val);
+                const maxCols = parseInt(colInput?.value || 4, 10) || 4;
+                if (num < 1 || !Number.isInteger(num) || num > maxCols) {
+                    e.target.style.borderColor = 'var(--color-danger)';
+                } else {
+                    e.target.style.borderColor = 'var(--accent-cyan)';
+                }
+            });
+
             modeSelect?.addEventListener('change', e => {
                 const is2D = e.target.value === '2D';
                 if (colGroup)   colGroup.style.display   = is2D ? 'block' : 'none';
                 if (err1dGroup) err1dGroup.style.display = is2D ? 'none'  : 'block';
+                if (err2dGroup) err2dGroup.style.display = is2D ? 'block' : 'none';
                 if (primaryInput) primaryInput.value = is2D ? '1011001011001001' : '1011001';
                 updateParityHint();
             });
@@ -941,7 +1013,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const maxLen = cleanData.length + 1; // data + parity bit
 
                     if (isNaN(epNum) || !Number.isInteger(epNum) || epNum < 1) {
-                        showToast('Invalid bit flip position. Please enter a positive whole number (≥ 1).', 'error');
+                        showToast('Invalid 1D bit flip position. Please enter a positive whole number (≥ 1).', 'error');
                         setStatus('error-detected', '<i class="fa-solid fa-triangle-exclamation"></i> INVALID POSITION (Must be integer ≥ 1)');
                         return;
                     }
@@ -951,6 +1023,47 @@ document.addEventListener('DOMContentLoaded', () => {
                         return;
                     }
                     payload.params.error_pos = epNum;
+                }
+            } else if (payload.params.mode === '2D') {
+                const rowRaw = document.getElementById('param-error-row')?.value;
+                const colRaw = document.getElementById('param-error-col')?.value;
+                const hasRow = rowRaw !== undefined && rowRaw !== null && String(rowRaw).trim() !== '';
+                const hasCol = colRaw !== undefined && colRaw !== null && String(colRaw).trim() !== '';
+
+                if (hasRow || hasCol) {
+                    if (!hasRow || !hasCol) {
+                        showToast('Please provide BOTH Row and Column (1-indexed) to flip a bit in 2D matrix.', 'error');
+                        setStatus('error-detected', '<i class="fa-solid fa-triangle-exclamation"></i> BOTH ROW & COLUMN REQUIRED');
+                        return;
+                    }
+                    const rowNum = Number(String(rowRaw).trim());
+                    const colNum = Number(String(colRaw).trim());
+                    const cleanData = payload.input_data ? payload.input_data.replace(/\s+/g, '') : '';
+                    const cols = payload.params.columns || 4;
+                    const maxRows = Math.ceil((cleanData.length || 1) / cols);
+
+                    if (isNaN(rowNum) || !Number.isInteger(rowNum) || rowNum < 1) {
+                        showToast('Invalid Row. Please enter a positive integer (≥ 1).', 'error');
+                        setStatus('error-detected', '<i class="fa-solid fa-triangle-exclamation"></i> INVALID ROW (Must be integer ≥ 1)');
+                        return;
+                    }
+                    if (isNaN(colNum) || !Number.isInteger(colNum) || colNum < 1) {
+                        showToast('Invalid Column. Please enter a positive integer (≥ 1).', 'error');
+                        setStatus('error-detected', '<i class="fa-solid fa-triangle-exclamation"></i> INVALID COL (Must be integer ≥ 1)');
+                        return;
+                    }
+                    if (rowNum > maxRows) {
+                        showToast(`Row ${rowNum} exceeds matrix row count (${maxRows} rows).`, 'error');
+                        setStatus('error-detected', `<i class="fa-solid fa-triangle-exclamation"></i> ROW OUT OF BOUNDS (1..${maxRows})`);
+                        return;
+                    }
+                    if (colNum > cols) {
+                        showToast(`Column ${colNum} exceeds matrix column count (${cols} columns).`, 'error');
+                        setStatus('error-detected', `<i class="fa-solid fa-triangle-exclamation"></i> COL OUT OF BOUNDS (1..${cols})`);
+                        return;
+                    }
+                    payload.params.error_row = rowNum;
+                    payload.params.error_col = colNum;
                 }
             }
 
@@ -1497,10 +1610,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
             } else {
                 // 2D Mode
+                const pin = res.pinpointed_location;
+                const cell = res.corrupted_cell || pin;
                 if (outputEncoded)  outputEncoded.textContent  = `2D Grid (${res.rows}×${res.columns}) | ${res.parity_type.toUpperCase()} Parity`;
                 if (outputReceived) outputReceived.innerHTML   = render2DParityMatrix(res);
-                if (outputDecoded)  outputDecoded.textContent  = `2D Block Matrix Parity Computed (${res.rows} rows × ${res.columns} cols)`;
-                updateTelemetry({ encoded: (res.matrix_rows ? res.matrix_rows.join(' ') : '—'), errorPos: '—', status: 'VALID', statusClass: 't-success' });
+
+                if (outputDecoded) {
+                    if (pin) {
+                        outputDecoded.innerHTML = `<span style="color:var(--color-danger); font-weight:600;"><i class="fa-solid fa-crosshairs"></i> Single-Bit Error Pinpointed</span> — Row ${pin.row}, Column ${pin.col} (Parity Mismatch Detected)`;
+                    } else if (hasErr) {
+                        outputDecoded.innerHTML = `<span style="color:var(--color-danger); font-weight:600;"><i class="fa-solid fa-triangle-exclamation"></i> 2D Parity Mismatch</span> — Rows: [${res.mismatched_rows?.join(', ') || '—'}], Cols: [${res.mismatched_cols?.join(', ') || '—'}]`;
+                    } else {
+                        outputDecoded.textContent = `2D Block Matrix Parity Verified (${res.rows} rows × ${res.columns} cols) — All parities intact`;
+                    }
+                }
+
+                if (hasErr) {
+                    statusText = pin
+                        ? `<i class="fa-solid fa-crosshairs"></i> 2D ERROR PINPOINTED (Row ${pin.row}, Col ${pin.col})`
+                        : '<i class="fa-solid fa-triangle-exclamation"></i> 2D PARITY MISMATCH DETECTED';
+                    setStatus('error-detected', statusText);
+                }
+
+                const errPosLabel = cell ? `Row ${cell.row}, Col ${cell.col}` : (hasErr ? 'Detected' : 'None');
+                updateTelemetry({
+                    encoded: (res.matrix_rows ? res.matrix_rows.join(' ') : '—'),
+                    errorPos: errPosLabel,
+                    status: hasErr ? (pin ? 'PINPOINTED' : 'ERROR') : 'VALID',
+                    statusClass: hasErr ? 't-danger' : 't-success'
+                });
             }
         }
 
