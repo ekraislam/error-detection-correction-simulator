@@ -37,6 +37,20 @@
                         <span class="nav-sub">Module Dashboard</span>
                     </div>
                 </a>
+                <a href="#compare" class="nav-item" data-technique="compare">
+                    <i class="fa-solid fa-scale-balanced"></i>
+                    <div class="nav-item-content">
+                        <span class="nav-title">Comparison Studio</span>
+                        <span class="nav-sub">Benchmark All Methods</span>
+                    </div>
+                </a>
+                <a href="#quiz" class="nav-item" data-technique="quiz">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                    <div class="nav-item-content">
+                        <span class="nav-title">Lab Quiz Mode</span>
+                        <span class="nav-sub">Interactive Knowledge Test</span>
+                    </div>
+                </a>
 
                 <div class="nav-section-title"><i class="fa-solid fa-layer-group"></i> FRAMING</div>
                 <a href="#byte_stuffing" class="nav-item" data-technique="byte_stuffing">
@@ -118,6 +132,9 @@
                     </div>
                 </div>
                 <div class="header-actions">
+                    <button type="button" class="btn-lab-report-header" id="btn-open-report-modal" title="Generate University-Grade Lab Report">
+                        <i class="fa-solid fa-file-signature"></i> <span>Formal Lab Report</span>
+                    </button>
                     <span class="course-badge" id="top-header-tech-badge"><i class="fa-solid fa-layer-group"></i> OVERVIEW</span>
                     <span class="status-badge online header-status"><span class="pulse-dot"></span> LIVE</span>
                 </div>
@@ -235,6 +252,45 @@
                         </div>
                     </section>
 
+                    <!-- ═══════════════════ QUICK MODULE SWITCHER BAR ═══════════════════ -->
+                    <div class="quick-switcher-wrapper glass-panel" id="quick-switcher-wrapper">
+                        <div class="quick-switcher-header">
+                            <span class="qs-label"><i class="fa-solid fa-microchip"></i> QUICK MODULE SWITCHER</span>
+                            <button type="button" class="qs-all-btn" id="btn-show-overview-grid">
+                                <i class="fa-solid fa-table-cells-large"></i> Full Overview
+                            </button>
+                        </div>
+                        <div class="quick-switcher-pills" id="quick-switcher-pills">
+                            <button type="button" class="qs-pill active" data-technique="byte_stuffing">
+                                <i class="fa-solid fa-file-code"></i> <span>Byte Stuffing</span>
+                            </button>
+                            <button type="button" class="qs-pill" data-technique="bit_stuffing">
+                                <i class="fa-solid fa-microchip"></i> <span>Bit Stuffing</span>
+                            </button>
+                            <button type="button" class="qs-pill" data-technique="parity">
+                                <i class="fa-solid fa-list-check"></i> <span>Parity Check</span>
+                            </button>
+                            <button type="button" class="qs-pill" data-technique="checksum">
+                                <i class="fa-solid fa-calculator"></i> <span>Internet Checksum</span>
+                            </button>
+                            <button type="button" class="qs-pill" data-technique="crc">
+                                <i class="fa-solid fa-calculator"></i> <span>CRC</span>
+                            </button>
+                            <button type="button" class="qs-pill" data-technique="hamming">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> <span>Hamming Code</span>
+                            </button>
+                            <button type="button" class="qs-pill" data-technique="hamming_distance">
+                                <i class="fa-solid fa-ruler-combined"></i> <span>Hamming Distance</span>
+                            </button>
+                            <button type="button" class="qs-pill qs-compare-pill" data-technique="compare" id="btn-qs-compare">
+                                <i class="fa-solid fa-scale-balanced"></i> <span>Compare All</span>
+                            </button>
+                            <button type="button" class="qs-pill qs-quiz-pill" data-technique="quiz" id="btn-qs-quiz">
+                                <i class="fa-solid fa-graduation-cap"></i> <span>Practice Quiz</span>
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- ═══════════════════ SIMULATOR WORKSPACE ═══════════════════ -->
                     <section class="simulator-studio glass-panel" id="simulator-panel">
                         <!-- Studio Header -->
@@ -251,15 +307,23 @@
                         </div>
 
                         <!-- 3-Column Workspace Grid -->
-                        <div class="three-col-studio-grid">
+                        <div class="three-col-studio-grid" id="studio-grid-container">
 
                             <!-- ── LEFT COLUMN: Input + Params + Error Injector ── -->
-                            <div class="studio-left-col">
+                            <div class="studio-left-col" id="studio-left-col">
 
                                 <!-- Input & Parameters Card -->
                                 <div class="input-card glass-card">
                                     <div class="card-header-sm">
                                         <h3><i class="fa-solid fa-terminal"></i> Data Parameters</h3>
+                                    </div>
+
+                                    <!-- Quick Protocol Presets Ribbon -->
+                                    <div class="presets-section" id="presets-section">
+                                        <div class="presets-label"><i class="fa-solid fa-bolt"></i> Quick Presets:</div>
+                                        <div class="presets-pills-bar" id="presets-pills-bar">
+                                            <!-- Injected dynamically via JS -->
+                                        </div>
                                     </div>
 
                                     <form id="simulator-form" onsubmit="return false;">
@@ -342,20 +406,53 @@
                             <!-- ── CENTER COLUMN: Visualizer + Pipeline + Step Trace ── -->
                             <div class="studio-center-col">
 
-                                <!-- Compact Transmission Pipeline Bar -->
+                                <!-- Interactive Transmission Pipeline Bar -->
                                 <div class="pipeline-bar glass-card">
+                                    <div class="pipeline-header-row">
+                                        <div class="pipeline-header-title">
+                                            <i class="fa-solid fa-diagram-project"></i>
+                                            <span>TRANSMISSION PIPELINE</span>
+                                        </div>
+                                        <div class="pipeline-playback-controls">
+                                            <button type="button" class="pipe-ctrl-btn" id="btn-pipe-step" title="Step through transmission stages">
+                                                <i class="fa-solid fa-forward-step"></i> Step
+                                            </button>
+                                            <button type="button" class="pipe-ctrl-btn" id="btn-pipe-play" title="Auto-play transmission animation">
+                                                <i class="fa-solid fa-play"></i> Animate
+                                            </button>
+                                            <button type="button" class="pipe-ctrl-btn" id="btn-pipe-reset" title="Reset pipeline focus">
+                                                <i class="fa-solid fa-arrow-rotate-left"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
                                     <div class="pipeline-steps-row">
-                                        <div class="pipe-step-sm active-pipe" id="pipe-source"><i class="fa-solid fa-database"></i><span>SOURCE</span></div>
+                                        <div class="pipe-step-sm active-pipe" id="pipe-source" title="Source Data Creation">
+                                            <i class="fa-solid fa-database"></i><span>SOURCE</span>
+                                        </div>
                                         <div class="pipe-arrow-sm"><i class="fa-solid fa-chevron-right"></i></div>
-                                        <div class="pipe-step-sm" id="pipe-encoder"><i class="fa-solid fa-gears"></i><span>ENCODE</span></div>
+                                        <div class="pipe-step-sm" id="pipe-encoder" title="Encoding / Frame Generation">
+                                            <i class="fa-solid fa-gears"></i><span>ENCODE</span>
+                                        </div>
                                         <div class="pipe-arrow-sm"><i class="fa-solid fa-chevron-right"></i></div>
-                                        <div class="pipe-step-sm" id="pipe-channel"><i class="fa-solid fa-wifi"></i><span>CHANNEL</span></div>
+                                        <div class="pipe-step-sm" id="pipe-channel" title="Physical / Logical Medium">
+                                            <i class="fa-solid fa-wifi"></i><span>CHANNEL</span>
+                                        </div>
                                         <div class="pipe-arrow-sm"><i class="fa-solid fa-chevron-right"></i></div>
-                                        <div class="pipe-step-sm" id="pipe-noise"><i class="fa-solid fa-bug"></i><span>NOISE</span></div>
+                                        <div class="pipe-step-sm" id="pipe-noise" title="Noise Injection & Bit Flips">
+                                            <i class="fa-solid fa-bug"></i><span>NOISE</span>
+                                        </div>
                                         <div class="pipe-arrow-sm"><i class="fa-solid fa-chevron-right"></i></div>
-                                        <div class="pipe-step-sm" id="pipe-decoder"><i class="fa-solid fa-filter"></i><span>DECODE</span></div>
+                                        <div class="pipe-step-sm" id="pipe-decoder" title="Receiver Decoding & Syndrome Computation">
+                                            <i class="fa-solid fa-filter"></i><span>DECODE</span>
+                                        </div>
                                         <div class="pipe-arrow-sm"><i class="fa-solid fa-chevron-right"></i></div>
-                                        <div class="pipe-step-sm" id="pipe-verify"><i class="fa-solid fa-circle-check"></i><span>VERIFY</span></div>
+                                        <div class="pipe-step-sm" id="pipe-verify" title="Integrity Verification & Auto-Correction">
+                                            <i class="fa-solid fa-circle-check"></i><span>VERIFY</span>
+                                        </div>
+                                    </div>
+                                    <div class="pipeline-stage-indicator" id="pipe-stage-desc">
+                                        <i class="fa-solid fa-circle-info"></i> Pipeline Ready. Click <strong>RUN SIMULATION</strong> or <strong>Animate</strong> to execute.
                                     </div>
                                 </div>
 
@@ -366,20 +463,41 @@
                                     </div>
                                 </div>
 
-                                <!-- Output Result Cards -->
+                                <!-- Output Result Cards with Chip Visualizer & Copy Buttons -->
                                 <div class="results-grid">
                                     <div class="result-box glass-card">
-                                        <div class="result-label"><i class="fa-solid fa-arrow-up-from-bracket"></i> Encoded / Transmitted</div>
+                                        <div class="result-box-top">
+                                            <div class="result-label"><i class="fa-solid fa-arrow-up-from-bracket"></i> Encoded / Transmitted</div>
+                                            <button type="button" class="btn-copy-result" data-target="output-encoded" title="Copy Encoded Stream">
+                                                <i class="fa-solid fa-copy"></i>
+                                            </button>
+                                        </div>
+                                        <div class="result-chips-container" id="chips-encoded"></div>
                                         <div class="result-value code-display" id="output-encoded">— Awaiting Simulation —</div>
                                     </div>
+
                                     <div class="result-box glass-card">
-                                        <div class="result-label"><i class="fa-solid fa-wifi"></i> Received Frame</div>
+                                        <div class="result-box-top">
+                                            <div class="result-label"><i class="fa-solid fa-wifi"></i> Received Frame</div>
+                                            <button type="button" class="btn-copy-result" data-target="output-received" title="Copy Received Frame">
+                                                <i class="fa-solid fa-copy"></i>
+                                            </button>
+                                        </div>
+                                        <div class="result-chips-container" id="chips-received"></div>
                                         <div class="result-value code-display" id="output-received">— Awaiting Simulation —</div>
                                     </div>
+
                                     <div class="result-box glass-card">
-                                        <div class="result-label"><i class="fa-solid fa-check-double"></i> Decoded / Verified Result</div>
+                                        <div class="result-box-top">
+                                            <div class="result-label"><i class="fa-solid fa-check-double"></i> Decoded / Verified Result</div>
+                                            <button type="button" class="btn-copy-result" data-target="output-decoded" title="Copy Decoded Payload">
+                                                <i class="fa-solid fa-copy"></i>
+                                            </button>
+                                        </div>
+                                        <div class="result-chips-container" id="chips-decoded"></div>
                                         <div class="result-value code-display" id="output-decoded">— Awaiting Simulation —</div>
                                     </div>
+
                                     <div class="result-box glass-card digital-waveform-box" id="waveform-box" style="display:none;">
                                         <div class="result-label"><i class="fa-solid fa-wave-square"></i> Channel Digital Signal (Logic Waveform)</div>
                                         <div class="result-value code-display" id="output-waveform"></div>
@@ -415,11 +533,16 @@
                             </div><!-- end .studio-center-col -->
 
                             <!-- ── RIGHT COLUMN: Telemetry HUD ── -->
-                            <div class="studio-right-col">
+                            <div class="studio-right-col" id="studio-right-col">
                                 <div class="telemetry-hud glass-card">
                                     <div class="hud-header">
-                                        <h3><i class="fa-solid fa-chart-pie"></i> LIVE TELEMETRY</h3>
-                                        <span class="live-tag">LIVE</span>
+                                        <div class="hud-header-title">
+                                            <h3><i class="fa-solid fa-chart-pie"></i> LIVE TELEMETRY</h3>
+                                            <span class="live-tag">LIVE</span>
+                                        </div>
+                                        <button type="button" class="btn-hud-collapse" id="btn-hud-collapse" title="Collapse Telemetry Panel">
+                                            <i class="fa-solid fa-chevron-right" id="hud-collapse-icon"></i>
+                                        </button>
                                     </div>
 
                                     <div class="hud-items">
@@ -466,6 +589,149 @@
                         </div><!-- end .three-col-studio-grid -->
                     </section>
 
+                    <!-- ═══════════════════ MULTI-TECHNIQUE COMPARISON STUDIO ═══════════════════ -->
+                    <section class="comparison-studio glass-panel" id="comparison-panel" style="display: none;">
+                        <div class="studio-header">
+                            <div class="studio-title">
+                                <span class="active-tag"><i class="fa-solid fa-scale-balanced"></i> BENCHMARK STUDIO</span>
+                                <h2>Multi-Technique Comparison Matrix</h2>
+                                <p class="studio-subtitle">Side-by-side performance, redundancy overhead, and error resilience analysis for arbitrary payloads</p>
+                            </div>
+                            <div class="studio-controls">
+                                <button class="btn btn-primary glowing-btn" id="btn-run-comparison"><i class="fa-solid fa-bolt"></i> EVALUATE ALL METHODS</button>
+                            </div>
+                        </div>
+
+                        <div class="comparison-input-bar glass-card">
+                            <div class="form-group comp-input-group">
+                                <label for="comp-input-data"><i class="fa-solid fa-terminal"></i> Binary Test Payload (e.g. 10110010):</label>
+                                <div class="comp-input-row">
+                                    <input type="text" id="comp-input-data" class="form-control code-input" value="10110010" placeholder="Enter binary sequence (e.g. 10110010)">
+                                    <button type="button" class="btn btn-primary btn-sm" id="btn-comp-submit"><i class="fa-solid fa-play"></i> Run</button>
+                                </div>
+                            </div>
+                            <div class="comp-quick-samples">
+                                <span class="comp-sample-label"><i class="fa-solid fa-bolt"></i> Quick Samples:</span>
+                                <button type="button" class="comp-sample-pill" data-sample="1011">Nibble 4-bit (1011)</button>
+                                <button type="button" class="comp-sample-pill" data-sample="10110010">Byte 8-bit (10110010)</button>
+                                <button type="button" class="comp-sample-pill" data-sample="1011001011001101">Word 16-bit</button>
+                            </div>
+                        </div>
+
+                        <div class="comparison-results-card glass-card" id="comparison-results-card">
+                            <div class="comp-table-responsive">
+                                <table class="comparison-matrix-table" id="comparison-matrix-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Technique</th>
+                                            <th>Payload (k)</th>
+                                            <th>Codeword (n)</th>
+                                            <th>Redundancy (%)</th>
+                                            <th>1-Bit Detect</th>
+                                            <th>2-Bit Detect</th>
+                                            <th>Burst Detect</th>
+                                            <th>Auto-Correct</th>
+                                            <th>Industry Domain</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="comparison-matrix-tbody">
+                                        <!-- Populated dynamically via JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- ═══════════════════ INTERACTIVE STUDENT LAB QUIZ STUDIO ═══════════════════ -->
+                    <section class="quiz-studio glass-panel" id="quiz-panel" style="display: none;">
+                        <div class="studio-header">
+                            <div class="studio-title">
+                                <span class="active-tag"><i class="fa-solid fa-graduation-cap"></i> ACADEMIC ASSESSMENT</span>
+                                <h2>Interactive Student Lab Quiz Mode</h2>
+                                <p class="studio-subtitle">Dynamic calculation problems, instant mathematical validation, and step-by-step solutions</p>
+                            </div>
+                            <div class="studio-controls">
+                                <div class="quiz-score-badge" id="quiz-score-badge">
+                                    <span class="score-label">SCORE:</span>
+                                    <span class="score-val" id="quiz-score-val">0 / 0</span>
+                                    <span class="score-percent" id="quiz-percent-val">(0%)</span>
+                                </div>
+                                <button type="button" class="btn btn-secondary" id="btn-restart-quiz"><i class="fa-solid fa-rotate-left"></i> Restart</button>
+                            </div>
+                        </div>
+
+                        <div class="quiz-body-grid">
+                            <!-- Main Question Card -->
+                            <div class="quiz-question-card glass-card">
+                                <div class="quiz-card-meta">
+                                    <span class="quiz-q-num" id="quiz-q-num">Question 1 of 10</span>
+                                    <span class="quiz-category-tag" id="quiz-category-tag">CRC Checksum</span>
+                                    <span class="quiz-difficulty-tag" id="quiz-difficulty-tag">MEDIUM</span>
+                                </div>
+
+                                <div class="quiz-prompt-text" id="quiz-prompt-text">
+                                    <!-- Prompt inserted via JS -->
+                                </div>
+
+                                <div class="quiz-options-container" id="quiz-options-container">
+                                    <!-- 4 Options inserted via JS -->
+                                </div>
+
+                                <div class="quiz-action-row">
+                                    <button type="button" class="btn btn-primary glowing-btn" id="btn-submit-quiz-answer" disabled>
+                                        <i class="fa-solid fa-check"></i> Submit Answer
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" id="btn-next-quiz-question" style="display:none;">
+                                        Next Question <i class="fa-solid fa-arrow-right"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Detailed Explanation & Mathematical Proof -->
+                                <div class="quiz-explanation-box glass-card" id="quiz-explanation-box" style="display:none;">
+                                    <div class="quiz-exp-title"><i class="fa-solid fa-lightbulb"></i> Mathematical Proof &amp; Solution:</div>
+                                    <div class="quiz-exp-content" id="quiz-exp-content"></div>
+                                </div>
+                            </div>
+
+                            <!-- Quiz Progress & Streak Sidebar -->
+                            <div class="quiz-sidebar glass-card">
+                                <div class="card-header-sm">
+                                    <h3><i class="fa-solid fa-chart-line"></i> Session Stats</h3>
+                                </div>
+                                <div class="quiz-stats-list">
+                                    <div class="q-stat-item">
+                                        <span class="q-stat-label">Answered</span>
+                                        <span class="q-stat-val" id="stat-answered">0</span>
+                                    </div>
+                                    <div class="q-stat-item">
+                                        <span class="q-stat-label">Correct</span>
+                                        <span class="q-stat-val t-success" id="stat-correct">0</span>
+                                    </div>
+                                    <div class="q-stat-item">
+                                        <span class="q-stat-label">Incorrect</span>
+                                        <span class="q-stat-val t-danger" id="stat-incorrect">0</span>
+                                    </div>
+                                    <div class="q-stat-item">
+                                        <span class="q-stat-label">Current Streak</span>
+                                        <span class="q-stat-val" id="stat-streak" style="color:var(--color-warning);">🔥 0</span>
+                                    </div>
+                                </div>
+
+                                <div class="quiz-topic-coverage">
+                                    <div class="quiz-topic-title">Topics Covered:</div>
+                                    <ul class="quiz-topics-list">
+                                        <li><i class="fa-solid fa-check" style="color:var(--accent-cyan);"></i> Byte &amp; Bit Framing</li>
+                                        <li><i class="fa-solid fa-check" style="color:var(--accent-cyan);"></i> 1D &amp; 2D Parity Matrices</li>
+                                        <li><i class="fa-solid fa-check" style="color:var(--accent-cyan);"></i> Internet Checksum (RFC 1071)</li>
+                                        <li><i class="fa-solid fa-check" style="color:var(--accent-cyan);"></i> Cyclic Redundancy Check (CRC)</li>
+                                        <li><i class="fa-solid fa-check" style="color:var(--accent-cyan);"></i> Hamming Code SEC</li>
+                                        <li><i class="fa-solid fa-check" style="color:var(--accent-cyan);"></i> Hamming Distance &amp; d_min</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
                 </div><!-- end .dashboard-scroll -->
             </div><!-- end .workspace-layout -->
         </main>
@@ -486,6 +752,63 @@
         </footer>
 
     </div>
+
+    <!-- ═══════════════════ FORMAL LAB REPORT MODAL ═══════════════════ -->
+    <div class="modal-overlay" id="lab-report-modal" style="display: none;">
+        <div class="modal-dialog glass-panel">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="fa-solid fa-file-signature" style="color:var(--accent-cyan);"></i>
+                    <h3>Generate Formal University Lab Assignment Report</h3>
+                </div>
+                <button type="button" class="btn-modal-close" id="btn-close-report-modal" aria-label="Close modal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-desc">Fill in student credentials to compile an official academic report with simulated parameters, waveforms, truth tables, and mathematical proofs.</p>
+
+                <form id="formal-report-form" onsubmit="return false;">
+                    <div class="report-form-grid">
+                        <div class="form-group">
+                            <label for="rep-student-name">Student Full Name:</label>
+                            <input type="text" id="rep-student-name" class="form-control" placeholder="e.g. Md. Ohi" value="">
+                        </div>
+                        <div class="form-group">
+                            <label for="rep-student-id">Student ID / Roll Number:</label>
+                            <input type="text" id="rep-student-id" class="form-control" placeholder="e.g. 2021-CSE-042" value="">
+                        </div>
+                        <div class="form-group">
+                            <label for="rep-course-code">Course Code &amp; Title:</label>
+                            <input type="text" id="rep-course-code" class="form-control" placeholder="e.g. CSE 3105: Data Communication Lab" value="">
+                        </div>
+                        <div class="form-group">
+                            <label for="rep-institution">Department &amp; Institution:</label>
+                            <input type="text" id="rep-institution" class="form-control" placeholder="e.g. Dept. of Computer Science &amp; Engineering" value="">
+                        </div>
+                        <div class="form-group">
+                            <label for="rep-experiment-title">Experiment Title:</label>
+                            <input type="text" id="rep-experiment-title" class="form-control" placeholder="e.g. Study and Implementation of Error Detection &amp; Correction" value="">
+                        </div>
+                        <div class="form-group">
+                            <label for="rep-lab-date">Submission Date:</label>
+                            <input type="date" id="rep-lab-date" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="btn-cancel-report-modal">Cancel</button>
+                        <button type="button" class="btn btn-primary glowing-btn" id="btn-confirm-generate-report">
+                            <i class="fa-solid fa-print"></i> Generate &amp; Print Report
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Container for Print Document Template -->
+    <div id="print-report-container" style="display:none;"></div>
 
     <!-- Toast Notification Container -->
     <div id="toast-container" aria-live="polite" aria-atomic="true"></div>

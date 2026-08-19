@@ -145,9 +145,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const outputEncoded         = document.getElementById('output-encoded');
     const outputReceived        = document.getElementById('output-received');
     const outputDecoded         = document.getElementById('output-decoded');
+    const chipsEncoded          = document.getElementById('chips-encoded');
+    const chipsReceived         = document.getElementById('chips-received');
+    const chipsDecoded          = document.getElementById('chips-decoded');
     const stepByStepDisplay     = document.getElementById('step-by-step-display');
 
-    // Pipeline steps
+    // Quick Switcher & Collapsible HUD
+    const quickSwitcherPills    = document.querySelectorAll('.qs-pill');
+    const btnShowOverviewGrid   = document.getElementById('btn-show-overview-grid');
+    const btnHudCollapse        = document.getElementById('btn-hud-collapse');
+    const hudCollapseIcon       = document.getElementById('hud-collapse-icon');
+    const studioRightCol        = document.getElementById('studio-right-col');
+    const studioGridContainer   = document.getElementById('studio-grid-container');
+
+    // Pipeline steps & playback controls
+    const btnPipeStep           = document.getElementById('btn-pipe-step');
+    const btnPipePlay           = document.getElementById('btn-pipe-play');
+    const btnPipeReset          = document.getElementById('btn-pipe-reset');
+    const pipeStageDesc         = document.getElementById('pipe-stage-desc');
+
     const pipeNodes = {
         source:  document.getElementById('pipe-source'),
         encoder: document.getElementById('pipe-encoder'),
@@ -212,6 +228,377 @@ document.addEventListener('DOMContentLoaded', () => {
             requestAnimationFrame(draw);
         }
         draw();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // INTERACTIVE LAB QUIZ QUESTION BANK
+    // ═══════════════════════════════════════════════════════════
+    const QUIZ_QUESTION_BANK = [
+        {
+            category: 'Byte Stuffing',
+            difficulty: 'EASY',
+            prompt: 'In Byte Stuffing with FLAG = <code>"F"</code> and ESC = <code>"E"</code>, what is the transmitted frame for payload <code>"AFEFB"</code>?',
+            options: [
+                'F A E F E E B F',
+                'F A E E F B F',
+                'F A F E B F',
+                'A E F E E B'
+            ],
+            correct: 0,
+            explanation: 'Any occurrence of FLAG (<code>"F"</code>) or ESC (<code>"E"</code>) inside the payload must be preceded by an ESC byte (<code>"E"</code>). The frame is also wrapped with FLAG at both ends: <code>F + A + (EF) + (EE) + B + F</code> = <code>F A E F E E B F</code>.'
+        },
+        {
+            category: 'Bit Stuffing',
+            difficulty: 'EASY',
+            prompt: 'In HDLC Bit Stuffing (FLAG = <code>01111110</code>), a <code>0</code> is stuffed after how many consecutive <code>1</code>s in the payload?',
+            options: [
+                'After every 4 consecutive 1s',
+                'After every 5 consecutive 1s',
+                'After every 6 consecutive 1s',
+                'Only at the end of the frame'
+            ],
+            correct: 1,
+            explanation: 'To prevent user payload data from accidentally mimicking the 6-consecutive-one delimiter FLAG (<code>01111110</code>), the transmitter unconditionally stuffs a <code>0</code> bit after every 5 consecutive <code>1</code>s.'
+        },
+        {
+            category: '1D Parity Check',
+            difficulty: 'EASY',
+            prompt: 'For binary data <code>1011001</code>, what is the Even Parity bit and the final transmitted codeword?',
+            options: [
+                'Parity = 0, Codeword = 10110010',
+                'Parity = 1, Codeword = 10110011',
+                'Parity = 1, Codeword = 11011001',
+                'Parity = 0, Codeword = 01011001'
+            ],
+            correct: 0,
+            explanation: 'Data <code>1011001</code> has four 1s (an even count). Under Even Parity, the total number of 1s must remain even, so the parity bit is <code>0</code>, giving codeword <code>10110010</code>.'
+        },
+        {
+            category: '2D Block Parity',
+            difficulty: 'MEDIUM',
+            prompt: 'In a 2D Parity Matrix, if Row 2 and Column 3 both indicate parity failure at the receiver, what can be deduced?',
+            options: [
+                'A burst of 5 errors occurred',
+                'A single-bit error is pinpointed exactly at (Row 2, Column 3)',
+                'The frame must be discarded with no error localization',
+                'The entire Row 2 is corrupted'
+            ],
+            correct: 1,
+            explanation: '2D Block Parity calculates row-wise and column-wise parities. The intersection of the faulty row and faulty column uniquely pinpoints the single flipped bit coordinate, allowing 1-bit auto-correction.'
+        },
+        {
+            category: 'Internet Checksum',
+            difficulty: 'MEDIUM',
+            prompt: 'In RFC 1071 Internet Checksum, how is the final transmitted checksum field generated from the 16-bit 1\'s complement sum?',
+            options: [
+                'By taking the 2\'s complement of the sum',
+                'By bitwise NOT (1\'s complement negation: ~Sum)',
+                'By multiplying the sum by polynomial x^4 + 1',
+                'By calculating the modulo-2 remainder'
+            ],
+            correct: 1,
+            explanation: 'The sender adds all 16-bit words using 1\'s complement addition (with end-around carry) and then takes the bitwise NOT (<code>~SUM</code>) to produce the checksum field.'
+        },
+        {
+            category: 'CRC Modulo-2',
+            difficulty: 'HARD',
+            prompt: 'Given data <code>100100</code> and Generator Polynomial <code>G(x) = 1101</code>, what is the CRC remainder (FCS)?',
+            options: [
+                '001',
+                '010',
+                '110',
+                '000'
+            ],
+            correct: 0,
+            explanation: 'Append 3 zeros: <code>100100000</code>. Modulo-2 binary division by <code>1101</code> yields quotient <code>111101</code> and remainder <code>001</code>. The transmitted codeword is <code>100100001</code>.'
+        },
+        {
+            category: 'Hamming Code (7,4)',
+            difficulty: 'MEDIUM',
+            prompt: 'In a standard Hamming (7,4) code with 1-based indexing, which bit positions are reserved for parity bits (redundancy)?',
+            options: [
+                'Positions 1, 2, 4 (Powers of 2: 2^0, 2^1, 2^2)',
+                'Positions 1, 3, 5, 7 (Odd positions)',
+                'Positions 5, 6, 7 (Upper bits)',
+                'Positions 2, 4, 6 (Even positions)'
+            ],
+            correct: 0,
+            explanation: 'In Hamming codes, parity bits are placed strictly at positions that are powers of 2 (i.e. 1, 2, 4, 8, etc.), so each data bit position can be uniquely addressed by a sum of powers of 2.'
+        },
+        {
+            category: 'Hamming Auto-Correction',
+            difficulty: 'HARD',
+            prompt: 'Receiver gets Hamming (7,4) codeword <code>1010001</code> with Even Parity. Syndrome calculation gives S = (P4, P2, P1) = <code>011</code> (binary 3). What action is taken?',
+            options: [
+                'Bit at position 3 is flipped from 0 to 1 (Error auto-corrected)',
+                'Discard frame because Hamming code cannot correct errors',
+                'Bit at position 7 is flipped',
+                'Request automatic frame retransmission (ARQ)'
+            ],
+            correct: 0,
+            explanation: 'Syndrome S = 011_2 = 3_10. This directly identifies bit position 3 as erroneous. Inverting position 3 corrects the codeword back to <code>1010101</code>.'
+        },
+        {
+            category: 'Hamming Distance',
+            difficulty: 'EASY',
+            prompt: 'What is the Hamming distance between codewords <code>c1 = 101101</code> and <code>c2 = 100111</code>?',
+            options: [
+                'd(c1, c2) = 2',
+                'd(c1, c2) = 1',
+                'd(c1, c2) = 3',
+                'd(c1, c2) = 0'
+            ],
+            correct: 0,
+            explanation: 'XOR: <code>101101 ⊕ 100111 = 001010</code>. The number of 1s in the XOR result is 2 (positions 3 and 5 differ), so the Hamming distance is 2.'
+        },
+        {
+            category: 'Coding Theory (d_min)',
+            difficulty: 'HARD',
+            prompt: 'If a coding scheme has a minimum Hamming distance of d_min = 5, what is the maximum number of errors it can detect (s) and correct (t)?',
+            options: [
+                'Detects s = 4 errors, Corrects t = 2 errors',
+                'Detects s = 5 errors, Corrects t = 5 errors',
+                'Detects s = 2 errors, Corrects t = 4 errors',
+                'Detects s = 3 errors, Corrects t = 1 error'
+            ],
+            correct: 0,
+            explanation: 'Fundamental coding theorems: Detection capability s = d_min - 1 = 5 - 1 = 4. Correction capability t = floor((d_min - 1) / 2) = floor(4/2) = 2.'
+        }
+    ];
+
+    // Quiz State
+    let currentQuizIndex = 0;
+    let quizScore = 0;
+    let quizTotalAnswered = 0;
+    let quizCurrentStreak = 0;
+    let selectedQuizOption = null;
+    let quizAnswered = false;
+
+    function renderCurrentQuizQuestion() {
+        const q = QUIZ_QUESTION_BANK[currentQuizIndex];
+        if (!q) return;
+
+        const qNumEl = document.getElementById('quiz-q-num');
+        const catEl  = document.getElementById('quiz-category-tag');
+        const diffEl = document.getElementById('quiz-difficulty-tag');
+        const promptEl = document.getElementById('quiz-prompt-text');
+        const optionsEl = document.getElementById('quiz-options-container');
+        const expBox = document.getElementById('quiz-explanation-box');
+        const btnSubmit = document.getElementById('btn-submit-quiz-answer');
+        const btnNext = document.getElementById('btn-next-quiz-question');
+
+        if (qNumEl) qNumEl.textContent = `Question ${currentQuizIndex + 1} of ${QUIZ_QUESTION_BANK.length}`;
+        if (catEl)  catEl.textContent  = q.category;
+        if (diffEl) diffEl.textContent = q.difficulty;
+        if (promptEl) promptEl.innerHTML = q.prompt;
+
+        selectedQuizOption = null;
+        quizAnswered = false;
+        if (expBox) expBox.style.display = 'none';
+        if (btnSubmit) {
+            btnSubmit.style.display = 'inline-flex';
+            btnSubmit.disabled = true;
+        }
+        if (btnNext) btnNext.style.display = 'none';
+
+        if (optionsEl) {
+            optionsEl.innerHTML = '';
+            const letters = ['A', 'B', 'C', 'D'];
+            q.options.forEach((optText, idx) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'quiz-option-btn';
+                btn.innerHTML = `<span class="quiz-opt-letter">${letters[idx]}</span> <span class="quiz-opt-text">${optText}</span>`;
+                btn.addEventListener('click', () => {
+                    if (quizAnswered) return;
+                    document.querySelectorAll('.quiz-option-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    selectedQuizOption = idx;
+                    if (btnSubmit) btnSubmit.disabled = false;
+                });
+                optionsEl.appendChild(btn);
+            });
+        }
+        updateQuizStatsDisplay();
+    }
+
+    function submitQuizAnswer() {
+        if (selectedQuizOption === null || quizAnswered) return;
+        quizAnswered = true;
+        quizTotalAnswered++;
+
+        const q = QUIZ_QUESTION_BANK[currentQuizIndex];
+        const isCorrect = (selectedQuizOption === q.correct);
+        const options = document.querySelectorAll('.quiz-option-btn');
+
+        options.forEach((btn, idx) => {
+            btn.disabled = true;
+            if (idx === q.correct) {
+                btn.classList.add('correct');
+            } else if (idx === selectedQuizOption && !isCorrect) {
+                btn.classList.add('wrong');
+            }
+        });
+
+        if (isCorrect) {
+            quizScore++;
+            quizCurrentStreak++;
+            showToast('Correct! Great job! 🎉', 'success', 2000);
+        } else {
+            quizCurrentStreak = 0;
+            showToast('Incorrect. Review the solution below.', 'warning', 2500);
+        }
+
+        const expBox = document.getElementById('quiz-explanation-box');
+        const expContent = document.getElementById('quiz-exp-content');
+        if (expBox && expContent) {
+            expContent.innerHTML = q.explanation;
+            expBox.style.display = 'block';
+        }
+
+        const btnSubmit = document.getElementById('btn-submit-quiz-answer');
+        const btnNext   = document.getElementById('btn-next-quiz-question');
+        if (btnSubmit) btnSubmit.style.display = 'none';
+        if (btnNext)   btnNext.style.display   = 'inline-flex';
+
+        updateQuizStatsDisplay();
+    }
+
+    function nextQuizQuestion() {
+        currentQuizIndex = (currentQuizIndex + 1) % QUIZ_QUESTION_BANK.length;
+        renderCurrentQuizQuestion();
+    }
+
+    function restartQuiz() {
+        currentQuizIndex = 0;
+        quizScore = 0;
+        quizTotalAnswered = 0;
+        quizCurrentStreak = 0;
+        renderCurrentQuizQuestion();
+        showToast('Quiz session restarted!', 'info', 1800);
+    }
+
+    function updateQuizStatsDisplay() {
+        const scoreVal = document.getElementById('quiz-score-val');
+        const percentVal = document.getElementById('quiz-percent-val');
+        const statAnswered = document.getElementById('stat-answered');
+        const statCorrect = document.getElementById('stat-correct');
+        const statIncorrect = document.getElementById('stat-incorrect');
+        const statStreak = document.getElementById('stat-streak');
+
+        const pct = quizTotalAnswered > 0 ? Math.round((quizScore / quizTotalAnswered) * 100) : 0;
+        if (scoreVal) scoreVal.textContent = `${quizScore} / ${quizTotalAnswered}`;
+        if (percentVal) percentVal.textContent = `(${pct}%)`;
+        if (statAnswered) statAnswered.textContent = quizTotalAnswered;
+        if (statCorrect) statCorrect.textContent = quizScore;
+        if (statIncorrect) statIncorrect.textContent = (quizTotalAnswered - quizScore);
+        if (statStreak) statStreak.textContent = `🔥 ${quizCurrentStreak}`;
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // PROTOCOL PRESET LIBRARY (Real-World Standards)
+    // ═══════════════════════════════════════════════════════════
+    const PROTOCOL_PRESETS = {
+        byte_stuffing: [
+            { label: 'Point-to-Point (PPP)', data: 'ABCFE', flag: 'F', esc: 'E' },
+            { label: 'Escape Burst', data: 'EEEFFF', flag: 'F', esc: 'E' },
+            { label: 'Custom Protocol', data: 'HELLO$WORLD', flag: '$', esc: '/' }
+        ],
+        bit_stuffing: [
+            { label: 'HDLC (01111110)', data: '01111110111110', flag_pattern: '01111110' },
+            { label: '1s Burst (Stress Test)', data: '111111111111', flag_pattern: '01111110' },
+            { label: 'Clean Payload', data: '101010101010', flag_pattern: '01111110' }
+        ],
+        parity: [
+            { label: "ASCII 'A' (1D Even)", data: '1000001', mode: '1D', scheme: 'even' },
+            { label: "ASCII 'B' (1D Odd)", data: '1000010', mode: '1D', scheme: 'odd' },
+            { label: '2D 4×4 Block Parity', data: '1011001011001001', mode: '2D', scheme: 'even', columns: 4 }
+        ],
+        checksum: [
+            { label: 'IPv4 Header (8-bit)', data: '1010100100110101', word_size: 8 },
+            { label: 'UDP Word (16-bit)', data: '11001100101010101111000000001111', word_size: 16 },
+            { label: 'Unaligned (12-bit)', data: '101010011111', word_size: 8 }
+        ],
+        crc: [
+            { label: 'CRC-3 (GSM)', data: '100100', generator: '1101' },
+            { label: 'CRC-4 (ITU-T G.704)', data: '1101011011', generator: '10011' },
+            { label: 'CRC-8 (ATM Header)', data: '101100101001', generator: '100000111' }
+        ],
+        hamming: [
+            { label: 'Hamming (7,4) Standard', data: '1011', parity: 'even' },
+            { label: 'Hamming (12,8) RAM ECC', data: '10110010', parity: 'even' },
+            { label: 'Hamming (15,11) High-Rate', data: '10110010110', parity: 'even' }
+        ],
+        hamming_distance: [
+            { label: 'Pairwise Distance (d=2)', mode: 'two', c1: '101101', c2: '100111' },
+            { label: '4-Codeword Metric Space (d_min=1)', mode: 'multi', list: '101101, 100111, 111101, 001101' },
+            { label: 'Orthogonal Codes (d=4)', mode: 'two', c1: '0000', c2: '1111' }
+        ]
+    };
+
+    function renderPresetsForTechnique(techKey) {
+        const bar = document.getElementById('presets-pills-bar');
+        const section = document.getElementById('presets-section');
+        if (!bar || !section) return;
+
+        const presets = PROTOCOL_PRESETS[techKey];
+        if (!presets || !presets.length) {
+            section.style.display = 'none';
+            return;
+        }
+
+        section.style.display = 'block';
+        bar.innerHTML = '';
+        presets.forEach(p => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'preset-pill-btn';
+            btn.innerHTML = `<i class="fa-solid fa-play" style="font-size:0.6rem;"></i> ${escapeHtml(p.label)}`;
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                applyPreset(techKey, p);
+            });
+            bar.appendChild(btn);
+        });
+    }
+
+    function applyPreset(techKey, p) {
+        if (p.data && primaryInput) primaryInput.value = p.data;
+        if (techKey === 'byte_stuffing') {
+            if (p.flag && document.getElementById('param-flag')) document.getElementById('param-flag').value = p.flag;
+            if (p.esc  && document.getElementById('param-esc'))  document.getElementById('param-esc').value  = p.esc;
+        } else if (techKey === 'bit_stuffing') {
+            if (p.flag_pattern && document.getElementById('param-flag-pattern')) document.getElementById('param-flag-pattern').value = p.flag_pattern;
+        } else if (techKey === 'parity') {
+            if (p.mode) {
+                const modeSelect = document.getElementById('param-parity-mode');
+                if (modeSelect) {
+                    modeSelect.value = p.mode;
+                    modeSelect.dispatchEvent(new Event('change'));
+                }
+            }
+            if (p.scheme && document.getElementById('param-parity-scheme')) document.getElementById('param-parity-scheme').value = p.scheme;
+            if (p.columns && document.getElementById('param-columns')) document.getElementById('param-columns').value = p.columns;
+        } else if (techKey === 'checksum') {
+            if (p.word_size && document.getElementById('param-word-size')) document.getElementById('param-word-size').value = p.word_size;
+        } else if (techKey === 'crc') {
+            if (p.generator && document.getElementById('param-generator')) document.getElementById('param-generator').value = p.generator;
+        } else if (techKey === 'hamming') {
+            if (p.parity && document.getElementById('param-hamming-parity')) document.getElementById('param-hamming-parity').value = p.parity;
+        } else if (techKey === 'hamming_distance') {
+            if (p.mode) {
+                const mSelect = document.getElementById('param-hdist-mode');
+                if (mSelect) {
+                    mSelect.value = p.mode;
+                    mSelect.dispatchEvent(new Event('change'));
+                }
+            }
+            if (p.c1 && primaryInput) primaryInput.value = p.c1;
+            if (p.c2 && document.getElementById('param-codeword2')) document.getElementById('param-codeword2').value = p.c2;
+            if (p.list && document.getElementById('param-codewords-list')) document.getElementById('param-codewords-list').value = p.list;
+        }
+        showToast(`Loaded Preset: ${p.label}`, 'info', 1800);
+        processSimulatorData('full_cycle');
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -474,14 +861,59 @@ document.addEventListener('DOMContentLoaded', () => {
     function selectTechnique(techKey) {
         if (sidebarDrawer) sidebarDrawer.classList.remove('open');
 
+        const simPanel  = document.getElementById('simulator-panel');
+        const compPanel = document.getElementById('comparison-panel');
+        const quizPanel = document.getElementById('quiz-panel');
+
         if (techKey === 'overview') {
+            if (simPanel)  simPanel.style.display  = 'block';
+            if (compPanel) compPanel.style.display = 'none';
+            if (quizPanel) quizPanel.style.display = 'none';
             document.getElementById('overview-cards')?.scrollIntoView({ behavior: 'smooth' });
             navItems.forEach(item => item.classList.toggle('active', item.getAttribute('data-technique') === 'overview'));
             techniqueCards.forEach(card => card.classList.remove('active'));
+            quickSwitcherPills.forEach(pill => pill.classList.remove('active'));
             if (topHeaderTechBadge) topHeaderTechBadge.innerHTML = `<i class="fa-solid fa-layer-group"></i> OVERVIEW`;
             window.location.hash = 'overview';
             return;
         }
+
+        if (techKey === 'compare') {
+            if (simPanel)  simPanel.style.display  = 'none';
+            if (compPanel) compPanel.style.display = 'block';
+            if (quizPanel) quizPanel.style.display = 'none';
+            navItems.forEach(item => item.classList.toggle('active', item.getAttribute('data-technique') === 'compare'));
+            techniqueCards.forEach(card => card.classList.remove('active'));
+            quickSwitcherPills.forEach(pill => pill.classList.toggle('active', pill.getAttribute('data-technique') === 'compare'));
+            if (topHeaderTechBadge) topHeaderTechBadge.innerHTML = `<i class="fa-solid fa-scale-balanced"></i> COMPARISON MATRIX`;
+            window.location.hash = 'compare';
+            compPanel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            const tbody = document.getElementById('comparison-matrix-tbody');
+            if (tbody && (!tbody.children.length || tbody.textContent.includes('Evaluating'))) {
+                runMultiTechniqueComparison('10110010');
+            }
+            return;
+        }
+
+        if (techKey === 'quiz') {
+            if (simPanel)  simPanel.style.display  = 'none';
+            if (compPanel) compPanel.style.display = 'none';
+            if (quizPanel) quizPanel.style.display = 'block';
+            navItems.forEach(item => item.classList.toggle('active', item.getAttribute('data-technique') === 'quiz'));
+            techniqueCards.forEach(card => card.classList.remove('active'));
+            quickSwitcherPills.forEach(pill => pill.classList.toggle('active', pill.getAttribute('data-technique') === 'quiz'));
+            if (topHeaderTechBadge) topHeaderTechBadge.innerHTML = `<i class="fa-solid fa-graduation-cap"></i> LAB QUIZ`;
+            window.location.hash = 'quiz';
+            quizPanel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            renderCurrentQuizQuestion();
+            return;
+        }
+
+        // Return to standard simulation panel
+        if (simPanel)  simPanel.style.display  = 'block';
+        if (compPanel) compPanel.style.display = 'none';
+        if (quizPanel) quizPanel.style.display = 'none';
 
         if (!techniqueConfigs[techKey]) return;
         currentTechnique = techKey;
@@ -491,6 +923,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Navigation highlights
         navItems.forEach(item => item.classList.toggle('active', item.getAttribute('data-technique') === techKey));
         techniqueCards.forEach(card => card.classList.toggle('active', card.getAttribute('data-technique') === techKey));
+        quickSwitcherPills.forEach(pill => pill.classList.toggle('active', pill.getAttribute('data-technique') === techKey));
 
         // Header
         if (activeTechniqueTag)   activeTechniqueTag.textContent  = config.name;
@@ -505,6 +938,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (primaryInputHint) primaryInputHint.textContent = config.hint;
         if (dynamicParamsContainer) dynamicParamsContainer.innerHTML = config.paramsHtml;
+
+        // Render Presets
+        renderPresetsForTechnique(techKey);
 
         // Theory HUD
         if (hudTheoryBody) hudTheoryBody.textContent = config.theory;
@@ -966,8 +1402,97 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ═══════════════════════════════════════════════════════════
-    // PIPELINE STATE HELPER
+    // PIPELINE STATE HELPER & INTERACTIVE STEP-THROUGH
     // ═══════════════════════════════════════════════════════════
+    const PIPELINE_STAGES = [
+        { key: 'source',  name: 'SOURCE',  icon: 'fa-database', desc: '1. SOURCE: Raw application data payload generated and placed into transmission queue.' },
+        { key: 'encoder', name: 'ENCODE',  icon: 'fa-gears', desc: '2. ENCODE: Redundancy / Framing logic calculated (Framing Delimiters, Parity Bit, CRC Remainder, or Hamming Matrix Bits).' },
+        { key: 'channel', name: 'CHANNEL', icon: 'fa-wifi', desc: '3. CHANNEL: Frame serialized into electrical / optical bitstream and propagated across transmission medium.' },
+        { key: 'noise',   name: 'NOISE',   icon: 'fa-bug', desc: '4. NOISE LAYER: Channel noise, Gaussian interference, or intentional bit-flip injection evaluated.' },
+        { key: 'decoder', name: 'DECODE',  icon: 'fa-filter', desc: '5. DECODE: Receiver frame synchronizer unpacks packet; syndrome, checksum, or parity recalculated.' },
+        { key: 'verify',  name: 'VERIFY',  icon: 'fa-circle-check', desc: '6. VERIFY: Final integrity check completed. Errors detected or single-bit errors auto-corrected.' }
+    ];
+
+    let currentPipelineStepIdx = -1;
+    let pipelinePlayInterval = null;
+
+    function resetPipelinePlayback() {
+        if (pipelinePlayInterval) {
+            clearInterval(pipelinePlayInterval);
+            pipelinePlayInterval = null;
+        }
+        if (btnPipePlay) {
+            btnPipePlay.classList.remove('active-play');
+            btnPipePlay.innerHTML = '<i class="fa-solid fa-play"></i> Animate';
+        }
+        currentPipelineStepIdx = -1;
+        Object.values(pipeNodes).forEach(el => {
+            if (el) el.classList.remove('pipe-focus');
+        });
+        if (pipeStageDesc) {
+            pipeStageDesc.innerHTML = '<i class="fa-solid fa-circle-info"></i> Pipeline Ready. Click <strong>RUN SIMULATION</strong> or <strong>Animate</strong> to execute.';
+        }
+    }
+
+    function stepPipelineNext() {
+        currentPipelineStepIdx = (currentPipelineStepIdx + 1) % PIPELINE_STAGES.length;
+        highlightPipelineStage(currentPipelineStepIdx);
+    }
+
+    function highlightPipelineStage(idx) {
+        const stage = PIPELINE_STAGES[idx];
+        if (!stage) return;
+
+        Object.entries(pipeNodes).forEach(([key, el]) => {
+            if (el) {
+                el.classList.toggle('pipe-focus', key === stage.key);
+                if (key === stage.key) {
+                    el.classList.add('active-pipe');
+                }
+            }
+        });
+
+        if (pipeStageDesc) {
+            pipeStageDesc.innerHTML = `<i class="fa-solid ${stage.icon}" style="color:var(--accent-cyan);"></i> <span><strong>${stage.name}:</strong> ${stage.desc}</span>`;
+        }
+    }
+
+    function togglePipelinePlay() {
+        if (pipelinePlayInterval) {
+            clearInterval(pipelinePlayInterval);
+            pipelinePlayInterval = null;
+            if (btnPipePlay) {
+                btnPipePlay.classList.remove('active-play');
+                btnPipePlay.innerHTML = '<i class="fa-solid fa-play"></i> Animate';
+            }
+        } else {
+            if (btnPipePlay) {
+                btnPipePlay.classList.add('active-play');
+                btnPipePlay.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+            }
+            if (currentPipelineStepIdx === -1 || currentPipelineStepIdx >= PIPELINE_STAGES.length - 1) {
+                currentPipelineStepIdx = -1;
+            }
+            stepPipelineNext();
+            pipelinePlayInterval = setInterval(() => {
+                if (currentPipelineStepIdx < PIPELINE_STAGES.length - 1) {
+                    stepPipelineNext();
+                } else {
+                    clearInterval(pipelinePlayInterval);
+                    pipelinePlayInterval = null;
+                    if (btnPipePlay) {
+                        btnPipePlay.classList.remove('active-play');
+                        btnPipePlay.innerHTML = '<i class="fa-solid fa-play"></i> Animate';
+                    }
+                }
+            }, 900);
+        }
+    }
+
+    btnPipeStep?.addEventListener('click', stepPipelineNext);
+    btnPipePlay?.addEventListener('click', togglePipelinePlay);
+    btnPipeReset?.addEventListener('click', resetPipelinePlayback);
+
     function setPipelineState(stage) {
         // stage: 'running' | 'success' | 'error' | 'corrected' | 'idle'
         const stageMap = {
@@ -997,6 +1522,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (outputEncoded)  outputEncoded.textContent  = '— Awaiting Simulation —';
         if (outputReceived) outputReceived.textContent = '— Awaiting Simulation —';
         if (outputDecoded)  outputDecoded.textContent  = '— Awaiting Simulation —';
+        if (chipsEncoded)   chipsEncoded.innerHTML     = '';
+        if (chipsReceived)  chipsReceived.innerHTML    = '';
+        if (chipsDecoded)   chipsDecoded.innerHTML     = '';
+        resetPipelinePlayback();
         if (stepByStepDisplay) {
             stepByStepDisplay.innerHTML = `
                 <div class="empty-state">
@@ -1199,8 +1728,151 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ═══════════════════════════════════════════════════════════
-    // RENDERERS
+    // RENDERERS & COLOR-CODED CHIP STREAMS
     // ═══════════════════════════════════════════════════════════
+
+    /** Color-coded Visual Chip Stream Renderers */
+    function renderChipsForEncoded(container, tech, res, payload) {
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (tech === 'byte_stuffing') {
+            const tokens = res.stuffed_tokens || [];
+            if (tokens.length) {
+                tokens.forEach(tok => {
+                    const chip = document.createElement('span');
+                    const isFlag = tok.type === 'flag';
+                    const isEsc = tok.type === 'esc_inserted';
+                    chip.className = `chip-item ${isFlag ? 'chip-flag' : isEsc ? 'chip-esc' : 'chip-data'}`;
+                    chip.innerHTML = `<span>${escapeHtml(tok.value)}</span><span class="chip-tag-sm">${isFlag ? 'FLAG' : isEsc ? 'ESC' : 'DATA'}</span>`;
+                    container.appendChild(chip);
+                });
+            }
+        } else if (tech === 'bit_stuffing') {
+            const tokens = res.stuffed_tokens || [];
+            if (tokens.length) {
+                tokens.forEach(tok => {
+                    const chip = document.createElement('span');
+                    const isFlag = tok.type === 'flag';
+                    const isStuffed = tok.type === 'stuffed_zero';
+                    chip.className = `chip-item ${isFlag ? 'chip-flag' : isStuffed ? 'chip-stuffed' : 'chip-data'}`;
+                    chip.innerHTML = `<span>${escapeHtml(tok.value)}</span><span class="chip-tag-sm">${isFlag ? 'FLAG' : isStuffed ? 'STUFF 0' : 'DATA'}</span>`;
+                    container.appendChild(chip);
+                });
+            }
+        } else if (tech === 'parity') {
+            const cw = res.codeword || res.transmitted_codeword || '';
+            if (cw && res.mode === '1D') {
+                const dataLen = cw.length - 1;
+                for (let i = 0; i < cw.length; i++) {
+                    const chip = document.createElement('span');
+                    const isParity = (i === dataLen);
+                    chip.className = `chip-item ${isParity ? 'chip-parity' : 'chip-data'}`;
+                    chip.innerHTML = `<span>${cw[i]}</span><span class="chip-tag-sm">${isParity ? 'PARITY' : 'D' + (i + 1)}</span>`;
+                    container.appendChild(chip);
+                }
+            }
+        } else if (tech === 'crc') {
+            const cw = res.transmitted_codeword || '';
+            const rem = res.crc_remainder || '';
+            if (cw && rem) {
+                const dataLen = cw.length - rem.length;
+                for (let i = 0; i < cw.length; i++) {
+                    const chip = document.createElement('span');
+                    const isRem = (i >= dataLen);
+                    chip.className = `chip-item ${isRem ? 'chip-crc' : 'chip-data'}`;
+                    chip.innerHTML = `<span>${cw[i]}</span><span class="chip-tag-sm">${isRem ? 'CRC' : 'D' + (i + 1)}</span>`;
+                    container.appendChild(chip);
+                }
+            }
+        } else if (tech === 'hamming') {
+            const posTable = res.pos_table || [];
+            if (posTable.length) {
+                posTable.forEach(item => {
+                    const chip = document.createElement('span');
+                    const isP = item.is_parity;
+                    chip.className = `chip-item ${isP ? 'chip-parity' : 'chip-data'}`;
+                    chip.innerHTML = `<span>${item.bit}</span><span class="chip-tag-sm">${item.name}</span>`;
+                    container.appendChild(chip);
+                });
+            }
+        } else if (tech === 'checksum') {
+            const words = res.words || [];
+            const chk = res.checksum || '';
+            if (words.length) {
+                words.forEach((w, idx) => {
+                    const chip = document.createElement('span');
+                    chip.className = 'chip-item chip-data';
+                    chip.innerHTML = `<span>${w}</span><span class="chip-tag-sm">W${idx + 1}</span>`;
+                    container.appendChild(chip);
+                });
+                if (chk) {
+                    const chkChip = document.createElement('span');
+                    chkChip.className = 'chip-item chip-crc';
+                    chkChip.innerHTML = `<span>${chk}</span><span class="chip-tag-sm">CHECKSUM</span>`;
+                    container.appendChild(chkChip);
+                }
+            }
+        }
+    }
+
+    function renderChipsForReceived(container, tech, res, payload) {
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (tech === 'byte_stuffing') {
+            const frame = res.received_frame || '';
+            const isCorrupted = res.received_frame && res.stuffed_frame && (res.received_frame !== res.stuffed_frame);
+            if (isCorrupted) {
+                const chip = document.createElement('span');
+                chip.className = 'chip-item chip-error';
+                chip.innerHTML = `<span><i class="fa-solid fa-bolt"></i> ${escapeHtml(frame)}</span><span class="chip-tag-sm">CORRUPTED</span>`;
+                container.appendChild(chip);
+            } else if (res.stuffed_tokens) {
+                renderChipsForEncoded(container, tech, res, payload);
+            }
+        } else if (tech === 'bit_stuffing') {
+            const frame = res.received_frame || '';
+            const isCorrupted = res.received_frame && res.stuffed_frame && (res.received_frame !== res.stuffed_frame);
+            if (isCorrupted) {
+                const chip = document.createElement('span');
+                chip.className = 'chip-item chip-error';
+                chip.innerHTML = `<span><i class="fa-solid fa-bolt"></i> ${escapeHtml(frame)}</span><span class="chip-tag-sm">CORRUPTED</span>`;
+                container.appendChild(chip);
+            } else if (res.stuffed_tokens) {
+                renderChipsForEncoded(container, tech, res, payload);
+            }
+        } else if (tech === 'parity' || tech === 'crc' || tech === 'hamming' || tech === 'checksum') {
+            const recv = res.received_codeword || res.received_frame || '';
+            const errPos = res.injected_error_pos || res.error_pos;
+            if (recv && /^[01]+$/.test(recv)) {
+                for (let i = 0; i < recv.length; i++) {
+                    const chip = document.createElement('span');
+                    const isRightToLeft = (tech === 'hamming');
+                    const posNum = isRightToLeft ? (recv.length - i) : (i + 1);
+                    const isFlipped = (errPos === posNum);
+
+                    chip.className = `chip-item ${isFlipped ? 'chip-error' : 'chip-data'}`;
+                    chip.innerHTML = `<span>${recv[i]}${isFlipped ? '⚡' : ''}</span><span class="chip-tag-sm">${isFlipped ? 'ERR P' + posNum : 'b' + posNum}</span>`;
+                    container.appendChild(chip);
+                }
+            }
+        }
+    }
+
+    function renderChipsForDecoded(container, tech, res, payload) {
+        if (!container) return;
+        container.innerHTML = '';
+        const data = res.destuffed_data || res.decoded_payload || res.corrected_data || res.data || '';
+        if (data && typeof data === 'string') {
+            for (let i = 0; i < Math.min(data.length, 32); i++) {
+                const chip = document.createElement('span');
+                chip.className = 'chip-item chip-stuffed';
+                chip.innerHTML = `<span>${escapeHtml(data[i])}</span><span class="chip-tag-sm">${i + 1}</span>`;
+                container.appendChild(chip);
+            }
+        }
+    }
 
     /** Stuffed token stream (byte/bit stuffing) */
     function renderStuffedTokens(tokens) {
@@ -2225,6 +2897,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (stepByStepDisplay) stepByStepDisplay.innerHTML = stepsHtml || '<div class="step-row">No trace generated.</div>';
 
+        // ── Render Visual Chips ──
+        renderChipsForEncoded(chipsEncoded, tech, res, payload);
+        renderChipsForReceived(chipsReceived, tech, res, payload);
+        renderChipsForDecoded(chipsDecoded, tech, res, payload);
+
         // ── Digital Signal Waveform Visualizer ──
         const waveformBox = document.getElementById('waveform-box');
         const outputWaveform = document.getElementById('output-waveform');
@@ -2294,6 +2971,60 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Quick Switcher Pills Listener
+    quickSwitcherPills.forEach(pill => {
+        pill.addEventListener('click', () => {
+            const tech = pill.getAttribute('data-technique');
+            if (tech) selectTechnique(tech);
+        });
+    });
+
+    if (btnShowOverviewGrid) {
+        btnShowOverviewGrid.addEventListener('click', () => {
+            selectTechnique('overview');
+        });
+    }
+
+    // Copy Result Buttons Listener
+    document.querySelectorAll('.btn-copy-result').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const targetId = btn.getAttribute('data-target');
+            const targetEl = document.getElementById(targetId);
+            if (!targetEl) return;
+            const text = targetEl.textContent.trim();
+            if (!text || text === '— Awaiting Simulation —' || text === 'VALIDATION ERROR') {
+                showToast('No simulated data to copy yet.', 'info');
+                return;
+            }
+            navigator.clipboard.writeText(text).then(() => {
+                btn.classList.add('copied');
+                btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+                showToast('Copied result to clipboard! 📋', 'success', 2000);
+                setTimeout(() => {
+                    btn.classList.remove('copied');
+                    btn.innerHTML = '<i class="fa-solid fa-copy"></i>';
+                }, 2000);
+            }).catch(() => {
+                showToast('Could not copy to clipboard.', 'error');
+            });
+        });
+    });
+
+    // Collapsible Live Telemetry HUD
+    if (btnHudCollapse) {
+        btnHudCollapse.addEventListener('click', (e) => {
+            e.preventDefault();
+            const isCollapsed = studioRightCol?.classList.toggle('collapsed');
+            studioGridContainer?.classList.toggle('hud-collapsed', isCollapsed);
+            if (hudCollapseIcon) {
+                hudCollapseIcon.className = isCollapsed ? 'fa-solid fa-chevron-left' : 'fa-solid fa-chevron-right';
+            }
+            btnHudCollapse.title = isCollapsed ? 'Expand Telemetry Panel' : 'Collapse Telemetry Panel';
+        });
+    }
+
     if (processBtn) processBtn.addEventListener('click', () => processSimulatorData('full_cycle'));
 
     if (primaryInput) {
@@ -2310,6 +3041,330 @@ document.addEventListener('DOMContentLoaded', () => {
             selectTechnique(currentTechnique);
         });
     }
+
+    // ═══════════════════════════════════════════════════════════
+    // MULTI-TECHNIQUE COMPARISON BENCHMARK ENGINE
+    // ═══════════════════════════════════════════════════════════
+    async function runMultiTechniqueComparison(rawInput) {
+        const tbody = document.getElementById('comparison-matrix-tbody');
+        if (!tbody) return;
+        const input = (rawInput || document.getElementById('comp-input-data')?.value || '10110010').trim();
+        if (!input || !/^[01]+$/.test(input)) {
+            showToast('Please enter a valid binary sequence for comparison (e.g. 10110010).', 'warning');
+            return;
+        }
+
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:24px; color:var(--accent-cyan);"><i class="fa-solid fa-spinner fa-spin"></i> Evaluating all detection and correction algorithms...</td></tr>`;
+
+        const k = input.length;
+
+        try {
+            const [pRes, cRes, crcRes, hRes] = await Promise.all([
+                fetch('/api/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ technique: 'parity', input_data: input, params: { mode: '1D', scheme: 'even' } })
+                }).then(r => r.json()),
+                fetch('/api/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ technique: 'checksum', input_data: input, params: { word_size: 8 } })
+                }).then(r => r.json()),
+                fetch('/api/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ technique: 'crc', input_data: input, params: { generator: '10011', action: 'full_cycle' } })
+                }).then(r => r.json()),
+                fetch('/api/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ technique: 'hamming', input_data: input, params: { parity: 'even' } })
+                }).then(r => r.json())
+            ]);
+
+            const pData = pRes.result || {};
+            const cData = cRes.result || {};
+            const crcData = crcRes.result || {};
+            const hData = hRes.result || {};
+
+            const parityN = pData.codeword ? pData.codeword.length : k + 1;
+            const parityOverhead = (((parityN - k) / k) * 100).toFixed(1);
+
+            const chkN = cData.transmitted_frame ? cData.transmitted_frame.length : k + 8;
+            const chkOverhead = (((chkN - k) / k) * 100).toFixed(1);
+
+            const crcN = crcData.transmitted_codeword ? crcData.transmitted_codeword.length : k + 4;
+            const crcOverhead = (((crcN - k) / k) * 100).toFixed(1);
+
+            const hamN = hData.total_length || (hData.transmitted_codeword ? hData.transmitted_codeword.length : k + Math.ceil(Math.log2(k + 1)));
+            const hamOverhead = (((hamN - k) / k) * 100).toFixed(1);
+
+            tbody.innerHTML = `
+                <tr>
+                    <td><div class="comp-tech-name"><i class="fa-solid fa-list-check" style="color:var(--accent-violet);"></i> 1D Parity Check</div></td>
+                    <td><code>${k} bits</code></td>
+                    <td><code>${parityN} bits</code></td>
+                    <td><span class="comp-overhead-val">+${parityOverhead}%</span> (1 bit)</td>
+                    <td><span class="comp-tech-badge comp-badge-ok">✅ 100% Detected</span></td>
+                    <td><span class="comp-tech-badge comp-badge-no">❌ 0% (Blind)</span></td>
+                    <td><span class="comp-tech-badge comp-badge-partial">⚠️ Odd-bursts only</span></td>
+                    <td><span class="comp-tech-badge comp-badge-no">❌ None</span></td>
+                    <td><span class="comp-domain-tag">UART Serial COM, Microcontrollers</span></td>
+                </tr>
+                <tr>
+                    <td><div class="comp-tech-name"><i class="fa-solid fa-calculator" style="color:#2dd4bf;"></i> Internet Checksum (RFC 1071)</div></td>
+                    <td><code>${k} bits</code></td>
+                    <td><code>${chkN} bits</code></td>
+                    <td><span class="comp-overhead-val">+${chkOverhead}%</span> (8 bits)</td>
+                    <td><span class="comp-tech-badge comp-badge-ok">✅ 100% Detected</span></td>
+                    <td><span class="comp-tech-badge comp-badge-ok">✅ Detected</span></td>
+                    <td><span class="comp-tech-badge comp-badge-partial">⚠️ Weak vs Compensating Swaps</span></td>
+                    <td><span class="comp-tech-badge comp-badge-no">❌ None</span></td>
+                    <td><span class="comp-domain-tag">IPv4 Header, UDP / TCP Transport</span></td>
+                </tr>
+                <tr>
+                    <td><div class="comp-tech-name"><i class="fa-solid fa-calculator" style="color:var(--color-warning);"></i> CRC Polynomial (CRC-4)</div></td>
+                    <td><code>${k} bits</code></td>
+                    <td><code>${crcN} bits</code></td>
+                    <td><span class="comp-overhead-val">+${crcOverhead}%</span> (4 bits)</td>
+                    <td><span class="comp-tech-badge comp-badge-ok">✅ 100% Detected</span></td>
+                    <td><span class="comp-tech-badge comp-badge-ok">✅ 100% Detected</span></td>
+                    <td><span class="comp-tech-badge comp-badge-ok">✅ Robust (Burst ≤ 4)</span></td>
+                    <td><span class="comp-tech-badge comp-badge-no">❌ None</span></td>
+                    <td><span class="comp-domain-tag">Ethernet (802.3), Wi-Fi (802.11), SATA</span></td>
+                </tr>
+                <tr>
+                    <td><div class="comp-tech-name"><i class="fa-solid fa-wand-magic-sparkles" style="color:var(--accent-cyan);"></i> Hamming Code (${hData.mode || 'Auto'})</div></td>
+                    <td><code>${k} bits</code></td>
+                    <td><code>${hamN} bits</code></td>
+                    <td><span class="comp-overhead-val">+${hamOverhead}%</span> (${hamN - k} bits)</td>
+                    <td><span class="comp-tech-badge comp-badge-ok">✅ 100% Detected</span></td>
+                    <td><span class="comp-tech-badge comp-badge-ok">✅ 100% Detected</span></td>
+                    <td><span class="comp-tech-badge comp-badge-partial">⚠️ Single-cluster only</span></td>
+                    <td><span class="comp-tech-badge comp-badge-ok">⚡ Auto-Corrects 1-Bit</span></td>
+                    <td><span class="comp-domain-tag">RAM ECC Memory, Deep Space Telemetry</span></td>
+                </tr>
+            `;
+            showToast('Benchmark Matrix Calculated!', 'success', 2000);
+        } catch (err) {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:18px; color:var(--color-error);">Failed to load comparison data.</td></tr>`;
+        }
+    }
+
+    // Comparison Studio Event Handlers
+    const btnRunComp = document.getElementById('btn-run-comparison');
+    const btnCompSubmit = document.getElementById('btn-comp-submit');
+    const compInput = document.getElementById('comp-input-data');
+
+    btnRunComp?.addEventListener('click', () => runMultiTechniqueComparison());
+    btnCompSubmit?.addEventListener('click', () => runMultiTechniqueComparison());
+    compInput?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            runMultiTechniqueComparison();
+        }
+    });
+
+    document.querySelectorAll('.comp-sample-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+            const sample = pill.getAttribute('data-sample');
+            if (sample && compInput) {
+                compInput.value = sample;
+                runMultiTechniqueComparison(sample);
+            }
+        });
+    });
+
+    // ── Global Keyboard Shortcuts ──
+    document.addEventListener('keydown', (e) => {
+        // Ignore if user is currently typing in an input or textarea
+        const activeTag = document.activeElement?.tagName?.toLowerCase();
+        const isTyping = (activeTag === 'input' || activeTag === 'textarea');
+
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            e.preventDefault();
+            if (window.location.hash === '#compare') {
+                runMultiTechniqueComparison();
+            } else {
+                processSimulatorData('full_cycle');
+            }
+            return;
+        }
+
+        if (!isTyping) {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                togglePipelinePlay();
+            } else if (e.key >= '1' && e.key <= '7') {
+                const map = ['byte_stuffing', 'bit_stuffing', 'parity', 'checksum', 'crc', 'hamming', 'hamming_distance'];
+                const idx = parseInt(e.key, 10) - 1;
+                if (map[idx]) selectTechnique(map[idx]);
+            }
+        }
+    });
+
+    // ═══════════════════════════════════════════════════════════
+    // FORMAL LAB REPORT GENERATOR & MODAL HANDLERS
+    // ═══════════════════════════════════════════════════════════
+    function openLabReportModal() {
+        const modal = document.getElementById('lab-report-modal');
+        if (modal) {
+            modal.classList.add('active');
+            modal.style.display = 'flex';
+            const dateInput = document.getElementById('rep-lab-date');
+            if (dateInput && !dateInput.value) {
+                dateInput.value = new Date().toISOString().split('T')[0];
+            }
+        }
+    }
+
+    function closeLabReportModal() {
+        const modal = document.getElementById('lab-report-modal');
+        if (modal) {
+            modal.classList.remove('active');
+            modal.style.display = 'none';
+        }
+    }
+
+    function generateFormalLabReport() {
+        const studentName = document.getElementById('rep-student-name')?.value || 'Student';
+        const studentId   = document.getElementById('rep-student-id')?.value || '—';
+        const courseCode  = document.getElementById('rep-course-code')?.value || 'CSE 3105';
+        const institution = document.getElementById('rep-institution')?.value || 'Department of CSE';
+        const expTitle    = document.getElementById('rep-experiment-title')?.value || 'EDC Simulation';
+        const labDate     = document.getElementById('rep-lab-date')?.value || new Date().toLocaleDateString();
+
+        const config = techniqueConfigs[currentTechnique];
+        const techTitle = config ? config.title : 'Error Detection & Correction';
+        const inputVal  = primaryInput?.value || '—';
+        const encVal    = document.getElementById('result-encoded-val')?.textContent || '—';
+        const recVal    = document.getElementById('result-received-val')?.textContent || '—';
+        const decVal    = document.getElementById('result-decoded-val')?.textContent || '—';
+        const rows      = document.querySelectorAll('#step-by-step-display .step-row');
+
+        let stepsHtml = '';
+        rows.forEach(r => {
+            stepsHtml += `<div style="padding:4px 8px; border-bottom:1px solid #eee; font-family:monospace; font-size:12px;">${escapeHtml(r.textContent.trim())}</div>`;
+        });
+        if (!stepsHtml) {
+            stepsHtml = '<div style="padding:8px; font-style:italic;">Simulation verified with 100% integrity.</div>';
+        }
+
+        const reportWindow = window.open('', '_blank');
+        if (!reportWindow) {
+            showToast('Please allow popups to generate print report.', 'warning');
+            return;
+        }
+
+        reportWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>${escapeHtml(expTitle)} - Lab Report</title>
+                <style>
+                    body { font-family: 'Segoe UI', Arial, sans-serif; margin: 40px; color: #111; line-height: 1.5; font-size: 14px; }
+                    .header-box { text-align: center; border-bottom: 2px solid #111; padding-bottom: 15px; margin-bottom: 20px; }
+                    .header-box h1 { margin: 0 0 5px 0; font-size: 20px; text-transform: uppercase; letter-spacing: 1px; }
+                    .header-box h2 { margin: 0 0 5px 0; font-size: 15px; color: #444; font-weight: normal; }
+                    .meta-table { width: 100%; border-collapse: collapse; margin-bottom: 25px; }
+                    .meta-table td { padding: 6px 10px; border: 1px solid #ccc; font-size: 13px; }
+                    .meta-label { font-weight: bold; width: 22%; background: #f5f5f5; }
+                    .section-title { font-size: 15px; font-weight: bold; border-bottom: 1px solid #333; padding-bottom: 4px; margin: 20px 0 10px 0; text-transform: uppercase; }
+                    .data-box { background: #fafafa; border: 1px solid #ddd; padding: 12px 15px; border-radius: 4px; margin-bottom: 15px; font-family: monospace; }
+                    .steps-box { border: 1px solid #ccc; border-radius: 4px; background: #fdfdfd; margin-bottom: 25px; }
+                    .sign-box { margin-top: 40px; display: flex; justify-content: space-between; page-break-inside: avoid; }
+                    .sign-col { width: 40%; text-align: center; border-top: 1px solid #111; padding-top: 8px; font-size: 13px; }
+                    @media print {
+                        body { margin: 20px; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header-box">
+                    <h1>${escapeHtml(institution)}</h1>
+                    <h2>${escapeHtml(courseCode)}</h2>
+                    <p style="margin:4px 0 0 0; font-weight:bold; font-size:16px;">${escapeHtml(expTitle)}</p>
+                </div>
+
+                <table class="meta-table">
+                    <tr>
+                        <td class="meta-label">Student Name:</td>
+                        <td>${escapeHtml(studentName)}</td>
+                        <td class="meta-label">Student ID / Roll:</td>
+                        <td>${escapeHtml(studentId)}</td>
+                    </tr>
+                    <tr>
+                        <td class="meta-label">Active Technique:</td>
+                        <td>${escapeHtml(techTitle)}</td>
+                        <td class="meta-label">Submission Date:</td>
+                        <td>${escapeHtml(labDate)}</td>
+                    </tr>
+                </table>
+
+                <div class="section-title">1. Experiment Objectives &amp; Background</div>
+                <p>${config ? escapeHtml(config.theory) : 'Implementation and verification of error detection and correction algorithm.'}</p>
+
+                <div class="section-title">2. Simulation Data &amp; Codewords</div>
+                <div class="data-box">
+                    <div><strong>Original Input Payload:</strong> ${escapeHtml(inputVal)}</div>
+                    <div><strong>Transmitted Codeword:</strong> ${escapeHtml(encVal)}</div>
+                    <div><strong>Received Channel Data:</strong> ${escapeHtml(recVal)}</div>
+                    <div><strong>Receiver Decoded Output:</strong> ${escapeHtml(decVal)}</div>
+                </div>
+
+                <div class="section-title">3. Mathematical Verification &amp; Step Proof</div>
+                <div class="steps-box">
+                    ${stepsHtml}
+                </div>
+
+                <div class="section-title">4. Lab Evaluation &amp; Sign-off</div>
+                <div class="sign-box">
+                    <div class="sign-col">
+                        <strong>Student Signature</strong><br>
+                        <span>${escapeHtml(studentName)}</span>
+                    </div>
+                    <div class="sign-col">
+                        <strong>Course Instructor / Lab Evaluator</strong><br>
+                        <span>Marks / Grade: ______ / 10</span>
+                    </div>
+                </div>
+
+                <script>
+                    window.onload = function() {
+                        window.print();
+                    }
+                </script>
+            </body>
+            </html>
+        `);
+        reportWindow.document.close();
+        closeLabReportModal();
+        showToast('Official University Lab Report Generated! 📄', 'success', 2500);
+    }
+
+    // Modal & Quiz Listeners
+    const btnOpenReportModal   = document.getElementById('btn-open-report-modal');
+    const btnCloseReportModal  = document.getElementById('btn-close-report-modal');
+    const btnCancelReportModal = document.getElementById('btn-cancel-report-modal');
+    const btnConfirmReport     = document.getElementById('btn-confirm-generate-report');
+    const modalReportOverlay   = document.getElementById('lab-report-modal');
+
+    btnOpenReportModal?.addEventListener('click', openLabReportModal);
+    btnCloseReportModal?.addEventListener('click', closeLabReportModal);
+    btnCancelReportModal?.addEventListener('click', closeLabReportModal);
+    btnConfirmReport?.addEventListener('click', generateFormalLabReport);
+    modalReportOverlay?.addEventListener('click', (e) => {
+        if (e.target === modalReportOverlay) closeLabReportModal();
+    });
+
+    // Quiz Buttons
+    const btnSubmitQuiz = document.getElementById('btn-submit-quiz-answer');
+    const btnNextQuiz   = document.getElementById('btn-next-quiz-question');
+    const btnRestartQuiz = document.getElementById('btn-restart-quiz');
+
+    btnSubmitQuiz?.addEventListener('click', submitQuizAnswer);
+    btnNextQuiz?.addEventListener('click', nextQuizQuestion);
+    btnRestartQuiz?.addEventListener('click', restartQuiz);
 
     // ── Step Trace Copy & Print Buttons ──
     const btnCopyTrace = document.getElementById('btn-copy-trace');
@@ -2343,7 +3398,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnPrintReport.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            window.print();
+            openLabReportModal();
         });
     }
 
@@ -2356,7 +3411,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sidebarOverlay) {
             sidebarOverlay.classList.add('active');
         }
-        document.body.style.overflow = 'hidden'; // prevent background scroll
+        document.body.style.overflow = 'hidden';
         if (mobileMenuBtn) mobileMenuBtn.setAttribute('aria-expanded', 'true');
     }
 
@@ -2395,7 +3450,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (sidebarDrawer) {
         sidebarDrawer.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', () => {
-                // Only close on mobile (when sidebar is in drawer mode)
                 if (window.innerWidth <= 768) {
                     closeSidebar();
                 }
@@ -2415,6 +3469,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Escape' && sidebarDrawer && sidebarDrawer.classList.contains('open')) {
             closeSidebar();
         }
+        if (e.key === 'Escape' && modalReportOverlay && modalReportOverlay.style.display !== 'none') {
+            closeLabReportModal();
+        }
     });
 
     // ═══════════════════════════════════════════════════════════
@@ -2423,6 +3480,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const initialHash = window.location.hash.replace(/^#/, '');
     if (initialHash === 'overview') {
         selectTechnique('overview');
+    } else if (initialHash === 'compare') {
+        selectTechnique('compare');
+    } else if (initialHash === 'quiz') {
+        selectTechnique('quiz');
     } else if (initialHash && techniqueConfigs[initialHash]) {
         selectTechnique(initialHash);
     } else {

@@ -1,4 +1,4 @@
-﻿# 🔬 Error Detection & Correction Simulator
+# 🔬 Error Detection & Correction Simulator
 
 > **Interactive Data Link Layer Laboratory Platform**
 > A full-featured, academically accurate simulation environment for 7 core networking algorithms — designed for Data Communication coursework, lab presentations, and engineering portfolios.
@@ -28,14 +28,18 @@ python app.py
 
 ---
 
-## 🎓 Academic Features
+## 🎓 Academic & Advanced Features
 
-- **Step-by-Step Mathematical Proof** — Every algorithm shows a complete calculation trace
-- **📋 Copy Steps** — One-click export of the full proof to clipboard (Markdown format)
-- **🖨️ Print Report** — Clean academic print layout for lab submission
+- **Step-by-Step Mathematical Proof** — Every algorithm displays a rigorous calculation trace
+- **⚡ Real-World Protocol Presets** — 1-click loading of standards (PPP, HDLC, IPv4 Checksum, ATM CRC-8, RAM ECC Hamming)
+- **⚖️ Multi-Technique Comparison Studio** — Side-by-side evaluation of overhead %, detection rate, and error correction across all algorithms
+- **🎓 Interactive Lab Quiz Mode** — 10 dynamic calculation questions with instant feedback and step-by-step proofs
+- **📄 Formal University Lab Assignment Report Exporter** — Generates official academic lab assignment sheets with student credentials, waveforms, and instructor sign-off
+- **📋 Result & Step Copying** — 1-click copy of results and full mathematical steps to clipboard
+- **🖨️ Clean Print Engine** — Optimized print stylesheet for academic lab submission
 - **Digital Signal Waveform** — TTL NRZ-L logic analyzer visualization for every binary module
-- **Error Injection** — Interactive bit-flip, burst error, and random noise injection
-- **Live Telemetry HUD** — Real-time pipeline state monitoring
+- **Interactive Error Injection** — Bit-flip, burst error, and random noise injection
+- **Live Telemetry HUD** — Real-time transmission pipeline state monitoring
 
 ---
 
