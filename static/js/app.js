@@ -111,6 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const techniqueCards        = document.querySelectorAll('.technique-card');
     const sidebarDrawer         = document.getElementById('sidebar-drawer');
     const mobileMenuBtn         = document.getElementById('mobile-menu-btn');
+    const sidebarOverlay        = document.getElementById('sidebar-overlay');
 
     const activeTechniqueTag    = document.getElementById('active-technique-tag');
     const activeTechniqueTitle  = document.getElementById('active-technique-title');
@@ -211,23 +212,6 @@ document.addEventListener('DOMContentLoaded', () => {
             requestAnimationFrame(draw);
         }
         draw();
-    }
-
-    // ═══════════════════════════════════════════════════════════
-    // MOBILE SIDEBAR
-    // ═══════════════════════════════════════════════════════════
-    if (mobileMenuBtn && sidebarDrawer) {
-        mobileMenuBtn.addEventListener('click', e => {
-            e.stopPropagation();
-            sidebarDrawer.classList.toggle('open');
-        });
-        document.addEventListener('click', e => {
-            if (sidebarDrawer.classList.contains('open') &&
-                !sidebarDrawer.contains(e.target) &&
-                e.target !== mobileMenuBtn) {
-                sidebarDrawer.classList.remove('open');
-            }
-        });
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -1669,6 +1653,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function processSimulatorData(actionOverride) {
         const startTime = performance.now();
         const payload   = buildRequestPayload(actionOverride);
+        if (!payload) return;
 
         // UI: Running state
         setPipelineState('running');
@@ -2311,6 +2296,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (processBtn) processBtn.addEventListener('click', () => processSimulatorData('full_cycle'));
 
+    if (primaryInput) {
+        primaryInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                processSimulatorData('full_cycle');
+            }
+        });
+    }
+
     if (resetBtn) {
         resetBtn.addEventListener('click', () => {
             selectTechnique(currentTechnique);
@@ -2354,6 +2348,76 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ═══════════════════════════════════════════════════════════
+    // MOBILE SIDEBAR DRAWER
+    // ═══════════════════════════════════════════════════════════
+    function openSidebar() {
+        if (!sidebarDrawer) return;
+        sidebarDrawer.classList.add('open');
+        if (sidebarOverlay) {
+            sidebarOverlay.classList.add('active');
+        }
+        document.body.style.overflow = 'hidden'; // prevent background scroll
+        if (mobileMenuBtn) mobileMenuBtn.setAttribute('aria-expanded', 'true');
+    }
+
+    function closeSidebar() {
+        if (!sidebarDrawer) return;
+        sidebarDrawer.classList.remove('open');
+        if (sidebarOverlay) {
+            sidebarOverlay.classList.remove('active');
+        }
+        document.body.style.overflow = '';
+        if (mobileMenuBtn) mobileMenuBtn.setAttribute('aria-expanded', 'false');
+    }
+
+    function toggleSidebar() {
+        if (sidebarDrawer && sidebarDrawer.classList.contains('open')) {
+            closeSidebar();
+        } else {
+            openSidebar();
+        }
+    }
+
+    if (mobileMenuBtn) {
+        mobileMenuBtn.setAttribute('aria-expanded', 'false');
+        mobileMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleSidebar();
+        });
+    }
+
+    // Close when overlay (backdrop) is tapped
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', closeSidebar);
+    }
+
+    // Close sidebar when a nav item is clicked (mobile UX)
+    if (sidebarDrawer) {
+        sidebarDrawer.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                // Only close on mobile (when sidebar is in drawer mode)
+                if (window.innerWidth <= 768) {
+                    closeSidebar();
+                }
+            });
+        });
+    }
+
+    // On resize: if going back to desktop, remove overflow lock and reset sidebar
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 768) {
+            closeSidebar();
+        }
+    });
+
+    // Close sidebar on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && sidebarDrawer && sidebarDrawer.classList.contains('open')) {
+            closeSidebar();
+        }
+    });
+
+    // ═══════════════════════════════════════════════════════════
     // INITIALISE
     // ═══════════════════════════════════════════════════════════
     const initialHash = window.location.hash.replace(/^#/, '');
@@ -2364,4 +2428,5 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         selectTechnique('byte_stuffing');
     }
+
 });

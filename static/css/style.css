@@ -76,7 +76,9 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    width: 100vw;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
     position: relative;
     z-index: 1;
 }
@@ -1179,7 +1181,10 @@ details[open] .accordion-arrow { transform: rotate(180deg); }
 .token-data         { background: rgba(245, 247, 250, 0.06); color: var(--text-primary); border: 1px solid var(--border-glass); }
 
 /* Tables (Parity, Hamming, Hamming Distance) */
-.matrix-container, .hamming-table-container, .hdist-table-container { overflow-x: auto; }
+.matrix-container, .hamming-table-container, .hdist-table-container { 
+    overflow-x: auto; 
+    -webkit-overflow-scrolling: touch;
+}
 
 .parity-matrix-table, .hamming-pos-table, .hdist-matrix-table {
     width: 100%; border-collapse: separate; border-spacing: 5px;
@@ -1250,12 +1255,31 @@ details[open] .accordion-arrow { transform: rotate(180deg); }
 .crc-final-row td { background: rgba(34, 197, 94, 0.08); border-color: rgba(34, 197, 94, 0.3) !important; }
 
 /* ════════════════════════════════════════════════
-   RESPONSIVE
+   RESPONSIVE — FULL DEVICE SUPPORT
 ════════════════════════════════════════════════ */
+
+/* ── Sidebar Overlay (mobile backdrop) ── */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 99;
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+}
+.sidebar-overlay.active {
+    opacity: 1;
+}
+
+/* ── 1400px — Wide Laptop ── */
 @media (max-width: 1400px) {
     .three-col-studio-grid { grid-template-columns: 280px 1fr 220px; }
 }
 
+/* ── 1150px — Small Laptop / Large Tablet ── */
 @media (max-width: 1150px) {
     .three-col-studio-grid { grid-template-columns: 280px 1fr; }
     .studio-right-col { grid-column: 1 / -1; }
@@ -1263,23 +1287,272 @@ details[open] .accordion-arrow { transform: rotate(180deg); }
     .hud-items { flex-direction: row; flex-wrap: wrap; flex: 1; }
     .hud-item { min-width: 130px; flex: 1; }
     .hud-theory-box { width: 100%; }
+    .sidebar { width: 250px; }
 }
 
+/* ── 900px — Tablet Portrait ── */
 @media (max-width: 900px) {
     .three-col-studio-grid { grid-template-columns: 1fr; }
-    .hero-compact { flex-direction: column; align-items: flex-start; }
-    .hero-compact-stats { width: 100%; justify-content: space-between; }
+    .hero-compact { flex-direction: column; align-items: flex-start; gap: 16px; }
+    .hero-compact-stats { width: 100%; justify-content: space-between; gap: 10px; }
+    .hero-stat { flex: 1; min-width: 60px; padding: 8px 10px; }
+    .hero-stat-val { font-size: 1.3rem; }
     .cards-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+    .studio-controls { flex-wrap: wrap; gap: 8px; }
+    .pipeline-steps-row { gap: 4px; }
+    .pipe-step-sm span { font-size: 0.52rem; }
 }
 
+/* ── 768px — Mobile Landscape / Tablet ── */
 @media (max-width: 768px) {
-    .mobile-toggle-btn { display: flex; align-items: center; justify-content: center; }
-    .sidebar { position: fixed; top: 0; left: 0; bottom: 0; transform: translateX(-100%); box-shadow: var(--shadow-md); }
-    .sidebar.open { transform: translateX(0); }
-    .top-header { padding: 0 16px; }
-    .dashboard-scroll { padding: 16px; }
-    .dynamic-params-grid { grid-template-columns: 1fr; }
-    .header-status { display: none; }
+    /* Show hamburger button */
+    .mobile-toggle-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Sidebar: slide-out drawer */
+    .sidebar {
+        position: fixed;
+        top: 0; left: 0; bottom: 0;
+        width: 270px;
+        transform: translateX(-100%);
+        box-shadow: var(--shadow-md);
+        z-index: 200;
+    }
+    .sidebar.open {
+        transform: translateX(0);
+    }
+    .sidebar-overlay {
+        display: block;
+    }
+
+    /* Header */
+    .top-header { padding: 0 14px; height: 60px; }
+    .header-title h1 { font-size: 1.05rem; }
+    .header-title p  { display: none; }
+    .header-status   { display: none; }
+    .course-badge    { font-size: 0.7rem; padding: 4px 10px; }
+
+    /* Main scroll area */
+    .dashboard-scroll { padding: 14px 14px 60px 14px; gap: 16px; }
+
+    /* Hero */
+    .hero-compact { padding: 16px 18px; }
+    .hero-compact-left h2 { font-size: 1.25rem; }
+    .hero-compact-stats { flex-wrap: wrap; }
+    .hero-stat { min-width: 65px; }
+
+    /* Module cards */
+    .cards-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+    .technique-card { padding: 16px 14px; }
+
+    /* Simulator studio */
+    .simulator-studio { padding: 18px 14px; }
+    .studio-header { margin-bottom: 16px; }
+    .studio-title h2 { font-size: 1.15rem; }
+    .studio-controls { width: 100%; }
+    .studio-controls .btn { flex: 1; justify-content: center; padding: 10px 12px; font-size: 0.8rem; }
+
+    /* 3-col grid → single column */
+    .three-col-studio-grid { grid-template-columns: 1fr; gap: 14px; }
+
+    /* Input cards */
+    .input-card { padding: 16px 14px; }
+    .dynamic-params-grid { grid-template-columns: 1fr; gap: 10px; }
+    .error-quick-actions { grid-template-columns: 1fr 1fr; gap: 7px; }
+
+    /* Pipeline bar */
+    .pipeline-bar { padding: 10px 12px; overflow-x: auto; }
+    .pipeline-steps-row { min-width: 480px; }
+
+    /* Result boxes */
+    .result-box { padding: 13px 14px; }
+
+    /* Steps accordion */
+    .steps-summary-toggle { padding: 12px 14px; }
+    .btn-step-action { padding: 3px 7px; font-size: 0.68rem; }
+    .steps-content { padding: 12px; max-height: 280px; }
+
+    /* Telemetry HUD */
+    .telemetry-hud { padding: 14px; }
+    .hud-items { gap: 7px; }
+    .hud-item { min-width: 110px; padding: 7px 10px; }
+
+    /* Toast */
+    #toast-container { bottom: 16px; right: 12px; left: 12px; }
+    .toast-notification { max-width: 100%; font-size: 0.8rem; }
+}
+
+/* ── 600px — Mobile Portrait ── */
+@media (max-width: 600px) {
+    /* Header */
+    .top-header { height: 56px; padding: 0 12px; }
+    .header-title h1 { font-size: 0.95rem; letter-spacing: 0.02em; }
+
+    /* Dashboard */
+    .dashboard-scroll { padding: 12px 10px 72px 10px; gap: 14px; }
+
+    /* Hero compact */
+    .hero-compact { padding: 14px 14px; gap: 12px; }
+    .hero-compact-left h2 { font-size: 1.1rem; }
+    .hero-compact-left p  { font-size: 0.8rem; }
+    .hero-tag { font-size: 0.65rem; }
+    .hero-compact-stats { gap: 8px; }
+    .hero-stat { padding: 6px 8px; min-width: 54px; }
+    .hero-stat-val { font-size: 1.15rem; }
+    .hero-stat-label { font-size: 0.58rem; }
+
+    /* Module cards: 1 column on very small */
+    .cards-grid { grid-template-columns: 1fr; gap: 10px; }
+    .technique-card { padding: 14px 14px; }
+    .technique-card h3 { font-size: 0.95rem; }
+
+    /* Simulator */
+    .simulator-studio { padding: 14px 12px; }
+    .studio-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .studio-controls { width: 100%; }
+    .studio-controls .btn { flex: 1; }
+    .active-tag { font-size: 0.65rem; }
+    .studio-title h2 { font-size: 1rem; }
+
+    /* Input form */
+    .form-control { font-size: 0.85rem; padding: 10px 12px; }
+    .input-card { padding: 14px 12px; }
+
+    /* Pipeline */
+    .pipeline-steps-row { min-width: 420px; }
+    .pipe-step-sm span { font-size: 0.48rem; letter-spacing: 0.02em; }
+    .pipe-step-sm i { font-size: 0.85rem; }
+
+    /* Status badge */
+    .status-indicator-badge { font-size: 0.75rem; padding: 7px 14px; }
+
+    /* Steps actions */
+    .steps-header-actions { gap: 5px; }
+    .btn-step-action { font-size: 0.64rem; padding: 2px 6px; }
+
+    /* Error injector */
+    .error-quick-actions { grid-template-columns: 1fr 1fr; }
+    .err-action-btn { font-size: 0.72rem; padding: 7px 8px; }
+
+    /* HUD: horizontal scroll on tiny */
+    .hud-items { flex-direction: row; flex-wrap: wrap; gap: 6px; }
+    .hud-item { min-width: calc(50% - 3px); flex: none; padding: 7px 9px; }
+    .hud-label { font-size: 0.58rem; }
+    .hud-val { font-size: 0.78rem; }
+
+    /* Telemetry theory box */
+    .hud-theory-body { font-size: 0.73rem; }
+
+    /* Bit grid chips */
+    .bit-chip { width: 26px; height: 26px; font-size: 0.76rem; }
+
+    /* Buttons */
+    .btn { font-size: 0.8rem; padding: 9px 14px; }
+    .glowing-btn { font-size: 0.8rem; }
+
+    /* Checksum math layout */
+    .chk-math-line {
+        grid-template-columns: 90px auto 1fr;
+        font-size: 0.78rem;
+        gap: 6px;
+    }
+}
+
+/* ── 480px — Small Phone ── */
+@media (max-width: 480px) {
+    .top-header { height: 52px; }
+    .mobile-toggle-btn { width: 36px; height: 36px; font-size: 1rem; }
+    .header-title h1 { font-size: 0.88rem; }
+    .course-badge { display: none; }
+
+    .dashboard-scroll { padding: 10px 8px 80px 8px; }
+
+    .hero-compact-stats { flex-wrap: wrap; }
+    .hero-stat { min-width: 48%; flex: 1 0 48%; }
+
+    .cards-grid { grid-template-columns: 1fr; }
+
+    .simulator-studio { padding: 12px 10px; border-radius: var(--radius-md); }
+
+    /* Pipeline: make it scroll horizontally */
+    .pipeline-bar { padding: 8px 10px; border-radius: var(--radius-sm); }
+    .pipeline-steps-row { min-width: 380px; gap: 2px; }
+    .pipe-step-sm { padding: 4px 5px; }
+
+    /* Studio controls: stack */
+    .studio-controls { flex-direction: column; gap: 8px; }
+    .studio-controls .btn { width: 100%; justify-content: center; }
+
+    /* Results */
+    .result-box { padding: 11px 12px; }
+    .result-value.code-display { font-size: 0.85rem; padding: 8px 10px; }
+
+    /* Steps content */
+    .steps-content { font-size: 0.78rem; max-height: 240px; padding: 10px; }
+    .step-row { padding: 6px 9px; font-size: 0.76rem; }
+
+    /* HUD items: single column */
+    .hud-item { min-width: 100%; }
+
+    /* Error quick actions */
+    .error-quick-actions { grid-template-columns: 1fr 1fr; gap: 6px; }
+
+    /* Input cards */
+    .input-card { padding: 12px 10px; }
+    .card-header-sm h3 { font-size: 0.85rem; }
+
+    /* Section titles */
+    .section-title { font-size: 1rem; }
+
+    /* Footer meta — hidden on tiny screens */
+    .footer-meta { display: none; }
+    .footer-divider { display: none; }
+    .footer-inner { flex-direction: column; gap: 3px; font-size: 0.62rem; }
+
+    /* Toast */
+    #toast-container { bottom: 12px; right: 8px; left: 8px; }
+    .toast-notification { font-size: 0.76rem; padding: 10px 14px; }
+}
+
+/* ── 360px — Very Small / Old Phones ── */
+@media (max-width: 360px) {
+    .top-header { height: 50px; }
+    .header-title h1 { font-size: 0.82rem; }
+    .dashboard-scroll { padding: 8px 6px 80px 6px; }
+    .simulator-studio { padding: 10px 8px; }
+    .studio-title h2 { font-size: 0.9rem; }
+    .hero-compact-left h2 { font-size: 0.95rem; }
+    .hero-compact-stats { gap: 6px; }
+    .hero-stat { padding: 5px 6px; }
+    .hero-stat-val { font-size: 1rem; }
+    .cards-grid { grid-template-columns: 1fr; }
+    .technique-card { padding: 12px 10px; }
+    .pipeline-steps-row { min-width: 350px; }
+    .btn { font-size: 0.75rem; padding: 8px 10px; }
+    .form-control { font-size: 0.8rem; padding: 9px 10px; }
+    .result-value.code-display { font-size: 0.78rem; }
+}
+
+/* ── Touch / Pointer improvements ── */
+@media (hover: none) and (pointer: coarse) {
+    /* Larger tap targets */
+    .nav-item { padding: 12px 14px; min-height: 48px; }
+    .btn { min-height: 44px; }
+    .mobile-toggle-btn { min-height: 44px; min-width: 44px; }
+    .err-action-btn { min-height: 42px; }
+    .form-control { min-height: 44px; font-size: 16px; } /* 16px prevents iOS zoom */
+    .bit-chip { width: 32px; height: 32px; }
+    .preset-btn { padding: 8px 14px; min-height: 38px; }
+
+    /* Remove hover transforms that don't feel right on touch */
+    .glass-card:hover { transform: none; }
+    .technique-card:hover { transform: none; }
+    .btn-primary:hover { transform: none; }
+    .btn-secondary:hover { transform: none; }
+    .chk-hud-card:hover { transform: none; }
 }
 
 /* ── Site Footer ── */
