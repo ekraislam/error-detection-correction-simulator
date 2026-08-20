@@ -1,5 +1,9 @@
 # 🔬 Error Detection & Correction Simulator
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-teal.svg)](LICENSE)
+[![Python 3.8+](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
+[![Tests Passing](https://img.shields.io/badge/Tests-95%20Passed-emerald.svg)](#-test-coverage)
+
 > **Interactive Data Link Layer Laboratory Platform**
 > A full-featured, academically accurate simulation environment for 7 core networking algorithms — designed for Data Communication coursework, lab presentations, and engineering portfolios.
 
@@ -114,8 +118,14 @@ python app.py
 
 ## 👨‍💻 Author
 
-**Ohi** — Data Communication & Networking Laboratory Project
+**Ekra Islam Ohi** — Data Communication & Networking Laboratory Project  
 *Built with academic precision for educational excellence.*
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for full details.
 
 ---
 
